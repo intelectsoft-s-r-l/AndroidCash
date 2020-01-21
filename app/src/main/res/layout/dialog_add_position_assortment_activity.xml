@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <Button
+        android:id="@+id/btn_cancel"
+        style="@android:style/Widget.DeviceDefault.Button.Toggle"
+        android:layout_width="0dp"
+        android:layout_height="70dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="8dp"
+        android:layout_weight="1"
+        android:background="@drawable/background_button_payment"
+        android:text="Cancel"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/btn_add_item_clear"
+        app:layout_constraintStart_toEndOf="@+id/btn_ok"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_item_0" />
+
+    <Button
+        android:id="@+id/btn_ok"
+        style="@android:style/Widget.DeviceDefault.Light.Button.Toggle"
+        android:layout_width="0dp"
+        android:layout_height="70dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="8dp"
+        android:layout_weight="1"
+        android:background="@drawable/background_button_payment"
+        android:text="OK"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/btn_cancel"
+        app:layout_constraintStart_toStartOf="@+id/btn_add_item_point"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_item_point" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="9dp"
+        android:text="Adauga cantitate"
+        android:textColor="@android:color/background_dark"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toTopOf="@+id/txt_name_assortment"
+        app:layout_constraintEnd_toEndOf="@+id/et_input_assortment_count"
+        app:layout_constraintStart_toStartOf="@+id/et_input_assortment_count"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+    <TextView
+        android:id="@+id/et_input_assortment_count"
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:layout_below="@+id/textView2"
+        android:layout_centerInParent="true"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/edit_text_rame"
+        android:focusable="true"
+        android:focusedByDefault="true"
+        android:gravity="center"
+        android:textColor="@android:color/background_dark"
+        android:textSize="36sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_item_7"
+        app:layout_constraintEnd_toEndOf="@+id/btn_add_item_9"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@+id/btn_add_item_7"
+        app:layout_constraintTop_toBottomOf="@+id/txt_name_assortment" />
+
+    <Button
+        android:id="@+id/btn_add_item_1"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="1"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_item_point"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_item_2"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_item_4" />
+
+    <Button
+        android:id="@+id/btn_add_item_point"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginBottom="32dp"
+        android:background="@drawable/background_button_payment"
+        android:drawableStart="@drawable/arrow_down_white_36dp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_ok"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_item_0"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_item_1" />
+
+    <Button
+        android:id="@+id/btn_add_item_0"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginBottom="32dp"
+        android:background="@drawable/background_button_payment"
+        android:text="0"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_ok"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_item_clear"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_item_point"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_item_2" />
+
+    <Button
+        android:id="@+id/btn_add_item_clear"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginBottom="32dp"
+        android:background="@drawable/background_button_payment"
+        android:text="C"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_cancel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_item_0"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_item_3" />
+
+    <Button
+        android:id="@+id/btn_add_item_4"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="4"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_item_1"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_item_5"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_item_7" />
+
+    <Button
+        android:id="@+id/btn_add_item_7"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="7"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_item_4"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_item_8"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/et_input_assortment_count" />
+
+    <Button
+        android:id="@+id/btn_add_item_2"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="2"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_item_0"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_item_3"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_item_1"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_item_5" />
+
+    <Button
+        android:id="@+id/btn_add_item_5"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="5"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_item_2"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_item_6"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_item_4"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_item_8" />
+
+    <Button
+        android:id="@+id/btn_add_item_8"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="8"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_item_5"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_item_9"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_item_7"
+        app:layout_constraintTop_toBottomOf="@+id/et_input_assortment_count" />
+
+    <Button
+        android:id="@+id/btn_add_item_3"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="3"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_item_clear"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_item_2"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_item_6" />
+
+    <Button
+        android:id="@+id/btn_add_item_6"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="6"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_item_3"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_item_5"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_item_9" />
+
+    <Button
+        android:id="@+id/btn_add_item_9"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="9"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_item_6"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_item_8"
+        app:layout_constraintTop_toBottomOf="@+id/et_input_assortment_count" />
+
+    <TextView
+        android:id="@+id/txt_name_assortment"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="8dp"
+        android:text="TextView"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toTopOf="@+id/et_input_assortment_count"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView2" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

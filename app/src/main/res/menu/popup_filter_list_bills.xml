@@ -1,0 +1,22 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item
+        android:id="@+id/filter_today"
+        android:title="Today" />
+    <item
+        android:id="@+id/filter_this_week"
+        android:title="This week" />
+    <item
+        android:id="@+id/filter_this_month"
+        android:title="This month">
+    </item>
+
+    <item
+        android:id="@+id/filter_custom"
+        android:title="Custom..." >
+    </item>
+
+    <item
+        android:id="@+id/filter_reset"
+        android:title="Reset filter" />
+</menu>
+

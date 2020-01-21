@@ -1,0 +1,515 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <Button
+        android:id="@+id/btn_payment_point"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="."
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/btn_payment_clear"
+        app:layout_constraintStart_toEndOf="@+id/btn_payment_0"
+        app:layout_constraintTop_toBottomOf="@+id/btn_payment_8" />
+
+    <TextView
+        android:id="@+id/et_input_data2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/textView2"
+        android:layout_centerInParent="true"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/edit_text_rame"
+        android:gravity="right"
+        android:paddingTop="5dp"
+        android:paddingEnd="15dp"
+        android:paddingBottom="5dp"
+        android:text="0.0"
+        android:textColor="@android:color/background_dark"
+        android:textSize="36sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_payment_200"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/LL_paymentMode" />
+
+    <TextView
+        android:id="@+id/txt_incasat_payment"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="0.0"
+        android:textSize="24sp"
+        app:layout_constraintEnd_toStartOf="@+id/txt_rest_incasat_payment"
+        app:layout_constraintStart_toEndOf="@+id/txt_total_payment"
+        app:layout_constraintTop_toBottomOf="@+id/textView55" />
+
+    <TextView
+        android:id="@+id/txt_rest_incasat_payment"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="0.0"
+        android:textColor="@android:color/holo_red_dark"
+        android:textSize="24sp"
+        app:layout_constraintEnd_toStartOf="@+id/txt_rest_payment"
+        app:layout_constraintStart_toEndOf="@+id/txt_incasat_payment"
+        app:layout_constraintTop_toBottomOf="@+id/textView59" />
+
+    <TextView
+        android:id="@+id/textView55"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="Incasat"
+        android:textColor="@android:color/black"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toStartOf="@+id/textView59"
+        app:layout_constraintStart_toEndOf="@+id/textView54"
+        app:layout_constraintTop_toBottomOf="@+id/divider7" />
+
+    <Button
+        android:id="@+id/btn_payment_200"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="200"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_payment_500"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btn_payment_20"
+        app:layout_constraintTop_toBottomOf="@+id/et_input_data2" />
+
+    <Button
+        android:id="@+id/btn_payment_500"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="500"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_payment_1000"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btn_payment_50"
+        app:layout_constraintTop_toBottomOf="@+id/btn_payment_200" />
+
+    <Button
+        android:id="@+id/btn_payment_1000"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="1000"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_cancel_payment"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btn_payment_100"
+        app:layout_constraintTop_toBottomOf="@+id/btn_payment_500" />
+
+    <Button
+        android:id="@+id/btn_payment_100"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="100"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_payment_delete"
+        app:layout_constraintEnd_toStartOf="@+id/btn_payment_1000"
+        app:layout_constraintStart_toEndOf="@+id/btn_payment_9"
+        app:layout_constraintTop_toBottomOf="@+id/btn_payment_50" />
+
+    <Button
+        android:id="@+id/btn_payment_50"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="50"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_payment_100"
+        app:layout_constraintEnd_toStartOf="@+id/btn_payment_500"
+        app:layout_constraintStart_toEndOf="@+id/btn_payment_6"
+        app:layout_constraintTop_toBottomOf="@+id/btn_payment_20" />
+
+    <Button
+        android:id="@+id/btn_cancel_payment"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="1dp"
+        android:layout_weight="1"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="Cancel"
+        android:textAllCaps="false"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btn_payment_delete"
+        app:layout_constraintTop_toBottomOf="@+id/btn_payment_1000" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Payment"
+        android:textColor="@android:color/background_dark"
+        android:textSize="24sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+    <Button
+        android:id="@+id/btn_payment_1"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="1"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_payment_4"
+        app:layout_constraintEnd_toStartOf="@+id/btn_payment_2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/et_input_data2" />
+
+    <Button
+        android:id="@+id/btn_payment_delete"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginBottom="1dp"
+        android:drawableStart="@drawable/arrow_down_white_36dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/btn_cancel_payment"
+        app:layout_constraintStart_toEndOf="@+id/btn_payment_clear"
+        app:layout_constraintTop_toBottomOf="@+id/btn_payment_100" />
+
+    <Button
+        android:id="@+id/btn_payment_0"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="0"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/btn_payment_point"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_payment_7" />
+
+    <Button
+        android:id="@+id/btn_payment_clear"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="C"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/btn_payment_delete"
+        app:layout_constraintStart_toEndOf="@+id/btn_payment_point"
+        app:layout_constraintTop_toBottomOf="@+id/btn_payment_9" />
+
+    <Button
+        android:id="@+id/btn_payment_4"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="4"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_payment_7"
+        app:layout_constraintEnd_toStartOf="@+id/btn_payment_5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_payment_1" />
+
+    <Button
+        android:id="@+id/btn_payment_7"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="7"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_payment_0"
+        app:layout_constraintEnd_toStartOf="@+id/btn_payment_8"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_payment_4" />
+
+    <Button
+        android:id="@+id/btn_payment_2"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="2"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_payment_5"
+        app:layout_constraintEnd_toStartOf="@+id/btn_payment_3"
+        app:layout_constraintStart_toEndOf="@+id/btn_payment_1"
+        app:layout_constraintTop_toBottomOf="@+id/et_input_data2" />
+
+    <Button
+        android:id="@+id/btn_payment_20"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="20"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_payment_50"
+        app:layout_constraintEnd_toStartOf="@+id/btn_payment_200"
+        app:layout_constraintStart_toEndOf="@+id/btn_payment_3"
+        app:layout_constraintTop_toBottomOf="@+id/et_input_data2" />
+
+    <Button
+        android:id="@+id/btn_payment_5"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="5"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_payment_8"
+        app:layout_constraintEnd_toStartOf="@+id/btn_payment_6"
+        app:layout_constraintStart_toEndOf="@+id/btn_payment_4"
+        app:layout_constraintTop_toBottomOf="@+id/btn_payment_2" />
+
+    <Button
+        android:id="@+id/btn_payment_8"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="8"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_payment_point"
+        app:layout_constraintEnd_toStartOf="@+id/btn_payment_9"
+        app:layout_constraintStart_toEndOf="@+id/btn_payment_7"
+        app:layout_constraintTop_toBottomOf="@+id/btn_payment_5" />
+
+    <Button
+        android:id="@+id/btn_payment_3"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="3"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_payment_6"
+        app:layout_constraintEnd_toStartOf="@+id/btn_payment_20"
+        app:layout_constraintStart_toEndOf="@+id/btn_payment_2"
+        app:layout_constraintTop_toBottomOf="@+id/et_input_data2" />
+
+    <Button
+        android:id="@+id/btn_payment_6"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="6"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_payment_9"
+        app:layout_constraintEnd_toStartOf="@+id/btn_payment_50"
+        app:layout_constraintStart_toEndOf="@+id/btn_payment_5"
+        app:layout_constraintTop_toBottomOf="@+id/btn_payment_3" />
+
+    <Button
+        android:id="@+id/btn_payment_9"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="sans-serif-condensed-light"
+        android:text="9"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_payment_clear"
+        app:layout_constraintEnd_toStartOf="@+id/btn_payment_100"
+        app:layout_constraintStart_toEndOf="@+id/btn_payment_8"
+        app:layout_constraintTop_toBottomOf="@+id/btn_payment_6" />
+
+    <View
+        android:id="@+id/divider7"
+        android:layout_width="0dp"
+        android:layout_height="2dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:background="@android:color/black"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView2" />
+
+    <View
+        android:id="@+id/divider9"
+        android:layout_width="0dp"
+        android:layout_height="2dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:background="@android:color/black"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/txt_rest_incasat_payment" />
+
+    <TextView
+        android:id="@+id/textView54"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="Total bon"
+        android:textColor="@android:color/black"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toStartOf="@+id/textView55"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/divider7" />
+
+    <TextView
+        android:id="@+id/textView59"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="Rest de incasat"
+        android:textColor="@android:color/black"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toStartOf="@+id/textView61"
+        app:layout_constraintStart_toEndOf="@+id/textView55"
+        app:layout_constraintTop_toBottomOf="@+id/divider7" />
+
+    <TextView
+        android:id="@+id/textView61"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:gravity="center"
+        android:text="Rest"
+        android:textColor="@android:color/black"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/textView59"
+        app:layout_constraintTop_toBottomOf="@+id/divider7" />
+
+    <TextView
+        android:id="@+id/txt_rest_payment"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:gravity="center"
+        android:text="0.0"
+        android:textColor="@android:color/holo_green_light"
+        android:textSize="24sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/txt_rest_incasat_payment"
+        app:layout_constraintTop_toBottomOf="@+id/textView61" />
+
+    <TextView
+        android:id="@+id/txt_total_payment"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="0.0"
+        android:textColor="@android:color/black"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toStartOf="@+id/txt_incasat_payment"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView54" />
+
+    <LinearLayout
+        android:id="@+id/LL_btn_pay"
+        android:layout_width="0dp"
+        android:layout_height="51dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/divider9">
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/LL_paymentMode"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/LL_btn_pay">
+
+    </LinearLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

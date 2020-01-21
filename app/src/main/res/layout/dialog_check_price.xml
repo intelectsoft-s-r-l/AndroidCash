@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <Button
+        android:id="@+id/btn_cancel_check_price"
+        style="@android:style/Widget.DeviceDefault.Button.Toggle"
+        android:layout_width="140dp"
+        android:layout_height="70dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginBottom="8dp"
+        android:layout_weight="1"
+        android:background="@drawable/background_button_payment"
+        android:text="Cancel"
+        android:textAllCaps="false"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/btn_add_position_clear"
+        app:layout_constraintStart_toEndOf="@+id/btn_search"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_clear" />
+
+    <Button
+        android:id="@+id/btn_search"
+        style="@android:style/Widget.DeviceDefault.Light.Button.Toggle"
+        android:layout_width="140dp"
+        android:layout_height="70dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginBottom="8dp"
+        android:layout_weight="1"
+        android:background="@drawable/background_button_payment"
+        android:text="Check"
+        android:textAllCaps="false"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/btn_cancel"
+        app:layout_constraintStart_toEndOf="@+id/btn_add"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_0" />
+
+    <Button
+        android:id="@+id/btn_add"
+        style="@android:style/Widget.DeviceDefault.Light.Button.Toggle"
+        android:layout_width="140dp"
+        android:layout_height="70dp"
+        android:layout_marginBottom="8dp"
+        android:layout_weight="1"
+        android:background="@drawable/background_button_payment"
+        android:text="Add"
+        android:textAllCaps="false"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/btn_search"
+        app:layout_constraintStart_toStartOf="@+id/btn_add_position_delete"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_delete" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="8dp"
+        android:text="CheckPrice"
+        android:textColor="@android:color/background_dark"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toTopOf="@+id/et_input_data"
+        app:layout_constraintEnd_toEndOf="@+id/et_input_data"
+        app:layout_constraintStart_toStartOf="@+id/et_input_data"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+    <TextView
+        android:id="@+id/et_input_data"
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:layout_below="@+id/textView2"
+        android:layout_centerInParent="true"
+        android:layout_marginTop="8dp"
+        android:focusable="true"
+        android:focusedByDefault="true"
+        android:gravity="center"
+        android:textColor="@android:color/background_dark"
+        android:textSize="24sp"
+        app:layout_constraintEnd_toEndOf="@+id/btn_add_position_9"
+        app:layout_constraintStart_toStartOf="@+id/btn_add_position_7"
+        app:layout_constraintTop_toBottomOf="@+id/textView2" />
+
+    <Button
+        android:id="@+id/btn_add_position_1"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="1"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_delete"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_position_2"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_4" />
+
+    <Button
+        android:id="@+id/btn_add_position_delete"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/background_button_payment"
+        android:drawableStart="@drawable/arrow_down_white_36dp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_position_0"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_1" />
+
+    <Button
+        android:id="@+id/btn_add_position_0"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/background_button_payment"
+        android:text="0"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_search"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_position_clear"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_position_delete"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_2" />
+
+    <Button
+        android:id="@+id/btn_add_position_clear"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/background_button_payment"
+        android:text="C"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_cancel_check_price"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_position_0"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_3" />
+
+    <Button
+        android:id="@+id/btn_add_position_4"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="4"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_1"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_position_5"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_7" />
+
+    <Button
+        android:id="@+id/btn_add_position_7"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="7"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_4"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_position_8"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/LL_AssortmentName" />
+
+    <Button
+        android:id="@+id/btn_add_position_2"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="2"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_0"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_position_3"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_position_1"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_5" />
+
+    <Button
+        android:id="@+id/btn_add_position_5"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="5"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_2"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_position_6"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_position_4"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_8" />
+
+    <Button
+        android:id="@+id/btn_add_position_8"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="8"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_5"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_position_9"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_position_7"
+        app:layout_constraintTop_toBottomOf="@+id/LL_AssortmentName" />
+
+    <Button
+        android:id="@+id/btn_add_position_3"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="3"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_clear"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_position_2"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_6" />
+
+    <Button
+        android:id="@+id/btn_add_position_6"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="6"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_3"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_position_5"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_9" />
+
+    <Button
+        android:id="@+id/btn_add_position_9"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/background_button_payment"
+        android:text="9"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_6"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_position_8"
+        app:layout_constraintTop_toBottomOf="@+id/LL_AssortmentName" />
+
+    <View
+        android:id="@+id/divider7"
+        android:layout_width="0dp"
+        android:layout_height="2dp"
+        android:background="@android:color/black"
+        app:layout_constraintEnd_toEndOf="@+id/et_input_data"
+        app:layout_constraintStart_toStartOf="@+id/et_input_data"
+        app:layout_constraintTop_toBottomOf="@+id/et_input_data" />
+
+    <TextView
+        android:id="@+id/textView69"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Assortment name"
+        android:textColor="@android:color/black"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="@+id/et_input_data"
+        app:layout_constraintStart_toStartOf="@+id/et_input_data"
+        app:layout_constraintTop_toBottomOf="@+id/divider7" />
+
+    <LinearLayout
+        android:id="@+id/LL_AssortmentName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/edit_text_rame"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="@+id/et_input_data"
+        app:layout_constraintStart_toStartOf="@+id/et_input_data"
+        app:layout_constraintTop_toBottomOf="@+id/txt_name_assortment">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textView73"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Without discount"
+                android:textColor="@android:color/black"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/price_without_discount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="-"
+                android:textColor="@android:color/black"
+                android:textSize="24sp" />
+        </LinearLayout>
+
+        <View
+            android:id="@+id/divider8"
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@color/cardview_shadow_start_color" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textView72"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="With discount"
+                android:textColor="@android:color/black"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/price_with_discount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="-"
+                android:textColor="@android:color/holo_green_light"
+                android:textSize="24sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/txt_name_assortment"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="-"
+        android:textColor="@android:color/black"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="@+id/et_input_data"
+        app:layout_constraintStart_toStartOf="@+id/et_input_data"
+        app:layout_constraintTop_toBottomOf="@+id/textView69" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
