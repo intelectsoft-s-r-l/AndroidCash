@@ -271,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
+//testrt
         // Get USB manager
         mManager = (UsbManager) getSystemService(Context.USB_SERVICE);
         // Register receiver for USB permission
