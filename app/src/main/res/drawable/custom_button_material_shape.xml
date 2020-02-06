@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:insetLeft="2dp"
+    android:insetTop="3dp"
+    android:insetRight="2dp"
+    android:insetBottom="3dp">
+    <shape android:shape="rectangle"
+        android:tint="?android:attr/textAppearanceButton">
+        <corners android:radius="5dp" />
+        <solid android:color="@color/blue_color" />
+        <padding android:left="4dp"
+            android:top="2dp"
+            android:right="4dp"
+            android:bottom="2dp" />
+    </shape>
+</inset>

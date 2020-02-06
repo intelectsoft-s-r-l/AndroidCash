@@ -173,12 +173,14 @@
         app:layout_constraintTop_toBottomOf="@+id/divider4"
         app:layout_constraintVertical_bias="0.0" />
 
-    <ListView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/LW_content_assortment_entry"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginStart="8dp"
         android:choiceMode="singleChoice"
+        tools:listitem="@layout/item_listview_assortment"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_weight="2.5"

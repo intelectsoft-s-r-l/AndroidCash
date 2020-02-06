@@ -1,16 +1,22 @@
 package edi.md.androidcash.RealmHelper;
+import androidx.annotation.NonNull;
+
 import io.realm.RealmObject;
+import io.realm.annotations.Required;
 
 /**
  * Created by Igor on 02.10.2019
  */
 
 public class BillString extends RealmObject {
-
+    @Required
     private String billID;
+    @Required
     private String id;
+    @Required
     private String assortmentExternID;
     private String assortmentFullName;
+    @Required
     private String createBy;
     private long createDate;
     private String promoLineID;

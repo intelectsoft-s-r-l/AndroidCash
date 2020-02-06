@@ -20,21 +20,20 @@ import androidx.fragment.app.Fragment;
 
 import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReport;
 
-import edi.md.androidcash.NetworkUtils.ApiUtils;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
 import edi.md.androidcash.NetworkUtils.FiscalServiceResult.PrintReportXResult;
 import edi.md.androidcash.NetworkUtils.FiscalServiceResult.PrintReportZResult;
 import edi.md.androidcash.NetworkUtils.FiscalServiceResult.XResponse;
 import edi.md.androidcash.NetworkUtils.FiscalServiceResult.ZResponse;
-import edi.md.androidcash.NetworkUtils.RetrofitRemote.PrintXService;
-import edi.md.androidcash.NetworkUtils.RetrofitRemote.PrintZService;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
 import edi.md.androidcash.R;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 import static android.content.Context.MODE_PRIVATE;
-import static edi.md.androidcash.GlobalVariables.SharedPrefFiscalService;
-import static edi.md.androidcash.GlobalVariables.SharedPrefSettings;
+import static edi.md.androidcash.BaseApplication.SharedPrefFiscalService;
+import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
 
 /**
  * Created by Igor on 28.10.2019
@@ -117,8 +116,8 @@ public class Reports extends Fragment {
                     if(ip != null && port != null) {
                         String uri = ip + ":" + port;
 
-                        PrintXService printXService = ApiUtils.printXService(uri);
-                        Call<XResponse> responseCall = printXService.printXReport();
+                        CommandServices commandServices = ApiUtils.commandFPService(uri);
+                        Call<XResponse> responseCall = commandServices.printXReport();
 
                         responseCall.enqueue(new Callback<XResponse>() {
                             @Override
@@ -199,8 +198,8 @@ public class Reports extends Fragment {
                     if(ip != null && port != null) {
                         String uri = ip + ":" + port;
 
-                        PrintZService printZService = ApiUtils.printZService(uri);
-                        Call<ZResponse> responseCall = printZService.printZReport();
+                        CommandServices commandServices = ApiUtils.commandFPService(uri);
+                        Call<ZResponse> responseCall = commandServices.printZReport();
 
                         responseCall.enqueue(new Callback<ZResponse>() {
                             @Override

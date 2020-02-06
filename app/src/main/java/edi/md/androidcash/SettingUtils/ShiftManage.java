@@ -33,11 +33,11 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.UUID;
 
-import edi.md.androidcash.GlobalVariables;
-import edi.md.androidcash.NetworkUtils.ApiUtils;
+import edi.md.androidcash.BaseApplication;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
 import edi.md.androidcash.NetworkUtils.FiscalServiceResult.PrintReportZResult;
 import edi.md.androidcash.NetworkUtils.FiscalServiceResult.ZResponse;
-import edi.md.androidcash.NetworkUtils.RetrofitRemote.PrintZService;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
 import edi.md.androidcash.NetworkUtils.User;
 import edi.md.androidcash.R;
 import edi.md.androidcash.RealmHelper.Bill;
@@ -49,9 +49,9 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 import static android.content.Context.MODE_PRIVATE;
-import static edi.md.androidcash.GlobalVariables.SharedPrefFiscalService;
-import static edi.md.androidcash.GlobalVariables.SharedPrefSettings;
-import static edi.md.androidcash.GlobalVariables.SharedPrefWorkPlaceSettings;
+import static edi.md.androidcash.BaseApplication.SharedPrefFiscalService;
+import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
+import static edi.md.androidcash.BaseApplication.SharedPrefWorkPlaceSettings;
 
 /**
  * Created by Igor on 28.10.2019
@@ -95,8 +95,8 @@ public class ShiftManage extends Fragment {
         tzInChisinau = TimeZone.getTimeZone("Europe/Chisinau");
         sdfChisinau.setTimeZone(tzInChisinau);
 
-        User user = ((GlobalVariables)getActivity().getApplication()).getUser();
-        myFiscalDevice = ((GlobalVariables)getActivity().getApplication()).getMyFiscalDevice();
+        User user = ((BaseApplication)getActivity().getApplication()).getUser();
+        myFiscalDevice = ((BaseApplication)getActivity().getApplication()).getMyFiscalDevice();
 
         SharedPreferences sPrefWorkPlace = getActivity().getSharedPreferences(SharedPrefWorkPlaceSettings, MODE_PRIVATE);
         final String workplaceId = sPrefWorkPlace.getString("WorkPlaceID", "null");
@@ -453,8 +453,8 @@ public class ShiftManage extends Fragment {
         if(ip != null && port != null) {
             String uri = ip + ":" + port;
 
-            PrintZService printZService = ApiUtils.printZService(uri);
-            Call<ZResponse> responseCall = printZService.printZReport();
+            CommandServices commandServices = ApiUtils.commandFPService(uri);
+            Call<ZResponse> responseCall = commandServices.printZReport();
 
             responseCall.enqueue(new Callback<ZResponse>() {
                 @Override

@@ -95,4 +95,8 @@ public class User extends RealmObject {
         this.userName = userName;
     }
 
+    public String getFullName() {
+        return firstName + lastName;
+    }
+
 }

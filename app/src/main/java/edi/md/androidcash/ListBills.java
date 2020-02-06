@@ -123,7 +123,7 @@ public class ListBills extends AppCompatActivity {
                     BillString billString = realm.where(BillString.class).equalTo("id",billStringID).findFirst();
                     if(billString != null){
                         billString.setDeleted(true);
-                        billString.setDeleteBy(((GlobalVariables)getApplication()).getUser().getId());
+                        billString.setDeleteBy(((BaseApplication)getApplication()).getUser().getId());
                         sumString[0] = billString.getSum();
                     }
 
@@ -131,7 +131,7 @@ public class ListBills extends AppCompatActivity {
                     if(bills != null){
                         bills.setSum(bills.getSum() - sumString[0]);
                         bills.setSumWithDiscount(bills.getSumWithDiscount() - sumString[0]);
-                        bills.setLastEditAuthor(((GlobalVariables)getApplication()).getUser().getId());
+                        bills.setLastEditAuthor(((BaseApplication)getApplication()).getUser().getId());
                     }
                 });
                 showBillString();
@@ -429,7 +429,7 @@ public class ListBills extends AppCompatActivity {
         @Override
         public void onClick(View v) {
             fiscalReceipt = new cmdReceipt.FiscalReceipt();
-            myFiscalDevice = ((GlobalVariables) getApplication()).getMyFiscalDevice();
+            myFiscalDevice = ((BaseApplication) getApplication()).getMyFiscalDevice();
 
             PaymentType paymentType = (PaymentType) v.getTag();
             boolean printFiscalCheck = paymentType.getPrintFiscalCheck();
@@ -461,13 +461,13 @@ public class ListBills extends AppCompatActivity {
 
             if ((billPaymentedSum + inputSum) >= sumBillToPay) {
                 DatecsFiscalDevice fiscalDevice = null;
-                if( ((GlobalVariables) getApplication()).getMyFiscalDevice() != null){
-                    fiscalDevice = ((GlobalVariables) getApplication()).getMyFiscalDevice();
+                if( ((BaseApplication) getApplication()).getMyFiscalDevice() != null){
+                    fiscalDevice = ((BaseApplication) getApplication()).getMyFiscalDevice();
                 }
 
                 if (printFiscalCheck) {
                     if(fiscalDevice != null && fiscalDevice.isConnectedDeviceV2()){
-                        resultCloseReceip = ((GlobalVariables) getApplication()).printFiscalReceipt(fiscalReceipt, billStrings, paymentType, inputSum, billPaymentTypes,billEntry.getShiftReceiptNumSoftware());
+                        resultCloseReceip = ((BaseApplication) getApplication()).printFiscalReceipt(fiscalReceipt, billStrings, paymentType, inputSum, billPaymentTypes,billEntry.getShiftReceiptNumSoftware());
                         if (resultCloseReceip != 0) {
                             BillPaymentType billPaymentType = new BillPaymentType();
                             billPaymentType.setId(UUID.randomUUID().toString());
@@ -476,7 +476,7 @@ public class ListBills extends AppCompatActivity {
                             billPaymentType.setPaymentCode(Integer.valueOf(code));
                             billPaymentType.setPaymentTypeID(paymentType.getExternalId());
                             billPaymentType.setSum(sumBillToPay - billPaymentedSum);
-                            billPaymentType.setAuthor(((GlobalVariables) getApplication()).getUser().getId());
+                            billPaymentType.setAuthor(((BaseApplication) getApplication()).getUser().getId());
                             billPaymentType.setCreateDate(new Date().getTime());
 
                             int finalResultCloseReceip = resultCloseReceip;
@@ -486,7 +486,7 @@ public class ListBills extends AppCompatActivity {
                                     bill.setReceiptNumFiscalMemory(finalResultCloseReceip);
                                     bill.setState(1);
                                     bill.setCloseDate(new Date().getTime());
-                                    bill.setClosedBy(((GlobalVariables) getApplication()).getUser().getId());
+                                    bill.setClosedBy(((BaseApplication) getApplication()).getUser().getId());
                                     bill.getBillPaymentTypes().add(billPaymentType);
                                 }
                             });
@@ -511,7 +511,7 @@ public class ListBills extends AppCompatActivity {
                     billPaymentType.setPaymentCode(Integer.valueOf(code));
                     billPaymentType.setPaymentTypeID(paymentType.getExternalId());
                     billPaymentType.setSum(sumBillToPay - billPaymentedSum);
-                    billPaymentType.setAuthor(((GlobalVariables) getApplication()).getUser().getId());
+                    billPaymentType.setAuthor(((BaseApplication) getApplication()).getUser().getId());
                     billPaymentType.setCreateDate(new Date().getTime());
 
                     mRealm.executeTransaction(realm -> {
@@ -520,7 +520,7 @@ public class ListBills extends AppCompatActivity {
                             bill.setReceiptNumFiscalMemory(0);
                             bill.setState(1);
                             bill.setCloseDate(new Date().getTime());
-                            bill.setClosedBy(((GlobalVariables) getApplication()).getUser().getId());
+                            bill.setClosedBy(((BaseApplication) getApplication()).getUser().getId());
                             bill.getBillPaymentTypes().add(billPaymentType);
                         }
                     });
@@ -541,7 +541,7 @@ public class ListBills extends AppCompatActivity {
                 billPaymentType.setPaymentCode(Integer.valueOf(code));
                 billPaymentType.setPaymentTypeID(paymentType.getExternalId());
                 billPaymentType.setSum(inputSum);
-                billPaymentType.setAuthor(((GlobalVariables) getApplication()).getUser().getId());
+                billPaymentType.setAuthor(((BaseApplication) getApplication()).getUser().getId());
                 billPaymentType.setCreateDate(new Date().getTime());
 
                 mRealm.executeTransaction(realm -> {
