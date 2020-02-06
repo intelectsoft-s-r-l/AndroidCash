@@ -18,4 +18,35 @@
     </style>
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="CustomButton" parent="android:Widget">
+        <item name="android:background">@drawable/custom_button_design</item>
+        <item name="android:textAppearance">?android:attr/textAppearanceButton</item>
+        <item name="android:minHeight">48dip</item>
+        <item name="android:minWidth">88dip</item>
+        <item name="android:focusable">true</item>
+        <item name="android:clickable">true</item>
+        <item name="android:gravity">center_vertical|center_horizontal</item>
+    </style>
+
+    <style name="MaterialIgor"/>
+    <style name="MaterialIgor.Light"/>
+    <style name="Widgetsdsd.MaterialIgor" parent="Widgetsdsd" />
+
+    <style name="Widgetsdsd">
+        <item name="android:textAppearance">?android:attr/textAppearanceButton</item>
+    </style>
+
+    <!-- Bordered ink button -->
+    <style name="Widgetsdsd.MaterialIgor.Button">
+        <item name="background">@drawable/custom_button_material_design</item>
+        <item name="android:textAppearance">?android:attr/textAppearanceButton</item>
+        <item name="android:minHeight">48dip</item>
+        <item name="android:minWidth">88dip</item>
+        <item name="android:stateListAnimator">@animator/custom_button_material_anim</item>
+        <item name="android:focusable">true</item>
+        <item name="android:clickable">true</item>
+        <item name="android:gravity">center_vertical|center_horizontal</item>
+    </style>
+
 </resources>

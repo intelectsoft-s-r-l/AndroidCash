@@ -17,15 +17,15 @@ import java.util.Date;
 import java.util.TimeZone;
 
 import edi.md.androidcash.NetworkUtils.FiscalServiceResult.SimpleResult;
-import edi.md.androidcash.NetworkUtils.ApiUtils;
-import edi.md.androidcash.NetworkUtils.RetrofitRemote.GetStateFiscalService;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
 import edi.md.androidcash.R;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 import static android.content.Context.MODE_PRIVATE;
-import static edi.md.androidcash.GlobalVariables.SharedPrefFiscalService;
+import static edi.md.androidcash.BaseApplication.SharedPrefFiscalService;
 
 public class FiscalService extends Fragment {
 
@@ -63,9 +63,9 @@ public class FiscalService extends Fragment {
                     .putString("IpAdressFiscalService",et_ip.getText().toString())
                     .putString("PortFiscalService",et_port.getText().toString())
                     .apply();
-            GetStateFiscalService getStateFiscalService = ApiUtils.getStateFiscalService(uri);
 
-            Call<SimpleResult> call = getStateFiscalService.getState();
+            CommandServices commandServices = ApiUtils.commandFPService(uri);
+            Call<SimpleResult> call = commandServices.getState();
             call.enqueue(new Callback<SimpleResult>() {
                 @Override
                 public void onResponse(Call<SimpleResult> call, Response<SimpleResult> response) {

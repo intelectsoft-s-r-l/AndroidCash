@@ -18,7 +18,7 @@ import edi.md.androidcash.SettingUtils.Equipment.FiscalMode.FiscalDevice;
 import edi.md.androidcash.SettingUtils.Equipment.FiscalMode.FiscalService;
 
 import static android.content.Context.MODE_PRIVATE;
-import static edi.md.androidcash.GlobalVariables.SharedPrefSettings;
+import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
 
 public class FiscalDeviceEquip extends Fragment {
 

@@ -282,7 +282,6 @@
 
     <Button
         android:id="@+id/btn_payment_2"
-        style="@style/Widget.AppCompat.Button"
         android:layout_width="140dp"
         android:layout_height="80dp"
         android:layout_marginStart="1dp"
@@ -343,7 +342,6 @@
 
     <Button
         android:id="@+id/btn_payment_3"
-        style="@style/Widget.AppCompat.Button"
         android:layout_width="140dp"
         android:layout_height="80dp"
         android:layout_marginStart="1dp"

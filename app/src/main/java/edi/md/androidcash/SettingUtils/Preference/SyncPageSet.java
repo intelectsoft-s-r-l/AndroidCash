@@ -11,7 +11,10 @@ import android.os.Message;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
@@ -24,7 +27,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
-import edi.md.androidcash.NetworkUtils.ApiUtils;
+import edi.md.androidcash.BaseApplication;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
 import edi.md.androidcash.NetworkUtils.AssortmentServiceEntry;
 import edi.md.androidcash.NetworkUtils.EposResult.AssortmentListService;
 import edi.md.androidcash.NetworkUtils.EposResult.GetAssortmentListResult;
@@ -36,9 +40,7 @@ import edi.md.androidcash.NetworkUtils.FiscalDevice;
 import edi.md.androidcash.NetworkUtils.PaymentType;
 import edi.md.androidcash.NetworkUtils.Promotion;
 import edi.md.androidcash.NetworkUtils.QuickGroup;
-import edi.md.androidcash.NetworkUtils.RetrofitRemote.GetAssortmentListService;
-import edi.md.androidcash.NetworkUtils.RetrofitRemote.GetUserService;
-import edi.md.androidcash.NetworkUtils.RetrofitRemote.ServiceWorkplaceSettings;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
 import edi.md.androidcash.NetworkUtils.User;
 import edi.md.androidcash.R;
 import edi.md.androidcash.RealmHelper.AssortmentRealm;
@@ -52,24 +54,29 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 import static android.content.Context.MODE_PRIVATE;
-import static edi.md.androidcash.GlobalVariables.SharedPrefSettings;
-import static edi.md.androidcash.GlobalVariables.SharedPrefSyncSettings;
-import static edi.md.androidcash.GlobalVariables.SharedPrefWorkPlaceSettings;
+import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
+import static edi.md.androidcash.BaseApplication.SharedPrefSyncSettings;
+import static edi.md.androidcash.BaseApplication.SharedPrefWorkPlaceSettings;
 
 public class SyncPageSet extends Fragment {
 
     private ProgressDialog pgH;
     private TextView mLastSync;
     private Switch startUpSyncSwitch,autoSyncSwitch;
-
+    private Spinner timeAutoUpdateSpinner;
+    ArrayAdapter<String> adapterUpdate;
 
     private long startDownloadAssortment,startDownloadUser,startDownloadWorkPlaceSet,endDownloadAssortment,endDownloadUser,endDownloadWorkPlaceSet,endInsertInDB;
-    private int countAssortment,countPayT,countUsers;
+    private int countAssortment = 0,countPayT = 0,countUsers = 0;
     private int MESSAGE_SUCCES = 0,MESSAGE_ERROR = 1,MESSAGE_FAILURE = 2;
+    private static final String[] intervalUpdate = {"Nu este ales","30 min", "1 ora", "3 ora"};
+    private int positionFromUpdate;
+    private boolean updateAuto, updateToStart;
     String token, workplaceId;
     String uri;
 
     private Realm mRealm;
+
 
     @Nullable
     @Override
@@ -81,20 +88,37 @@ public class SyncPageSet extends Fragment {
         pgH = new ProgressDialog(getActivity());
         autoSyncSwitch = rootViewAdmin.findViewById(R.id.switch_enable_autosync);
         startUpSyncSwitch = rootViewAdmin.findViewById(R.id.switch_synchronization_startup);
+        timeAutoUpdateSpinner = rootViewAdmin.findViewById(R.id.spinner);
+        timeAutoUpdateSpinner.setEnabled(false);
 
         mRealm = Realm.getDefaultInstance();
 
         uri = getActivity().getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("URI",null);
-        token = getActivity().getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("InstallationID","null");
+        token = getActivity().getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("Token","null");
 
         mLastSync.setText("The latest synchronization was: " + getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).getString("LastSync"," "));
+        updateAuto = getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).getBoolean("AutoSync",false);
+        updateToStart =  getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).getBoolean("SyncToStart",false);
+        positionFromUpdate =  getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).getInt("positionFromAutoUpdate",0);
+
+        adapterUpdate = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_spinner_item, intervalUpdate);
+        adapterUpdate.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        timeAutoUpdateSpinner.setAdapter(adapterUpdate);
+
+        timeAutoUpdateSpinner.setSelection(positionFromUpdate);
+
+        if(updateToStart)
+            startUpSyncSwitch.setChecked(true);
+        if(updateAuto){
+            timeAutoUpdateSpinner.setEnabled(true);
+            autoSyncSwitch.setChecked(true);
+        }
 
         mSync.setOnClickListener(v -> {
             mRealm.executeTransaction(realm -> realm.deleteAll());
 
             workplaceId = getActivity().getSharedPreferences(SharedPrefWorkPlaceSettings, MODE_PRIVATE).getString("WorkPlaceID", null);
             if(workplaceId != null) {
-                startDownloadAssortment = new Date().getTime();
                 new AssortmentTask().execute();
             }
         });
@@ -106,6 +130,48 @@ public class SyncPageSet extends Fragment {
                 getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putBoolean("SyncToStart",false).apply();
         });
 
+        autoSyncSwitch.setOnCheckedChangeListener(((compoundButton, checked) -> {
+            if(checked){
+                getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putBoolean("AutoSync",true).apply();
+                timeAutoUpdateSpinner.setEnabled(true);
+            }
+            else{
+                getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putBoolean("AutoSync",false).apply();
+                timeAutoUpdateSpinner.setEnabled(false);
+            }
+        }));
+
+        timeAutoUpdateSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putInt("positionFromAutoUpdate",i).apply();
+                switch (i){
+                    case 0:{
+                        getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putInt("intervalForAutoUpdate",0).apply();
+                    }break;
+                    case 1:{
+                        getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putInt("intervalForAutoUpdate",60000).apply();
+                        BaseApplication.getInstance().autoUpdateAssortment();
+                    }break;
+                    case 2:{
+                        getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putInt("intervalForAutoUpdate",180000).apply();
+                        BaseApplication.getInstance().autoUpdateAssortment();
+                    }break;
+                    case 3:{
+                        getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putInt("intervalForAutoUpdate",240000).apply();
+                        BaseApplication.getInstance().autoUpdateAssortment();
+                    }break;
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
+
+
+
         return rootViewAdmin;
     }
 
@@ -113,6 +179,7 @@ public class SyncPageSet extends Fragment {
                 assortiment.enqueue(new Callback<AssortmentListService>() {
                     @Override
                     public void onResponse(Call<AssortmentListService> call, Response<AssortmentListService> response) {
+                        endDownloadAssortment = new Date().getTime();
                         AssortmentListService assortiment_body = response.body();
                         GetAssortmentListResult result = assortiment_body != null ? assortiment_body.getGetAssortmentListResult() : null;
 
@@ -121,7 +188,7 @@ public class SyncPageSet extends Fragment {
                             errorecode = result.getErrorCode();
                         }
                         if(errorecode == 0){
-                            List<AssortmentServiceEntry> assortmentListData= result.getAssortments();
+                            List<AssortmentServiceEntry> assortmentListData = result.getAssortments();
 
                             countAssortment = assortmentListData.size();
 
@@ -133,12 +200,13 @@ public class SyncPageSet extends Fragment {
                                    RealmList<Barcodes> listBarcode = new RealmList<>();
                                    RealmList<Promotion> listPromotion = new RealmList<>();
 
-                                   for(String barcodes : assortmentServiceEntry.getBarcodes()){
-                                       Barcodes barcodes1 = new Barcodes();
-                                       barcodes1.setBar(barcodes);
-                                       listBarcode.add(barcodes1);
+                                   if(assortmentServiceEntry.getBarcodes() != null){
+                                       for(String barcodes : assortmentServiceEntry.getBarcodes()){
+                                           Barcodes barcodes1 = new Barcodes();
+                                           barcodes1.setBar(barcodes);
+                                           listBarcode.add(barcodes1);
+                                       }
                                    }
-
                                    if(assortmentServiceEntry.getPromotions()!= null){
                                        listPromotion.addAll(assortmentServiceEntry.getPromotions());
                                    }
@@ -178,7 +246,7 @@ public class SyncPageSet extends Fragment {
                                        RealmList<String> assortment = new RealmList<>();
                                        assortment.addAll(quickGroup.getAssortmentID());
 
-                                       quickGroupRealm.setGroupName("Test 1");
+                                       quickGroupRealm.setGroupName(nameGroup);
                                        quickGroupRealm.setAssortmentId(assortment);
 
                                        realm.insert(quickGroupRealm);
@@ -216,21 +284,30 @@ public class SyncPageSet extends Fragment {
                         }
                         if(errorecode == 0){
 
-                            List<PaymentType> paymentTypes = result.getPaymentTypes();
-                            FiscalDevice fiscalDevice = result.getFiscalDevice();
+                            if(result.getPaymentTypes() != null){
+                                List<PaymentType> paymentTypes = result.getPaymentTypes();
+                                countPayT = paymentTypes.size();
 
-                            countPayT = paymentTypes.size();
+                                for(PaymentType paymentType : paymentTypes){
+                                    mRealm.executeTransaction(new Realm.Transaction() {
+                                        @Override
+                                        public void execute(Realm realm) {
+                                            realm.insert(paymentType);
+                                        }
+                                    });
 
-                            mRealm.executeTransaction(new Realm.Transaction() {
-                                @Override
-                                public void execute(Realm realm) {
-                                    realm.insert(fiscalDevice);
-
-                                    for(PaymentType paymentType : paymentTypes){
-                                        realm.insert(paymentType);
-                                    }
                                 }
-                            });
+                            }
+                            if( result.getFiscalDevice() != null){
+                                FiscalDevice fiscalDevice = result.getFiscalDevice();
+                                mRealm.executeTransaction(new Realm.Transaction() {
+                                    @Override
+                                    public void execute(Realm realm) {
+                                        realm.insert(fiscalDevice);
+                                    }
+                                });
+                            }
+
                             endDownloadWorkPlaceSet = new Date().getTime();
                             mHandlerBills.obtainMessage(MESSAGE_SUCCES).sendToTarget();
 
@@ -270,7 +347,6 @@ public class SyncPageSet extends Fragment {
                         }
                     });
                     endDownloadUser = new Date().getTime();
-                    startDownloadAssortment = new Date().getTime();
                     startDownloadWorkPlaceSet = new Date().getTime();
                     new WorkPlaceTask().execute();
 
@@ -373,10 +449,11 @@ public class SyncPageSet extends Fragment {
 
         @Override
         protected Void doInBackground(Void... dates) {
-            GetAssortmentListService assortiment_API = ApiUtils.getAssortmentListService(getContext());
+            String uri = getActivity().getSharedPreferences("Settings",MODE_PRIVATE).getString("URI",null);
+            CommandServices commandServices = ApiUtils.commandEposService(uri);
 
-            final Call<AssortmentListService> assortiment = assortiment_API.getAssortiment(token, workplaceId);
-            endDownloadAssortment = new Date().getTime();
+            final Call<AssortmentListService> assortiment = commandServices.getAssortiment(token, workplaceId);
+            startDownloadAssortment = new Date().getTime();
             readAssortment(assortiment);
             return null;
         }
@@ -394,9 +471,10 @@ public class SyncPageSet extends Fragment {
 
         @Override
         protected Void doInBackground(Void... dates) {
-            GetUserService userService = ApiUtils.getUserService(getContext());
+            String uri = getActivity().getSharedPreferences("Settings",MODE_PRIVATE).getString("URI",null);
+            CommandServices commandServices = ApiUtils.commandEposService(uri);
 
-            final Call<UserListServiceResult> userListServiceResultCall = userService.getUsers(token, workplaceId);
+            final Call<UserListServiceResult> userListServiceResultCall = commandServices.getUsers(token, workplaceId);
             readUsers(userListServiceResultCall);
             return null;
         }
@@ -421,9 +499,10 @@ public class SyncPageSet extends Fragment {
 
         @Override
         protected Void doInBackground(Void... dates) {
-            ServiceWorkplaceSettings workplaceSettings = ApiUtils.workplaceSettingsService(getContext());
+            String uri = getActivity().getSharedPreferences("Settings",MODE_PRIVATE).getString("URI",null);
+            CommandServices commandServices = ApiUtils.commandEposService(uri);
 
-            final Call<WorkPlaceSettings> workPlaceSettingsCall = workplaceSettings.getWorkplaceSettings(token, workplaceId);
+            final Call<WorkPlaceSettings> workPlaceSettingsCall = commandServices.getWorkplaceSettings(token, workplaceId);
             readWorkPlaceSettings(workPlaceSettingsCall);
             return null;
         }

@@ -4,15 +4,17 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,27 +29,31 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONArray;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 import edi.md.androidcash.NetworkUtils.AssortmentServiceEntry;
 import edi.md.androidcash.NetworkUtils.EposResult.AssortmentListService;
 import edi.md.androidcash.NetworkUtils.EposResult.GetAssortmentListResult;
 import edi.md.androidcash.NetworkUtils.Promotion;
-import edi.md.androidcash.NetworkUtils.ApiUtils;
-import edi.md.androidcash.NetworkUtils.RetrofitRemote.GetAssortmentListService;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
 import edi.md.androidcash.RealmHelper.AssortmentRealm;
 import edi.md.androidcash.RealmHelper.Barcodes;
 import edi.md.androidcash.RealmHelper.Bill;
-import edi.md.androidcash.RealmHelper.BillString;
 import edi.md.androidcash.RealmHelper.Shift;
 import edi.md.androidcash.adapters.CustomAssortmentFolderRealmAdapter;
 import edi.md.androidcash.adapters.CustomAssortmentRealmAdapter;
+import edi.md.androidcash.adapters.CustomSwipedAdapterAssortmentItem;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmResults;
@@ -55,11 +61,12 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import static edi.md.androidcash.GlobalVariables.SharedPrefSettings;
-import static edi.md.androidcash.GlobalVariables.SharedPrefWorkPlaceSettings;
+import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
+import static edi.md.androidcash.BaseApplication.SharedPrefWorkPlaceSettings;
 
 public class AssortmentActivity extends AppCompatActivity {
-    ListView LW_Assortiment_items, lw_folders_assortment;
+    ListView lw_folders_assortment;
+    RecyclerView LW_Assortiment_items;
     AlertDialog setCount ;
     Button btn_add_close,btn_add,btn_refresh;
     ImageButton btn_home_assortment;
@@ -83,6 +90,10 @@ public class AssortmentActivity extends AppCompatActivity {
 
     CustomAssortmentFolderRealmAdapter folderRealmAdapter;
     CustomAssortmentRealmAdapter assortmentRealmAdapter;
+    CustomSwipedAdapterAssortmentItem adapterAssortmentItem;
+    private ArrayList<AssortmentRealm> imageModelArrayList;
+
+    private Paint p = new Paint();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,10 +135,11 @@ public class AssortmentActivity extends AppCompatActivity {
 
         showAssortmentList();
 
-        LW_Assortiment_items.setOnItemClickListener((parent, view, position, id) -> {
-            item_clicked = true;
-            assortmentRealm = assortmentRealmAdapter.getItem(position);
-        });
+//        LW_Assortiment_items.setOnItemClickListener((parent, view, position, id) -> {
+//            item_clicked = true;
+//            assortmentRealm = assortmentRealmAdapter.getItem(position);
+//        });
+
         lw_folders_assortment.setOnItemClickListener((parent, view, position, id) -> {
             AssortmentRealm assortmentRealm = folderRealmAdapter.getItem(position);
             guidItem = assortmentRealm.getId();
@@ -177,7 +189,8 @@ public class AssortmentActivity extends AppCompatActivity {
                         if(assortmentRealm.getBarcodes() != null && assortmentRealm.getBarcodes().first() != null)
                             barcode = assortmentRealm.getBarcodes().first().getBar();
 
-                        addAssortmentToBill(assortmentRealm,Double.valueOf(txtTotalCount.getText().toString()), barcode);
+//                        addAssortmentToBill(assortmentRealm,Double.valueOf(txtTotalCount.getText().toString()), barcode);
+                        MainActivity.addAssortmentToBill(assortmentRealm,Double.valueOf(txtTotalCount.getText().toString()), barcode,false);
                         setCount.dismiss();
                         Intent result = new Intent();
                         result.putExtra("BillID",billID);
@@ -237,7 +250,7 @@ public class AssortmentActivity extends AppCompatActivity {
                 final TextView txtTotalCount = dialogView.findViewById(R.id.et_input_assortment_count);
                 final TextView txtNames = dialogView.findViewById(R.id.txt_name_assortment);
 
-                txtNames.setText(name_clicked_item_assortment);
+                txtNames.setText(assortmentRealm.getName());
 
                 TextView txt1 = dialogView.findViewById(R.id.btn_add_item_1);
                 TextView txt2 = dialogView.findViewById(R.id.btn_add_item_2);
@@ -255,11 +268,12 @@ public class AssortmentActivity extends AppCompatActivity {
                 btnOK.setOnClickListener(v116 -> {
                     if (!txtTotalCount.getText().toString().equals("0") && !txtTotalCount.getText().toString().equals("") && !txtTotalCount.getText().toString().equals("0.0") && !txtTotalCount.getText().toString().equals("0.00") ) {
                         String barcode = null;
-                        if(assortmentRealm.getBarcodes() != null && assortmentRealm.getBarcodes().first() != null)
+                        if(assortmentRealm.getBarcodes() != null && assortmentRealm.getBarcodes().first() != null && !assortmentRealm.getBarcodes().isEmpty())
                             barcode = assortmentRealm.getBarcodes().first().getBar();
 
-                        addAssortmentToBill(assortmentRealm,Double.valueOf(txtTotalCount.getText().toString()),barcode);
+                        MainActivity.addAssortmentToBill(assortmentRealm,Double.valueOf(txtTotalCount.getText().toString()), barcode,false);
                         setCount.dismiss();
+
                     }else {
                         Toast.makeText(AssortmentActivity.this, "Introduceti cantitatea!", Toast.LENGTH_SHORT).show();
                     }
@@ -345,6 +359,9 @@ public class AssortmentActivity extends AppCompatActivity {
                 new AssortmentTask().execute();
             }
         });
+
+
+        enableSwipe();
     }
 
     View.OnClickListener butons_ = v -> {
@@ -365,132 +382,6 @@ public class AssortmentActivity extends AppCompatActivity {
         guidItem = assortmentEntry.getId();
         showAssortmentList();
     };
-
-    private void createNewBill(String uid){
-        Bill bill = new Bill();
-        bill.setId(uid);
-        bill.setShiftReceiptNumSoftware(shiftEntry.getBillCounter() + 1);
-        bill.setCreateDate(new Date().getTime());
-        bill.setAuthor(((GlobalVariables)getApplication()).getUser().getId());
-        bill.setSumWithDiscount(0.0);
-        bill.setSum(0.0);
-        bill.setState(0);
-        bill.setShiftId(shiftEntry.getId());
-        bill.setSinchronized(false);
-        String version ="0.0";
-        try {
-            PackageInfo pInfo = this.getPackageManager().getPackageInfo(getPackageName(), 0);
-            version = pInfo.versionName;
-        } catch (PackageManager.NameNotFoundException e) {
-            e.printStackTrace();
-        }
-        bill.setCurrentSoftwareVersion(version);
-        bill.setDeviceId(getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("DeviceId",null));
-
-        mRealm.executeTransaction(realm -> {
-            Shift shift = realm.where(Shift.class).equalTo("id", shiftEntry.getId()).findFirst();
-            if (shift != null) {
-                shift.setBillCounter(shiftEntry.getBillCounter() + 1);
-                shiftEntry.setBillCounter(shiftEntry.getBillCounter() + 1);
-            }
-            realm.insert(bill);
-        });
-    }
-
-    private void addAssortmentToBill(AssortmentRealm assortmentEntry,double count, String barcode){
-        if(billID == null) {
-            billID = UUID.randomUUID().toString();
-            createNewBill((billID));
-        }
-        BillString billString = new BillString();
-        double priceWithDisc = -1;
-        Promotion promo = null;
-        if(!assortmentEntry.getPromotions().isEmpty()){
-            promo = assortmentEntry.getPromotions().first();
-
-            long startDate = replaceDate(promo.getStartDate());
-            long endDate = replaceDate(promo.getEndDate());
-            Date curentDate = new Date();
-            long currDate = curentDate.getTime();
-
-            long timeBegin = 0;
-            long timeEnd = 0;
-
-            if(promo.getTimeBegin() != null)    timeBegin = replaceDate(promo.getTimeBegin());
-            if(promo.getTimeEnd() != null)    timeEnd = replaceDate(promo.getTimeEnd());
-
-            if(currDate > startDate && currDate < endDate){
-                if(timeBegin != 0 && timeEnd != 0){
-                    Date timeStart = new Date(timeBegin);
-                    int hourS = timeStart.getHours();
-                    int minS = timeStart.getMinutes();
-
-                    Date timeFinis = new Date(timeEnd);
-                    int hourE = timeFinis.getHours();
-                    int minE = timeFinis.getMinutes();
-
-                    Date one = new Date();
-                    one.setHours(hourS);
-                    one.setMinutes(minS);
-                    one.setSeconds(0);
-
-                    Date two = new Date();
-                    two.setHours(hourE);
-                    two.setMinutes(minE);
-                    two.setSeconds(0);
-
-                    if(hourE < hourS)
-                        two.setDate(two.getDate() + 1);
-
-                    if(curentDate.after(one) && curentDate.before(two)){
-                        priceWithDisc = promo.getPrice();
-                        billString.setPromoLineID(promo.getId());
-                        billString.setPromoPrice(promo.getPrice());
-                    }
-                    else{
-                        priceWithDisc = assortmentEntry.getPrice();
-                    }
-                }
-                else{
-                    priceWithDisc = promo.getPrice();
-                    billString.setPromoLineID(promo.getId());
-                    billString.setPromoPrice(promo.getPrice());
-                }
-            }
-            else{
-                priceWithDisc = assortmentEntry.getPrice();
-            }
-        }
-        else{
-            priceWithDisc = assortmentEntry.getPrice();
-        }
-
-        billString.setAssortmentExternID(assortmentEntry.getId());
-        billString.setAssortmentFullName(assortmentEntry.getName());
-        billString.setBillID(billID);
-        billString.setId(UUID.randomUUID().toString());
-        billString.setQuantity(count);
-        billString.setPrice(assortmentEntry.getPrice());
-        billString.setPriceLineID(assortmentEntry.getPriceLineId());
-        billString.setVat(assortmentEntry.getVat());
-        billString.setCreateDate(new Date().getTime());
-        billString.setDeleted(false);
-        billString.setPriceWithDiscount(priceWithDisc);
-        billString.setSum(priceWithDisc * count);
-        if(promo !=null)
-            billString.setPromoLineID(promo.getId());
-        billString.setBarcode(barcode);
-
-        double finalPriceWithDisc = priceWithDisc;
-        mRealm.executeTransaction(realm -> {
-            Bill billEntryRealmResults = realm.where(Bill.class).equalTo("id", billID).findFirst();
-            if (billEntryRealmResults != null) {
-                billEntryRealmResults.setSum(billEntryRealmResults.getSum() + (assortmentEntry.getPrice() * count));
-                billEntryRealmResults.setSumWithDiscount(billEntryRealmResults.getSumWithDiscount() + (finalPriceWithDisc * count));
-                billEntryRealmResults.getBillStrings().add(billString);
-            }
-        });
-    }
 
     private long replaceDate(String date){
         if(date !=null ){
@@ -586,9 +477,10 @@ public class AssortmentActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... dates) {
-            GetAssortmentListService assortiment_API = ApiUtils.getAssortmentListService(AssortmentActivity.this);
+            String uri = getSharedPreferences("Settings",MODE_PRIVATE).getString("URI",null);
+            CommandServices commandServices = ApiUtils.commandEposService(uri);
 
-            final Call<AssortmentListService> assortiment = assortiment_API.getAssortiment(token, workplaceId);
+            final Call<AssortmentListService> assortiment = commandServices.getAssortiment(token, workplaceId);
             readAssortment(assortiment);
             return null;
         }
@@ -663,22 +555,14 @@ public class AssortmentActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home : {
-
-                if(billID != null ){
-                    if(!billID.equals("null")){
-                        Intent result = new Intent();
-                        result.putExtra("BillID",billID);
-                        setResult(RESULT_OK,result);
-                        finish();
-                    }
-
-                }
-                setResult(RESULT_CANCELED);
+                setResult(RESULT_OK);
                 finish();
+
             }break;
         }
         return true;
     }
+
     private void showAssortmentList(){
         final RealmResults<AssortmentRealm>[] results = new RealmResults[]{null};
         final RealmResults<AssortmentRealm>[] resultsNoFolders = new RealmResults[]{null};
@@ -700,244 +584,76 @@ public class AssortmentActivity extends AppCompatActivity {
         folderRealmAdapter = new CustomAssortmentFolderRealmAdapter(results[0]);
         assortmentRealmAdapter = new CustomAssortmentRealmAdapter(resultsNoFolders[0]);
 
-        lw_folders_assortment.setAdapter(folderRealmAdapter);
-        LW_Assortiment_items.setAdapter(assortmentRealmAdapter);
-    }
-//    private void show() {
-//        SQLiteDatabase db = marketDbHelper.getWritableDatabase();
-//        db.isOpen();
-//        String[] projection = {COLUMN_ASL_FullName , COLUMN_ASL_ParentUid , COLUMN_ASL_Folder , COLUMN_ASL_ExternalID , COLUMN_ASL_Guid,COLUMN_ASL_Code,COLUMN_ASL_Barcode,COLUMN_ASL_Price,COLUMN_ASL_PriceLineID,COLUMN_ASL_VAT};
-//        Cursor cursor = db.query(TABLE_ASSORTIMENT,                      // таблица
-//                projection,                         // столбцы
-//                COLUMN_ASL_ParentUid + " =?",                  // столбцы для условия WHERE
-//                new String[]{guid},                  // значения для условия WHERE
-//                null,                  // Don't group the rows
-//                null,                  // Don't filter by row groups
-//                null);
-//        if (cursor.moveToFirst()) {
-//            int nameColumnIndex = cursor.getColumnIndex(COLUMN_ASL_FullName);
-//            int folderColumnIndex = cursor.getColumnIndex(COLUMN_ASL_Folder);
-//            int UidColumnIndex = cursor.getColumnIndex(COLUMN_ASL_Guid);
-//            int externalGuidColumnIndex = cursor.getColumnIndex(COLUMN_ASL_ExternalID);
-//
-//            int CodedColumnIndex = cursor.getColumnIndex(COLUMN_ASL_Code);
-//            int BarcodeColumnIndex = cursor.getColumnIndex(COLUMN_ASL_Barcode);
-//            int PriceColumnIndex = cursor.getColumnIndex(COLUMN_ASL_Price);
-//            int VatColumnIndex = cursor.getColumnIndex(COLUMN_ASL_VAT);
-//            int PriceLineIdColumnIndex = cursor.getColumnIndex(COLUMN_ASL_PriceLineID);
-//
-//            do {
-//               m = new HashMap<>();
-//                String currentName = cursor.getString(nameColumnIndex);
-//                String currentExternalGuid = cursor.getString(externalGuidColumnIndex);
-//                String currentFolder = cursor.getString(folderColumnIndex);
-//                String currentUid = cursor.getString(UidColumnIndex);
-//
-//                String currentCode = cursor.getString(CodedColumnIndex);
-//                String currentBarcode = cursor.getString(BarcodeColumnIndex);
-//                String currentPrice = cursor.getString(PriceColumnIndex);
-//                String currentPriceLineID = cursor.getString(PriceLineIdColumnIndex);
-//                String currentVAt = cursor.getString(VatColumnIndex);
-//
-//                if (currentFolder.equals("true")) {
-//                    m.put("name", currentName);
-//                    m.put("uid", currentUid);
-//                    m.put("externGuid", currentExternalGuid);
-//                    m.put("folder",currentFolder );
-//                    groupData.add(m);
-//
-//                }
-//                else{
-//                    HashMap<String, Object> asl_ = new HashMap<>();
-//                    asl_.put("Name", currentName);
-//                    asl_.put("Price",currentPrice );
-//                    asl_.put("Barcode",currentBarcode);
-//                    asl_.put("Vat",currentVAt);
-//                    asl_.put("PriceLineId",currentPriceLineID);
-//                    asl_.put("ID",currentUid);
-//                    asl_list_in_bill.add(asl_);
-//
-//                }
-//            } while (cursor.moveToNext());
-//        }
-//        cursor.close();
-//    }
-//    private TreeNode.TreeNodeClickListener nodeClickListener = new TreeNode.TreeNodeClickListener() {
-//            @Override
-//            public void onClick(TreeNode node, Object value) {
-//                IconTreeItemHolder.IconTreeItem item = (IconTreeItemHolder.IconTreeItem) value;
-//                if(node.size()==0) {
-//                    asl_list_in_bill.clear();
-//                    groupData.clear();
-//                    item_clicked=false;
-//                    getFolderItemsClick(node, item.GUID);
-//                    if(asl_list_in_bill.size()>0){
-//                        LastFolder_clicked.setText(item.text);
-//                    }
-//                }else{
-//                    asl_list_in_bill.clear();
-//                    item_clicked=false;
-////                    getItemsClick(item.GUID);
-////                    if(asl_list_in_bill.size()>0){
-////                        LastFolder_clicked.setText(item.text);
-////                    }else{
-////                        LastFolder_clicked.setText("");
-////                    }
-//                }
-//            }
-//        };
-//
-//    private TreeNode.TreeNodeLongClickListener nodeLongClickListener = new TreeNode.TreeNodeLongClickListener() {
-//            @Override
-//            public boolean onLongClick(TreeNode node, Object value) {
-//                IconTreeItemHolder.IconTreeItem item = (IconTreeItemHolder.IconTreeItem) value;
-//                Toast.makeText(Assortiment.this, "Long click: " + item.text, Toast.LENGTH_SHORT).show();
-//
-//                return true;
-//            }
-//        };
+        adapterAssortmentItem = new CustomSwipedAdapterAssortmentItem(resultsNoFolders[0],false);
 
-//    @Override
-//    public void onSaveInstanceState(Bundle outState) {
-//            super.onSaveInstanceState(outState);
-//            outState.putString("tState", tView.getSaveState());
-//        }
-//    private void getFolderItemsClick (TreeNode node,String Guid){
-//            SQLiteDatabase db = marketDbHelper.getWritableDatabase();
-//            db.isOpen();
-//            String[] projection = {COLUMN_ASL_FullName , COLUMN_ASL_ParentUid , COLUMN_ASL_Folder , COLUMN_ASL_ExternalID , COLUMN_ASL_Guid,COLUMN_ASL_Code,COLUMN_ASL_Barcode,COLUMN_ASL_Price};
-//            Cursor cursor = db.query(TABLE_ASSORTIMENT,                      // таблица
-//                    projection,                         // столбцы
-//                    COLUMN_ASL_ParentUid + " =?",                  // столбцы для условия WHERE
-//                    new String[]{Guid},                  // значения для условия WHERE
-//                    null,                  // Don't group the rows
-//                    null,                  // Don't filter by row groups
-//                    null);
-//            if (cursor.moveToFirst()) {
-//                int nameColumnIndex = cursor.getColumnIndex(COLUMN_ASL_FullName);
-//                int folderColumnIndex = cursor.getColumnIndex(COLUMN_ASL_Folder);
-//                int UidColumnIndex = cursor.getColumnIndex(COLUMN_ASL_Guid);
-//                int parentColumnIndex = cursor.getColumnIndex(COLUMN_ASL_ParentUid);
-//                int externalGuidColumnIndex = cursor.getColumnIndex(COLUMN_ASL_ExternalID);
-//
-//                int CodedColumnIndex = cursor.getColumnIndex(COLUMN_ASL_Code);
-//                int BarcodeColumnIndex = cursor.getColumnIndex(COLUMN_ASL_Barcode);
-//                int PriceColumnIndex = cursor.getColumnIndex(COLUMN_ASL_Price);
-//                do {
-//                    m = new HashMap<>();
-//                    String currentName = cursor.getString(nameColumnIndex);
-//                    String currentExternalGuid = cursor.getString(externalGuidColumnIndex);
-//                    String currentFolder = cursor.getString(folderColumnIndex);
-//                    String currentUid = cursor.getString(UidColumnIndex);
-//                    String currentParentUid = cursor.getString(parentColumnIndex);
-//
-//                    String currentCode = cursor.getString(CodedColumnIndex);
-//                    String currentBarcode = cursor.getString(BarcodeColumnIndex);
-//                    String currentPrice = cursor.getString(PriceColumnIndex);
-//
-//                    if (currentFolder.equals("true")) {
-//                        m.put("name", currentName);
-//                        m.put("uid", currentUid);
-//                        m.put("externGuid", currentExternalGuid);
-//                        m.put("folder",currentFolder );
-//                        m.put("parentUid",currentParentUid);
-//                        groupData.add(m);
+        lw_folders_assortment.setAdapter(folderRealmAdapter);
+
+        LW_Assortiment_items.setAdapter(adapterAssortmentItem);
+
+    }
+
+    private void enableSwipe(){
+        ItemTouchHelper.SimpleCallback simpleItemTouchCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+
+            @Override
+            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                if (direction == ItemTouchHelper.RIGHT){
+                    AssortmentRealm item = adapterAssortmentItem.getItem(position);
+                    MainActivity.addAssortmentToBill(item,1,"swipe",false);
+                    // showing snack bar with Undo option
+                    Snackbar snackbar = Snackbar.make(getWindow().getDecorView().getRootView(), item.getName() + " adaugat!", Snackbar.LENGTH_LONG);
+                    snackbar.setAction("UNDO", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            // undo is selected, restore the deleted item
+                            MainActivity.deleteItemFromBill(item,false);
+                        }
+                    });
+                    snackbar.setActionTextColor(Color.YELLOW);
+                    snackbar.show();
+
+                    adapterAssortmentItem.notifyDataSetChanged();
+
+                }
+            }
+            @Override
+            public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                Bitmap icon;
+                if(actionState == ItemTouchHelper.ACTION_STATE_SWIPE){
+                    View itemView = viewHolder.itemView;
+                    float height = (float) itemView.getBottom() - (float) itemView.getTop();
+                    float width = height / 3;
+                    if(dX > 0){
+
+                        p.setColor(Color.parseColor("#388E3C"));
+                        RectF background = new RectF((float) itemView.getLeft(), (float) itemView.getTop(), dX,(float) itemView.getBottom());
+                        c.drawRect(background,p);
+                        icon = BitmapFactory.decodeResource(getResources(), R.drawable.add_black_36dp);
+                        RectF icon_dest = new RectF((float) itemView.getLeft() + width ,(float) itemView.getTop() + width,(float) itemView.getLeft()+ 2*width,(float)itemView.getBottom() - width);
+                        c.drawBitmap(icon,null,icon_dest,p);
+
+                    }
+//                    else {
+//                        p.setColor(Color.parseColor("#D32F2F"));
+//                        RectF background = new RectF((float) itemView.getRight() + dX, (float) itemView.getTop(),(float) itemView.getRight(), (float) itemView.getBottom());
+//                        c.drawRect(background,p);
+//                        icon = BitmapFactory.decodeResource(getResources(), R.drawable.add_black_36dp);
+//                        RectF icon_dest = new RectF((float) itemView.getRight() - 2*width ,(float) itemView.getTop() + width,(float) itemView.getRight() - width,(float)itemView.getBottom() - width);
+//                        c.drawBitmap(icon,null,icon_dest,p);
 //                    }
-//                    else{
-//                        HashMap<String, Object> asl_ = new HashMap<>();
-//                        asl_.put("Name", currentName);
-//                        asl_.put("Price",currentPrice );
-//                        asl_.put("Barcode",currentBarcode);
-//                        asl_.put("ID",currentUid);
-//                        asl_.put("ExternID",currentExternalGuid);
-//                        asl_list_in_bill.add(asl_);
-//                    }
-//                } while (cursor.moveToNext());
-//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-//                    groupData.sort(new Comparator<HashMap<String, Object>>() {
-//                        @Override
-//                        public int compare(HashMap<String, Object> o1, HashMap<String, Object> o2) {
-//                            return o1.get("name").toString().compareTo(o2.get("name").toString());
-//                        }
-//                    });
-//                }
-//                if(groupData.size()>0) {
-//                    for (int i = 0; i < groupData.size(); i++) {
-//                        TreeNode file1 = new TreeNode(new IconTreeItemHolder.IconTreeItem(R.string.ic_folder, (String) groupData.get(i).get("name"), (String) groupData.get(i).get("uid")));
-//                        node.addChildren(file1);
-//                    }
-//                }else{
-//                    node.setExpanded(true);
-//                }
-//                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-//                        asl_list_in_bill.sort(new Comparator<HashMap<String, Object>>() {
-//                            @Override
-//                            public int compare(HashMap<String, Object> o1, HashMap<String, Object> o2) {
-//                                return o1.get("Name").toString().compareTo(o2.get("Name").toString());
-//                            }
-//                        });
-//                    }
-//                    LW_Assortiment.setAdapter(adapterContent);
-//            }
-//            cursor.close();
-//
-//        }
-//    private void getItemsClick (String Guid){
-//        SQLiteDatabase db = marketDbHelper.getWritableDatabase();
-//        db.isOpen();
-//        String[] projection = {COLUMN_ASL_FullName , COLUMN_ASL_ParentUid , COLUMN_ASL_Folder , COLUMN_ASL_ExternalID , COLUMN_ASL_Guid,COLUMN_ASL_Code,COLUMN_ASL_Barcode,COLUMN_ASL_Price};
-//        Cursor cursor = db.query(TABLE_ASSORTIMENT,                      // таблица
-//                projection,                         // столбцы
-//                COLUMN_ASL_ParentUid + " =?",                  // столбцы для условия WHERE
-//                new String[]{Guid},                  // значения для условия WHERE
-//                null,                  // Don't group the rows
-//                null,                  // Don't filter by row groups
-//                null);
-//        if (cursor.moveToFirst()) {
-//            int nameColumnIndex = cursor.getColumnIndex(COLUMN_ASL_FullName);
-//            int folderColumnIndex = cursor.getColumnIndex(COLUMN_ASL_Folder);
-//            int UidColumnIndex = cursor.getColumnIndex(COLUMN_ASL_Guid);
-//            int parentColumnIndex = cursor.getColumnIndex(COLUMN_ASL_ParentUid);
-//            int externalGuidColumnIndex = cursor.getColumnIndex(COLUMN_ASL_ExternalID);
-//
-//            int CodedColumnIndex = cursor.getColumnIndex(COLUMN_ASL_Code);
-//            int BarcodeColumnIndex = cursor.getColumnIndex(COLUMN_ASL_Barcode);
-//            int PriceColumnIndex = cursor.getColumnIndex(COLUMN_ASL_Price);
-//            do {
-//                m = new HashMap<>();
-//                String currentName = cursor.getString(nameColumnIndex);
-//                String currentExternalGuid = cursor.getString(externalGuidColumnIndex);
-//                String currentFolder = cursor.getString(folderColumnIndex);
-//                String currentUid = cursor.getString(UidColumnIndex);
-//
-//                String currentCode = cursor.getString(CodedColumnIndex);
-//                String currentBarcode = cursor.getString(BarcodeColumnIndex);
-//                String currentPrice = cursor.getString(PriceColumnIndex);
-//
-//                if (!currentFolder.equals("true")) {
-//                    HashMap<String, Object> asl_ = new HashMap<>();
-//                    asl_.put("Code", currentCode);
-//                    asl_.put("Name", currentName);
-//                    asl_.put("Price",currentPrice );
-//                    asl_.put("Barcode",currentBarcode);
-//                    asl_.put("ID",currentUid);
-//                    asl_.put("ExternID",currentExternalGuid);
-//                    asl_list_in_bill.add(asl_);
-//                }
-//            } while (cursor.moveToNext());
-//
-//
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-//                    asl_list_in_bill.sort(new Comparator<HashMap<String, Object>>() {
-//                        @Override
-//                        public int compare(HashMap<String, Object> o1, HashMap<String, Object> o2) {
-//                            return o1.get("Name").toString().compareTo(o2.get("Name").toString());
-//                        }
-//                    });
-//                }
-//                LW_Assortiment.setAdapter(adapterContent);
-//        }
-//        cursor.close();
-//
-//    }
+                }
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+            }
+        };
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(simpleItemTouchCallback);
+        itemTouchHelper.attachToRecyclerView(LW_Assortiment_items);
+
+        adapterAssortmentItem.notifyDataSetChanged();
+    }
 }

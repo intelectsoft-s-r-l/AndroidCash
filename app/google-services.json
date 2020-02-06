@@ -1,34 +1,34 @@
 {
   "project_info": {
-    "project_number": "318662048568",
-    "firebase_url": "https://salescash-7c204.firebaseio.com",
-    "project_id": "salescash-7c204",
-    "storage_bucket": "salescash-7c204.appspot.com"
+    "project_number": "800004198757",
+    "firebase_url": "https://androidcash-512b4.firebaseio.com",
+    "project_id": "androidcash-512b4",
+    "storage_bucket": "androidcash-512b4.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:318662048568:android:f1222bc7b91b7c78",
+        "mobilesdk_app_id": "1:800004198757:android:b58c6234935a87399dd18c",
         "android_client_info": {
-          "package_name": "edi.md.salescash"
+          "package_name": "edi.md.androidcash"
         }
       },
       "oauth_client": [
         {
-          "client_id": "318662048568-h7tbhbre51a1dtl6frr2na3d2jsic4cn.apps.googleusercontent.com",
+          "client_id": "800004198757-ttfh7uj4ibfhck1egi8f6nearnf42mel.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCdpRhnH5SBJmDptDSGOxY5sahfCUQfZkc"
+          "current_key": "AIzaSyCFKoIMQ7dWqfnG63xb2Taa-X4I56ZteSk"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "318662048568-h7tbhbre51a1dtl6frr2na3d2jsic4cn.apps.googleusercontent.com",
+              "client_id": "800004198757-ttfh7uj4ibfhck1egi8f6nearnf42mel.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

@@ -2,6 +2,7 @@ package edi.md.androidcash.SettingUtils.Preference;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
@@ -11,6 +12,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -18,28 +21,32 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
+import edi.md.androidcash.BaseApplication;
+import edi.md.androidcash.MainActivity;
+import edi.md.androidcash.NetworkUtils.EposResult.AuthentificateUserResult;
 import edi.md.androidcash.NetworkUtils.EposResult.GetWorkPlaceService;
 import edi.md.androidcash.NetworkUtils.EposResult.GetWorkplacesResult;
-import edi.md.androidcash.NetworkUtils.RetrofitRemote.ServiceWorkplace;
+import edi.md.androidcash.NetworkUtils.EposResult.TokenReceivedFromAutenficateUser;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
 import edi.md.androidcash.NetworkUtils.WorkplaceEntry;
 import edi.md.androidcash.R;
-import okhttp3.OkHttpClient;
+import edi.md.androidcash.StartedActivity;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 import static android.content.Context.MODE_PRIVATE;
-import static edi.md.androidcash.GlobalVariables.SharedPrefWorkPlaceSettings;
+import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
+import static edi.md.androidcash.BaseApplication.SharedPrefWorkPlaceSettings;
 
 public class GeneralPageSet extends Fragment {
     Spinner mSelectWorkPlace,mAuthMethod;
     TextView companyName, idnoCompany;
-    int MESSAGE_SUCCES = 0,MESSAGE_ERROR = 1,MESSAGE_FAILURE = 2;
+    int MESSAGE_SUCCES = 0,MESSAGE_ERROR = 1,MESSAGE_FAILURE = 2, MESSAGE_MethodNotAllowed = 3;
     String[] mWorkPlaceName,mWorkPlaceId;
     ArrayAdapter<String> adapterType,adapterAuth;
 
@@ -63,8 +70,8 @@ public class GeneralPageSet extends Fragment {
         final SharedPreferences.Editor sPrefWorkPlace_Edit = sPrefWorkPlace.edit();
         int pos = sPrefWorkPlace.getInt("AuthPosition",0);
 
-        companyName.setText(sPrefWorkPlace.getString("CompanyName",""));
-        idnoCompany.setText(sPrefWorkPlace.getString("IDNO",""));
+        companyName.setText(getActivity().getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getString("CompanyName",""));
+        idnoCompany.setText(getActivity().getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getString("IDNO",""));
 
         adapterAuth = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_spinner_item, authStrings);
         adapterAuth.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -74,7 +81,18 @@ public class GeneralPageSet extends Fragment {
 
         String uri = getActivity().getSharedPreferences("Settings",MODE_PRIVATE).getString("URI",null);
 
-        getSyncWorkplace(uri);
+        String token = getActivity().getSharedPreferences("Settings",MODE_PRIVATE).getString("Token",null);
+        long validToken = getActivity().getSharedPreferences("Settings",MODE_PRIVATE).getLong("TokenValidTo",0);
+        long currentTime = new Date().getTime();
+
+        if(currentTime < validToken)
+            getSyncWorkplace(uri,token);
+        else{
+            String login = BaseApplication.getInstance().getUser().getUserName();
+            String pass = BaseApplication.getInstance().getUserPasswordsNotHashed();
+            setmAuthMethod ( login, pass);
+
+        }
 
         mSelectWorkPlace.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -107,58 +125,55 @@ public class GeneralPageSet extends Fragment {
 
         return rootViewAdmin;
     }
-    private void getSyncWorkplace(final String uri){
-        final Thread getASL = new Thread(new Runnable() {
+    private void getSyncWorkplace(final String uri, String token){
+        CommandServices commandServices = ApiUtils.commandEposService(uri);
+        final Call<GetWorkPlaceService> workplace = commandServices.getWorkplace(token);
+        workplace.enqueue(new Callback<GetWorkPlaceService>() {
             @Override
-            public void run() {
-                OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                        .connectTimeout(8, TimeUnit.MINUTES)
-                        .readTimeout(6, TimeUnit.MINUTES)
-                        .writeTimeout(8, TimeUnit.MINUTES)
-                        .build();
-                Retrofit retrofit = new Retrofit.Builder()
-                        .baseUrl("http://"+ uri)
-                        .addConverterFactory(GsonConverterFactory.create())
-                        .client(okHttpClient)
-                        .build();
-                ServiceWorkplace workplace_API = retrofit.create(ServiceWorkplace.class);
-                final Call<GetWorkPlaceService> workplace = workplace_API.getWorkplace("9cd98ecf-6ce5-4f6a-b828-8bf526a125a6");
-                workplace.enqueue(new Callback<GetWorkPlaceService>() {
-                    @Override
-                    public void onResponse(Call<GetWorkPlaceService> call, Response<GetWorkPlaceService> response) {
+            public void onResponse(Call<GetWorkPlaceService> call, Response<GetWorkPlaceService> response) {
 
-                        GetWorkPlaceService workPlaceService = response.body();
-                        GetWorkplacesResult result = workPlaceService != null ? workPlaceService.getGetWorkplacesResult() : null;
+                GetWorkPlaceService workPlaceService = response.body();
+                GetWorkplacesResult result = workPlaceService != null ? workPlaceService.getGetWorkplacesResult() : null;
 
-                        int errorecode = 101;
-                        if (result != null) {
-                            errorecode = result.getErrorCode();
-                        }
-                        if(errorecode == 0){
-                            List<WorkplaceEntry> workplaceEntryList= result.getWorkplaces();
-                            mWorkPlaceName = new String[workplaceEntryList.size()];
-                            mWorkPlaceId = new String[workplaceEntryList.size()];
+                int errorecode = 101;
+                if (result != null) {
+                    errorecode = result.getErrorCode();
+                }
 
-                            for (int i = 0; i < workplaceEntryList.size(); i++) {
-                                WorkplaceEntry workplaceEntry = workplaceEntryList.get(i);
-                                mWorkPlaceName[i] = workplaceEntry.getName();
-                                mWorkPlaceId[i] = workplaceEntry.getID();
-                            }
+                if(errorecode == 0){
+                    List<WorkplaceEntry> workplaceEntryList= result.getWorkplaces();
+                    mWorkPlaceName = new String[workplaceEntryList.size()];
+                    mWorkPlaceId = new String[workplaceEntryList.size()];
 
-                            mHandlerBills.obtainMessage(MESSAGE_SUCCES).sendToTarget();
-
-                        }else{
-                            mHandlerBills.obtainMessage(MESSAGE_ERROR,errorecode).sendToTarget();
-                        }
+                    for (int i = 0; i < workplaceEntryList.size(); i++) {
+                        WorkplaceEntry workplaceEntry = workplaceEntryList.get(i);
+                        mWorkPlaceName[i] = workplaceEntry.getName();
+                        mWorkPlaceId[i] = workplaceEntry.getID();
                     }
-                    @Override
-                    public void onFailure(Call<GetWorkPlaceService> call, Throwable t) {
-                        mHandlerBills.obtainMessage(MESSAGE_FAILURE,t.getMessage()).sendToTarget();
-                    }
-                });
+
+                    mHandlerBills.obtainMessage(MESSAGE_SUCCES).sendToTarget();
+
+                }
+                else if(errorecode == 405){
+                    // не прав на просмотр рабочих мест
+                    mHandlerBills.obtainMessage(MESSAGE_MethodNotAllowed).sendToTarget();
+                }
+                else if(errorecode == 401){
+                    //необходимо обновить токен
+                    String login = BaseApplication.getInstance().getUser().getUserName();
+                    String pass = BaseApplication.getInstance().getUserPasswordsNotHashed();
+
+                    setmAuthMethod(login,pass);
+                }
+                else{
+                    mHandlerBills.obtainMessage(MESSAGE_ERROR,errorecode).sendToTarget();
+                }
+            }
+            @Override
+            public void onFailure(Call<GetWorkPlaceService> call, Throwable t) {
+                mHandlerBills.obtainMessage(MESSAGE_FAILURE,t.getMessage()).sendToTarget();
             }
         });
-        getASL.start();
     }
 
     private final Handler mHandlerBills = new Handler(){
@@ -173,8 +188,6 @@ public class GeneralPageSet extends Fragment {
                         mSelectWorkPlace.setSelection(i);
                     }
                 }
-
-
             }
             else if(msg.what == MESSAGE_ERROR) {
                 AlertDialog.Builder failureAsl = new AlertDialog.Builder(getActivity());
@@ -208,6 +221,91 @@ public class GeneralPageSet extends Fragment {
                 });
                 failureAsl.show();
             }
+            else if(msg.what == MESSAGE_MethodNotAllowed){
+                dialogNewLoginsUser();
+            }
         }
     };
+
+    private void dialogNewLoginsUser(){
+        LayoutInflater inflater1 = this.getLayoutInflater();
+        final View dialogView = inflater1.inflate(R.layout.dialog_relogin_user, null);
+
+        final android.app.AlertDialog exitApp = new android.app.AlertDialog.Builder(getActivity(),R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
+        exitApp.setCancelable(false);
+        exitApp.setView(dialogView);
+
+        Button btn_ok = dialogView.findViewById(R.id.btn_relogin_select_workplace);
+        EditText et_login = dialogView.findViewById(R.id.et_login_relogin_user);
+        EditText et_pass = dialogView.findViewById(R.id.et_password_relogin_user);
+
+        btn_ok.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                setmAuthMethod(et_login.getText().toString(),et_pass.getText().toString());
+                exitApp.dismiss();
+            }
+        });
+
+        exitApp.show();
+    }
+
+    private void setmAuthMethod (String login , String pass){
+        String uri = getActivity().getSharedPreferences("Settings",MODE_PRIVATE).getString("URI",null);
+        String install_id = getActivity().getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("InstallationID",null);
+
+        CommandServices commandServices = ApiUtils.commandEposService(uri);
+
+        Call<AuthentificateUserResult> call = commandServices.autentificateUser(install_id,login,pass);
+
+        call.enqueue(new Callback<AuthentificateUserResult>() {
+            @Override
+            public void onResponse(Call<AuthentificateUserResult> call, Response<AuthentificateUserResult> response) {
+                AuthentificateUserResult authentificateUserResult = response.body();
+                if(authentificateUserResult != null){
+                    TokenReceivedFromAutenficateUser token = authentificateUserResult.getAuthentificateUserResult();
+                    if(token.getErrorCode() == 0){
+                        getActivity().getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).edit().putString("Token",token.getToken()).apply();
+                        String date = token.getTokenValidTo();
+                        date = date.replace("/Date(","");
+                        date = date.replace("+0200)/","");
+                        long dateLong = Long.parseLong(date);
+                        getActivity().getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).edit().putLong("TokenValidTo",dateLong).apply();
+
+                        getSyncWorkplace(uri,token.getToken());
+
+                    }
+                    else{
+                        AlertDialog.Builder dialog_user = new AlertDialog.Builder(getActivity());
+                        dialog_user.setTitle("Atentie!");
+                        dialog_user.setMessage("Eroare!Codul: " + token.getErrorCode());
+                        dialog_user.setPositiveButton("Ok", (dialog, which) -> {
+                            dialog.dismiss();
+                        });
+                        dialog_user.setNeutralButton("Oricum intra",(dialog,which) -> {
+
+                        });
+                        dialog_user.show();
+                    }
+                }
+                else{
+                    AlertDialog.Builder dialog_user = new AlertDialog.Builder(getActivity());
+                    dialog_user.setTitle("Atentie!");
+                    dialog_user.setMessage("Nu este raspuns de la serviciu!");
+                    dialog_user.setPositiveButton("Ok", (dialog, which) -> {
+                        dialog.dismiss();
+                    });
+                    dialog_user.setNeutralButton("Oricum intra",(dialog,which) -> {
+
+                    });
+                    dialog_user.show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<AuthentificateUserResult> call, Throwable t) {
+                String err = t.getMessage();
+            }
+        });
+    }
 }

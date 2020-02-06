@@ -27,7 +27,6 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -41,6 +40,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.acs.smartcard.Reader;
+import com.acs.smartcard.ReaderException;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -60,12 +60,13 @@ import java.util.TimeZone;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import edi.md.androidcash.NetworkUtils.ApiUtils;
+import edi.md.androidcash.NetworkUtils.EposResult.AuthentificateUserResult;
+import edi.md.androidcash.NetworkUtils.EposResult.TokenReceivedFromAutenficateUser;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
 import edi.md.androidcash.NetworkUtils.BrokerResultBody.Body.BodyRegisterApp;
 import edi.md.androidcash.NetworkUtils.BrokerResultBody.GetURIResult;
 import edi.md.androidcash.NetworkUtils.BrokerResultBody.RegisterApplicationResult;
-import edi.md.androidcash.NetworkUtils.RetrofitRemote.GetURIService;
-import edi.md.androidcash.NetworkUtils.RetrofitRemote.RegisterAppService;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
 import edi.md.androidcash.NetworkUtils.User;
 import edi.md.androidcash.Utils.Rfc2898DerivesBytes;
 import edi.md.androidcash.connectors.AbstractConnector;
@@ -76,7 +77,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import static edi.md.androidcash.GlobalVariables.SharedPrefSettings;
+import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
 
 public class StartedActivity extends AppCompatActivity {
 
@@ -104,56 +105,10 @@ public class StartedActivity extends AppCompatActivity {
 
     //Reader ACR
     private Reader mReader;
-    private ArrayAdapter<String> mReaderAdapter;
-    private ArrayAdapter<String> mSlotAdapter;
-    private static final String[] stateStrings = {"Unknown", "Absent", "Present", "Swallowed", "Powered", "Negotiable", "Specific"};
 
     //connection broker
-    RegisterAppService registerAppService;
-    GetURIService getURIService;
     BodyRegisterApp bodyRegisterApp;
     String brokerInstallationID = null;
-
-
-    private class PowerParams {
-
-        public int slotNum;
-        public int action;
-    }
-
-    private class PowerResult {
-
-        public byte[] atr;
-        public Exception e;
-    }
-
-    private class PowerTask extends AsyncTask<PowerParams, Void, PowerResult> {
-        @Override
-        protected PowerResult doInBackground(PowerParams... params) {
-            PowerResult result = new PowerResult();
-            try {
-                result.atr = mReader.power(params[0].slotNum, params[0].action);
-            } catch (Exception e) {
-                result.e = e;
-            }
-            return result;
-        }
-
-        @Override
-        protected void onPostExecute(PowerResult result) {
-            if (result.e != null) {
-                postToast(result.e.toString());
-            } else {
-                // Show ATR
-                if (result.atr != null) {
-                    logBuffer(result.atr, result.atr.length);
-
-                } else {
-                    postToast("ATR: None");
-                }
-            }
-        }
-    }
 
     private void postToast(final String message) {
         this.runOnUiThread(new Runnable() {
@@ -165,61 +120,115 @@ public class StartedActivity extends AppCompatActivity {
     }
 
     private class OpenTask extends AsyncTask<UsbDevice, Void, Exception> {
-
         @Override
         protected Exception doInBackground(UsbDevice... params) {
 
             Exception result = null;
 
             try {
-
                 mReader.open(params[0]);
-
             } catch (Exception e) {
-
                 result = e;
             }
-
             return result;
         }
 
         @Override
         protected void onPostExecute(Exception result) {
-
             if (result != null) {
-
                 postToast(result.toString());
-
-            } else {
-
-                postToast("Reader name: " + mReader.getReaderName());
-
-                int numSlots = mReader.getNumSlots();
-//                    postToast("Number of slots: " + numSlots);
-
-                // Add slot items
-                mSlotAdapter.clear();
-                for (int i = 0; i < numSlots; i++) {
-                    mSlotAdapter.add(Integer.toString(i));
-                }
+            }
+            else {
+                postToast("Reader: " + mReader.getReaderName());
             }
         }
     }
 
     private class CloseTask extends AsyncTask<Void, Void, Void> {
-
         @Override
         protected Void doInBackground(Void... params) {
-
             mReader.close();
             return null;
         }
 
-        @Override
-        protected void onPostExecute(Void result) {
+    }
 
+    private class TransmitParams {
+        public byte[] command;
+        public int slotNum;
+        public int controlCode;
+    }
+
+    private class TransmitProgress {
+        public byte[] command;
+        public int commandLength;
+        public byte[] response;
+        public int responseLength;
+        public Exception e;
+    }
+
+    private class TransmitTask extends AsyncTask<TransmitParams, Void, TransmitProgress> {
+
+        @Override
+        protected TransmitProgress doInBackground(TransmitParams... params) {
+            TransmitProgress progress = new TransmitProgress();
+            int responseLength = 0;
+
+            byte[] responses = new byte[300];
+
+            try {
+                responseLength = mReader.control(0,3500, params[0].command, params[0].command.length, responses, responses.length);
+
+                progress.command = params[0].command;
+                progress.commandLength = params[0].command.length;
+                progress.response = responses;
+                progress.responseLength = responseLength;
+                progress.e = null;
+            }
+            catch (Exception e) {
+                progress.command = null;
+                progress.commandLength = 0;
+                progress.response = null;
+                progress.responseLength = 0;
+                progress.e = e;
+            }
+            return progress;
         }
 
+        @Override
+        protected void onPostExecute(TransmitProgress transmitProgress) {
+            if (transmitProgress.e == null) {
+                StringBuilder sb = new StringBuilder();
+
+                for (byte page :  transmitProgress.response) {
+                    int b = page & 0xff;
+                    if (b < 0x10)
+                        sb.append("");
+                    sb.append(b);
+                }
+                postToast("sb " + sb.toString());
+
+                String cardCode = getMD5HashCardCode(sb.toString());
+
+                if(frame_card.getVisibility() == View.VISIBLE){
+                    Realm realms = Realm.getDefaultInstance();
+                    realms.executeTransaction(realm -> {
+                        User userCard = realm.where(User.class).equalTo("cardBarcode",cardCode).findFirst();
+
+                        if(userCard != null){
+                            User authentificateUser = realm.copyFromRealm(userCard);
+                            Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                            ((BaseApplication)getApplication()).setUser(authentificateUser);
+                            startActivity(main);
+                            finish();
+                        }
+                    });
+                }
+            }
+            else{
+                postToast(transmitProgress.e.getMessage());
+            }
+        }
     }
 
 
@@ -240,13 +249,11 @@ public class StartedActivity extends AppCompatActivity {
                             if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
 
                                 AbstractConnector connector = new UsbDeviceConnector(StartedActivity.this, mManager, device);
-
                                 HashMap<String, UsbDevice> deviceList = mManager.getDeviceList();
 
                                 Iterator<UsbDevice> deviceIterator = deviceList.values().iterator();
                                 while (deviceIterator.hasNext()) {
                                     UsbDevice devices = deviceIterator.next();
-
                                     if (devices.getManufacturerName().equals("ACS")) {
                                         if (!mManager.hasPermission(devices)) {
                                             mManager.requestPermission(devices, mPermissionIntent);
@@ -261,9 +268,6 @@ public class StartedActivity extends AppCompatActivity {
 
                     if (device.getManufacturerName().equals("ACS")) {
                         if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-
-                            // Open reader
-                            postToast("Opening reader: " + device.getDeviceName() + "...");
                             new OpenTask().execute(device);
 
                             HashMap<String, UsbDevice> deviceList = mManager.getDeviceList();
@@ -279,36 +283,21 @@ public class StartedActivity extends AppCompatActivity {
                                 }
                             }
 
-                        } else {
-                            postToast("Permission denied for device " + device.getDeviceName());
                         }
                     }
                 }
 
-            } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+            }
+            else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
                 synchronized (this) {
-
-                    // Update reader list
-                    mReaderAdapter.clear();
-                    for (UsbDevice device : mManager.getDeviceList().values()) {
-                        if (mReader.isSupported(device)) {
-                            mReaderAdapter.add(device.getDeviceName());
-                        }
-                    }
-
                     UsbDevice device = (UsbDevice) intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
 
                     if (device != null && device.equals(mReader.getDevice())) {
-
-                        // Clear slot items
-                        mSlotAdapter.clear();
-
-                        // Close reader
-                        postToast("Closing reader...");
                         new CloseTask().execute();
                     }
                 }
-            } else if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
+            }
+            else if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
                 for (UsbDevice device : mManager.getDeviceList().values()) {
                     if(isFiscalPrinter){
                         if (device.getManufacturerName().equals("Datecs")) {
@@ -380,14 +369,9 @@ public class StartedActivity extends AppCompatActivity {
 
         AskForPermissions();
 
-        // Initialize slot spinner
-        mSlotAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item);
-        mReaderAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item);
-
         // Initialize reader ACR
         mReader = new Reader(mManager);
         mReader.setOnStateChangeListener((slotNum, prevState, currState) -> {
-            postToast(" currstate " + currState);
             if (prevState < Reader.CARD_UNKNOWN || prevState > Reader.CARD_SPECIFIC) {
                 prevState = Reader.CARD_UNKNOWN;
             }
@@ -396,68 +380,49 @@ public class StartedActivity extends AppCompatActivity {
             }
             if (currState == Reader.CARD_PRESENT) {
 
-//                    byte[] command = {(byte)0xFF, (byte)0xCA, (byte)0x00, (byte)0x00, (byte)0x04};
-//                    byte[] response = new byte[300];
-//                    int responseLength = 0;
-//
-//                    try {
-//
-//                        responseLength = mReader.transmit(slotNum, command, command.length, response, response.length);
-//
-//                    } catch (ReaderException e) {
-//
-//                        e.printStackTrace();
-//                        postToast(" errorr "+e.getMessage());
-//                    }
-//                    postToast("responseLength: " + responseLength);
-//                    postToast("response: " + response[0]);
+                byte[] sendBuffer = new byte[]{ (byte)0xFF, (byte)0xCA, (byte)0x00, (byte)0x00, (byte)0x00};
+                byte[] receiveBuffer = new byte[16];
+
+                try {
+                    int byteCount = mReader.control(0, Reader.IOCTL_CCID_ESCAPE, sendBuffer, sendBuffer.length, receiveBuffer, receiveBuffer.length);
+
+                    StringBuilder sb = new StringBuilder();
+
+                    for (byte page : receiveBuffer) {
+                        int b = page & 0xff;
+                        if (b < 0x10)
+                            sb.append("");
+                        sb.append(b);
+                    }
+                    postToast("String builder " + sb.toString());
+
+                    //int MIFARE_CLASSIC_UID_LENGTH = 4;
+                    StringBuffer uid = new StringBuffer();
+                    for (int i = 0; i < (byteCount - 2); i++) {
+
+                        uid.append(String.format("%02X", receiveBuffer[i]));
+                        if (i < byteCount - 3) {
+                            uid.append(":");
+                        }
+
+                    }
+                    // TODO plugin should just return the UID as byte[]
+                    postToast("uid " + uid.toString());
+                } catch (ReaderException e) {
+                    e.printStackTrace();
+                }
 
 
-//
-//                    byte[] command = { (byte) 0xFF, (byte) 0xCA, (byte) 0x00, (byte) 0x00, (byte) 0x04 };
-//                    byte[] response = new byte[300];
-//                    int responseLength = 0;
-//                    try {
-//                        responseLength = mReader.transmit(slotNum, command, command.length, response,response.length);
-//                    } catch (ReaderException e) {
-//                        e.printStackTrace();
-//                        postToast(" errorr "+e.getMessage());
-//                    }
-//                    postToast("responseLength: " + responseLength);
-//                    postToast("response: " + response[0]);
 
-                int actionNum = Reader.CARD_WARM_RESET;
-                PowerParams params = new PowerParams();
-                params.slotNum = slotNum;
-                params.action = actionNum;
-
-                new PowerTask().execute(params);
-
-//                    try {
-//                        // Get ATR
-//                        postToast("Slot " + slotNum + ": Getting ATR...");
-//                        byte[] atr = mReader.getAtr(slotNum);
+//                byte[] comman = { (byte) 0xFF, (byte) 0xCA, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
 //
-//                        // Show ATR
-//                        if (atr != null) {
-//                            postToast("ATR:");
-//                            logBuffer(atr, atr.length);
-//                        } else {
-//                            postToast("ATR: None");
-//                        }
+//                TransmitParams params = new TransmitParams();
+//                params.slotNum = 0;
+//                params.controlCode = 3500;
+//                params.command = comman;
 //
-//                    } catch (IllegalArgumentException e) {
-//                        postToast(e.toString());
-//                    }
+//                new TransmitTask().execute(params);
             }
-
-//                // Show output
-//                runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        postToast(outputString);
-//                    }
-//                });
         });
 
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
@@ -476,7 +441,6 @@ public class StartedActivity extends AppCompatActivity {
             registerForm();
         } else {
             //если ID не null то запрашиваем URI
-            getURIService = ApiUtils.getURIService();
             doGetURIFromBrokerServer(brokerInstallationID, false);
 
             //паралельно ставим формы аутентификаций в зависимости от настроек входа в программу, по умолчанию 0 - логин и пароль
@@ -513,8 +477,6 @@ public class StartedActivity extends AppCompatActivity {
 
                 String androidID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
 
-                //создаем сервис для регистраций
-                registerAppService = ApiUtils.registerAppService();
                 bodyRegisterApp = new BodyRegisterApp();
                 bodyRegisterApp.setDeviceId(androidID);
                 bodyRegisterApp.setPlatform(2); // 2 - android
@@ -536,42 +498,101 @@ public class StartedActivity extends AppCompatActivity {
             //окно логина и пароля
             else if(frame_start.getVisibility() == View.VISIBLE){
                 User authentificateUser = new User();
+                BaseApplication.getInstance().setUserPasswordsNotHashed(et_user_password.getText().toString());
                 String passGenerate = GetSHA1HashUserPassword("This is the code for UserPass",et_user_password.getText().toString()).replace("\n","");
 
                 Realm realm = Realm.getDefaultInstance();
-                RealmResults<User> result = realm.where(User.class)
+                User result = realm.where(User.class)
                         .equalTo("userName",et_user_name.getText().toString())
                         .and()
                         .equalTo("password",passGenerate)
-                        .findAll();
-                if(!result.isEmpty()) {
-                    authentificateUser.setLastName(result.get(0).getLastName());
-                    authentificateUser.setFirstName(result.get(0).getFirstName());
-                    authentificateUser.setId(result.get(0).getId());
-                    authentificateUser.setPhoneNumber(result.get(0).getPhoneNumber());
-                    authentificateUser.setEmail(result.get(0).getEmail());
-
+                        .findFirst();
+                if(result != null) {
+                    authentificateUser = realm.copyFromRealm(result);
                     //пароли совпадают и проходим аутентификацию
                     Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                    ((GlobalVariables)getApplication()).setUser(authentificateUser);
+                    BaseApplication.getInstance().setUser(authentificateUser);
                     startActivity(main);
                     finish();
                 }
                 else{
                     //если пользователь не найден то показываем
-                    AlertDialog.Builder dialog_user = new AlertDialog.Builder(StartedActivity.this);
-                    dialog_user.setTitle("Atentie!");
-                    dialog_user.setMessage("Asa utilizator nu a fost gasit!");
-                    dialog_user.setPositiveButton("Ok", (dialog, which) -> {
-                        dialog.dismiss();
+                    String uri = getSharedPreferences("Settings",MODE_PRIVATE).getString("URI",null);
+                    String install_id = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("InstallationID",null);
+
+                    CommandServices commandServices = ApiUtils.commandEposService(uri);
+
+                    Call<AuthentificateUserResult> call = commandServices.autentificateUser(install_id,et_user_name.getText().toString(),et_user_password.getText().toString());
+
+                    User finalAuthentificateUser = authentificateUser;
+                    call.enqueue(new Callback<AuthentificateUserResult>() {
+                        @Override
+                        public void onResponse(Call<AuthentificateUserResult> call, Response<AuthentificateUserResult> response) {
+                            AuthentificateUserResult authentificateUserResult = response.body();
+                            if(authentificateUserResult != null){
+                                TokenReceivedFromAutenficateUser token = authentificateUserResult.getAuthentificateUserResult();
+                                if(token.getErrorCode() == 0){
+                                    getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).edit().putString("Token",token.getToken()).apply();
+                                    String date = token.getTokenValidTo();
+                                    date = date.replace("/Date(","");
+                                    date = date.replace("+0200)/","");
+                                    long dateLong = Long.parseLong(date);
+                                    getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).edit().putLong("TokenValidTo",dateLong).apply();
+                                    Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                                    BaseApplication.getInstance().setUser(finalAuthentificateUser);
+                                    startActivity(main);
+                                    finish();
+                                }
+                                else{
+                                    AlertDialog.Builder dialog_user = new AlertDialog.Builder(StartedActivity.this);
+                                    dialog_user.setTitle("Atentie!");
+                                    dialog_user.setMessage("Eroare!Codul: " + token.getErrorCode());
+                                    dialog_user.setPositiveButton("Ok", (dialog, which) -> {
+                                        dialog.dismiss();
+                                    });
+                                    dialog_user.setNeutralButton("Oricum intra",(dialog,which) -> {
+                                        Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                                        BaseApplication.getInstance().setUser(finalAuthentificateUser);
+                                        startActivity(main);
+                                        finish();
+                                    });
+                                    dialog_user.show();
+                                }
+                            }
+                            else{
+                                AlertDialog.Builder dialog_user = new AlertDialog.Builder(StartedActivity.this);
+                                dialog_user.setTitle("Atentie!");
+                                dialog_user.setMessage("Nu este raspuns de la serviciu!");
+                                dialog_user.setPositiveButton("Ok", (dialog, which) -> {
+                                    dialog.dismiss();
+                                });
+                                dialog_user.setNeutralButton("Oricum intra",(dialog,which) -> {
+                                    Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                                    BaseApplication.getInstance().setUser(finalAuthentificateUser);
+                                    startActivity(main);
+                                    finish();
+                                });
+                                dialog_user.show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<AuthentificateUserResult> call, Throwable t) {
+                            AlertDialog.Builder dialog_user = new AlertDialog.Builder(StartedActivity.this);
+                            dialog_user.setTitle("Atentie!");
+                            dialog_user.setMessage("Eroare!");
+                            dialog_user.setPositiveButton("Ok", (dialog, which) -> {
+                                dialog.dismiss();
+                            });
+                            dialog_user.setNeutralButton("Oricum intra",(dialog,which) -> {
+                                Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                                BaseApplication.getInstance().setUser(finalAuthentificateUser);
+                                startActivity(main);
+                                finish();
+                            });
+                            dialog_user.show();
+                        }
                     });
-                    dialog_user.setNeutralButton("Oricum intra",(dialog,which) -> {
-                        Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                        ((GlobalVariables)getApplication()).setUser(authentificateUser);
-                        startActivity(main);
-                        finish();
-                    });
-                    dialog_user.show();
                 }
             }
             //если это окно пароля
@@ -611,7 +632,8 @@ public class StartedActivity extends AppCompatActivity {
     }
 
     private void doRegisterAppToBrokerServer(){
-        Call<RegisterApplicationResult> call = registerAppService.registerApplicationCall(bodyRegisterApp);
+        CommandServices commandServices = ApiUtils.commandBrokerService();
+        Call<RegisterApplicationResult> call = commandServices.registerApplicationCall(bodyRegisterApp);
         call.enqueue(new Callback<RegisterApplicationResult>() {
             @Override
             public void onResponse(Call<RegisterApplicationResult> call, Response<RegisterApplicationResult> response) {
@@ -628,7 +650,6 @@ public class StartedActivity extends AppCompatActivity {
                         getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).edit().putString("InstallationID",instalation_id).apply();
                         getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).edit().putString("CompanyName",result.getName()).apply();
                         //и запрашиваем URI по данному ID
-                        getURIService = ApiUtils.getURIService();
                         doGetURIFromBrokerServer(instalation_id,true);
                     }
                     //TODO надо ставить проверку на других ошибок
@@ -640,45 +661,52 @@ public class StartedActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<RegisterApplicationResult> call, Throwable t) {
-                Toast.makeText(StartedActivity.this, t.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(StartedActivity.this, "Conect to broker error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void doGetURIFromBrokerServer(String instal_id, final boolean registerApp){
-        Call<GetURIResult> call = getURIService.getURICall(instal_id);
+        CommandServices commandServices = ApiUtils.commandBrokerService();
+        Call<GetURIResult> call = commandServices.getURICall(instal_id);
         call.enqueue(new Callback<GetURIResult>() {
             @Override
             public void onResponse(Call<GetURIResult> call, Response<GetURIResult> response) {
                 GetURIResult uriResult = response.body();
                 //получаем ответ от запроса URI
-                int erroreCode = uriResult.getErrorCode();
-                String uri = uriResult.getUri();
-                String dateValid = uriResult.getInstalationidvalidto();
-                String dateServer = uriResult.getDateNow();
-                //сохраняем время с устройство когда получили ответ
-                long currentDate = new Date().getTime();
+                if(uriResult != null){
+                    int erroreCode = uriResult.getErrorCode();
+                    String uri = uriResult.getUri();
+                    String dateValid = uriResult.getInstalationidvalidto();
+                    String dateServer = uriResult.getDateNow();
+                    //сохраняем время с устройство когда получили ответ
+                    long currentDate = new Date().getTime();
 
-                if(erroreCode == 0 && uri != null){  // если все успешно то проходим дальше
-                    //получаем время валидаций ID
-                    dateValid = dateValid.replace("/Date(","");
-                    dateValid = dateValid.replace("+0200)/","");
-                    long validDate = Long.parseLong(dateValid);
-                    //получаем время с брокер сервера
-                    dateServer = dateServer.replace("/Date(","");
-                    dateServer = dateServer.replace("+0200)/","");
-                    long serverDate = Long.parseLong(dateServer);
-                    //сохраняем все полученые данные
-                    getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).edit()
-                            .putString("URI",uri)
-                            .putLong("DateValid",validDate)
-                            .putLong("DateGetURI",currentDate)
-                            .putLong("ServerDate",serverDate)
-                            .apply();
+                    if(erroreCode == 0 && uri != null){  // если все успешно то проходим дальше
+                        //получаем время валидаций ID
+                        dateValid = dateValid.replace("/Date(","");
+                        dateValid = dateValid.replace("+0200)/","");
+                        long validDate = Long.parseLong(dateValid);
+                        //получаем время с брокер сервера
+                        dateServer = dateServer.replace("/Date(","");
+                        dateServer = dateServer.replace("+0200)/","");
+                        long serverDate = Long.parseLong(dateServer);
+                        //сохраняем все полученые данные
+                        getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).edit()
+                                .putString("URI",uri)
+                                .putLong("DateValid",validDate)
+                                .putLong("DateGetURI",currentDate)
+                                .putLong("ServerDate",serverDate)
+                                .apply();
+                    }
+                    //TODO надо ставить проверку на других ошибок
+                    else {
+                        Toast.makeText(StartedActivity.this, uriResult.getErrorMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                    processAfterGetURI(registerApp);
                 }
-                //TODO надо ставить проверку на других ошибок
                 else {
-                    Toast.makeText(StartedActivity.this, uriResult.getErrorMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(StartedActivity.this, "Get uri iss null", Toast.LENGTH_SHORT).show();
                 }
                 processAfterGetURI(registerApp);
             }
@@ -713,9 +741,10 @@ public class StartedActivity extends AppCompatActivity {
         //если проходим регистрацию то после открываем главное окно
         //если это не регистрация то ничего не делаем, дальше идет проверка по логину/ пароля/ карточки
         if (registeredApp){
-            startActivity(new Intent(StartedActivity.this,MainActivity.class));
-            ((GlobalVariables)getApplication()).setUser(null);
-            finish();
+            loginForm();
+//            startActivity(new Intent(StartedActivity.this,MainActivity.class));
+//            BaseApplication.getInstance().setUser(null);
+//            finish();
         }
     }
 
@@ -862,7 +891,7 @@ public class StartedActivity extends AppCompatActivity {
                                 if(userCard != null){
                                     User authentificateUser = realm.copyFromRealm(userCard);
                                     Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                                    ((GlobalVariables)getApplication()).setUser(authentificateUser);
+                                    ((BaseApplication)getApplication()).setUser(authentificateUser);
                                     startActivity(main);
                                     finish();
                                 }
@@ -918,7 +947,7 @@ public class StartedActivity extends AppCompatActivity {
                                 if(userCard != null){
                                     User authentificateUser = realm.copyFromRealm(userCard);
                                     Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                                    ((GlobalVariables)getApplication()).setUser(authentificateUser);
+                                    ((BaseApplication)getApplication()).setUser(authentificateUser);
                                     startActivity(main);
                                     finish();
                                 }
@@ -974,7 +1003,6 @@ public class StartedActivity extends AppCompatActivity {
                 UsbDevice device = deviceIterator.next();
 
                 if ((device.getVendorId() == DATECS_USB_VID) || (device.getVendorId() == FTDI_USB_VID && device.getManufacturerName().equals("Datecs")) ) {
-                    postToast("Device has permision: " + mManager.hasPermission(device));
                     if(mManager.hasPermission(device)){
                         AbstractConnector connector = new UsbDeviceConnector(this, mManager, device);
                         deviceConnect(connector);
@@ -984,10 +1012,7 @@ public class StartedActivity extends AppCompatActivity {
                     }
                 }
                 else if(device.getManufacturerName().equals("ACS")) {
-                    postToast("ACS has permision: " + mManager.hasPermission(device));
                     if(mManager.hasPermission(device)){
-                        // Open reader
-                        postToast("Opening reader: " + device.getDeviceName() + "...");
                         new OpenTask().execute(device);
                     }
                     else{
@@ -1036,13 +1061,13 @@ public class StartedActivity extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            ((GlobalVariables)getApplication()).setMyFiscalDevice(PrinterManager.instance.getFiscalDevice());
+                            ((BaseApplication)getApplication()).setMyFiscalDevice(PrinterManager.instance.getFiscalDevice());
 
                         }
                     });
                 } finally {
                     fail("finish");
-                    ((GlobalVariables)getApplication()).setMyFiscalDevice(PrinterManager.instance.getFiscalDevice());
+                    ((BaseApplication)getApplication()).setMyFiscalDevice(PrinterManager.instance.getFiscalDevice());
                     String sTitle = getTitle() + "  " + PrinterManager.instance.getModelVendorName() + ":" + PrinterManager.getsConnectorType();
                     fail(sTitle);
                 }

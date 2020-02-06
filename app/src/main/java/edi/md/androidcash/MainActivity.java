@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Point;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.nfc.NfcAdapter;
@@ -15,31 +16,31 @@ import android.nfc.Tag;
 import android.nfc.tech.MifareClassic;
 import android.nfc.tech.MifareUltralight;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.StrictMode;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -56,19 +57,19 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.TimeZone;
 import java.util.UUID;
 
-import edi.md.androidcash.DynamicTabs.TabAdapter;
-import edi.md.androidcash.NetworkUtils.ApiUtils;
+import edi.md.androidcash.DynamicTabs.ViewPagerDynamicTabs;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
 import edi.md.androidcash.NetworkUtils.FiscalServiceResult.SimpleResult;
 import edi.md.androidcash.NetworkUtils.PaymentType;
 import edi.md.androidcash.NetworkUtils.Promotion;
-import edi.md.androidcash.NetworkUtils.RetrofitRemote.GetStateFiscalService;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
 import edi.md.androidcash.RealmHelper.AssortmentRealm;
 import edi.md.androidcash.RealmHelper.Bill;
 import edi.md.androidcash.RealmHelper.BillPaymentType;
@@ -85,16 +86,24 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import static edi.md.androidcash.GlobalVariables.SharedPrefFiscalService;
-import static edi.md.androidcash.GlobalVariables.SharedPrefSettings;
-import static edi.md.androidcash.GlobalVariables.SharedPrefWorkPlaceSettings;
+import static edi.md.androidcash.BaseApplication.SharedPrefFiscalService;
+import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
+import static edi.md.androidcash.BaseApplication.SharedPrefWorkPlaceSettings;
+
 
 public class MainActivity extends AppCompatActivity {
     Button btn_list_bill,btn_asl_list,btn_new_bill,btn_check_price,btn_add_position,btn_payment_bill;
-    TextView txt_total_sum_for_pay,inpput,tv_schedule_shift, txt_input_sum , tv_primit_lei,tv_reducere_lei,tv_rest_lei;
+    Button checkDiscount, btnApplyDiscount;
+    static TextView txt_total_sum_for_pay;
+    TextView inpput;
+    TextView tv_schedule_shift;
+    TextView txt_input_sum;
+    TextView tv_primit_lei;
+    TextView tv_reducere_lei;
+    TextView tv_rest_lei;
     ImageView fiscal_printer;
     AlertDialog payment;
-    ListView LW_NewBill;
+    static ListView LW_NewBill;
 
     int REQUEST_ACTIVITY_ASSORTIMENT = 222;
     int REQUEST_ACTIVITY_LIST_BILL = 666;
@@ -112,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
     TextView tv_input_barcode,tv_shift_state,tv_user_name;
     //tv_input_barcode - text view introducerea barcodului la adaugarea prin buton sau la verificarea pretului
 
-    String billUid = null;
+    static String billUid = null;
     Button myButton;
 
     FrameLayout frm_add_position,frm_new_bill, frm_check_price, frm_check_disc, frm_apply_disc, frm_delete_disc, frm_listBills, frm_ListAssortment;
@@ -126,18 +135,17 @@ public class MainActivity extends AppCompatActivity {
     CountDownTimer cTimer = null;
 
     //realm data bases
-    private Realm mRealm;
-    Shift shiftEntry = null;
+    private static Realm mRealm;
+    static Shift shiftEntry = null;
 
-    CustomNewBillRealmAdapter adapterString;
+    static CustomNewBillRealmAdapter adapterString;
 
     SimpleDateFormat sdfChisinau;
     TimeZone tzInChisinau;
 
     //DynamicTabs
-    private TabAdapter adapter;
     private TabLayout tab;
-    private ViewPager viewPager;
+    private ViewPager viewPagerTabs;
 
     //deviceconect
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
@@ -151,15 +159,13 @@ public class MainActivity extends AppCompatActivity {
 
     //Reader ACR
     private Reader mReader;
-    private ArrayAdapter<String> mReaderAdapter;
-    private ArrayAdapter<String> mSlotAdapter;
-    private static final String[] stateStrings = {"Unknown", "Absent",
-            "Present", "Swallowed", "Powered", "Negotiable", "Specific"};
 
     public static final int DATECS_USB_VID = 65520;
     public static final int FTDI_USB_VID = 1027;
 
     boolean isFiscalPrinter = false;
+
+    static Context context;
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
 
@@ -221,30 +227,18 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
 
-            } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+            }
+            else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
                 synchronized (this) {
-                    // Update reader list
-                    mReaderAdapter.clear();
-                    for (UsbDevice device : mManager.getDeviceList().values()) {
-                        if (mReader.isSupported(device)) {
-                            mReaderAdapter.add(device.getDeviceName());
-                        }
-                    }
-
                     UsbDevice device = (UsbDevice) intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
 
                     if (device != null && device.equals(mReader.getDevice())) {
-
-                        // Clear slot items
-                        mSlotAdapter.clear();
-
                         // Close reader
                         postToast("Closing reader...");
                         new CloseTask().execute();
                     }
-
                     if(isFiscalPrinter){
-                        runOnUiThread(() -> fiscal_printer.setImageDrawable(getResources().getDrawable(R.drawable.fiscal_off)));
+                        fiscal_printer.setImageDrawable(getResources().getDrawable(R.drawable.fiscal_off));
                     }
                 }
             }
@@ -271,7 +265,6 @@ public class MainActivity extends AppCompatActivity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
-//testrt
         // Get USB manager
         mManager = (UsbManager) getSystemService(Context.USB_SERVICE);
         // Register receiver for USB permission
@@ -290,8 +283,8 @@ public class MainActivity extends AppCompatActivity {
         inpput = toolbar.findViewById(R.id.toolbar_barcode_input);
         btn_settings = toolbar.findViewById(R.id.img_button_settings);
         tv_user_name = toolbar.findViewById(R.id.tv_user_name);
-        tv_user_name.setText(((GlobalVariables)getApplication()).getUserName());
-
+        tv_user_name.setText(((BaseApplication)getApplication()).getUser().getFullName());
+        context = this;
 
         name_magazin.setText(getSharedPreferences(SharedPrefWorkPlaceSettings,MODE_PRIVATE).getString("WorkPlaceName",""));
 
@@ -299,9 +292,30 @@ public class MainActivity extends AppCompatActivity {
 
         initUIElements();
 
+        String wokPlaceID= getSharedPreferences(SharedPrefWorkPlaceSettings,MODE_PRIVATE).getString("WorkPlaceID",null);
 
-        if( ((GlobalVariables)getApplication()).getUser() == null){
-//            tv_user_name.setText(((GlobalVariables)getApplication()).getUserName());
+        if( wokPlaceID == null){
+            LayoutInflater inflater1 = this.getLayoutInflater();
+            final View dialogView = inflater1.inflate(R.layout.dialog_not_workplaces, null);
+
+            final android.app.AlertDialog exitApp = new android.app.AlertDialog.Builder(this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
+            exitApp.setCancelable(false);
+            exitApp.setView(dialogView);
+
+            Button btn_ok = dialogView.findViewById(R.id.btn_yes_select_workplace);
+
+            btn_ok.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    startActivityForResult(new Intent(".Settings"), REQUEST_ACTIVITY_LIST_SETTING);
+                }
+            });
+
+            exitApp.show();
+        }
+
+
+        if( ((BaseApplication)getApplication()).getUser() == null){
             btn_payment_bill.setEnabled(false);
             btn_add_position.setEnabled(false);
             btn_check_price.setEnabled(false);
@@ -335,16 +349,13 @@ public class MainActivity extends AppCompatActivity {
         mRealm = Realm.getDefaultInstance();
 
         fiscalReceipt = new cmdReceipt.FiscalReceipt();
-        myFiscalDevice = ((GlobalVariables)getApplication()).getMyFiscalDevice();
-
-        // Initialize slot spinner
-        mSlotAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item);
-        mReaderAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item);
+        myFiscalDevice = ((BaseApplication)getApplication()).getMyFiscalDevice();
 
         // Initialize reader ACR
         mReader = new Reader(mManager);
+
         mReader.setOnStateChangeListener((slotNum, prevState, currState) -> {
-            postToast(" currstate " + currState);
+
             if (prevState < Reader.CARD_UNKNOWN || prevState > Reader.CARD_SPECIFIC) {
                 prevState = Reader.CARD_UNKNOWN;
             }
@@ -353,68 +364,8 @@ public class MainActivity extends AppCompatActivity {
             }
             if (currState == Reader.CARD_PRESENT) {
 
-//                    byte[] command = {(byte)0xFF, (byte)0xCA, (byte)0x00, (byte)0x00, (byte)0x04};
-//                    byte[] response = new byte[300];
-//                    int responseLength = 0;
-//
-//                    try {
-//
-//                        responseLength = mReader.transmit(slotNum, command, command.length, response, response.length);
-//
-//                    } catch (ReaderException e) {
-//
-//                        e.printStackTrace();
-//                        postToast(" errorr "+e.getMessage());
-//                    }
-//                    postToast("responseLength: " + responseLength);
-//                    postToast("response: " + response[0]);
 
-
-//
-//                    byte[] command = { (byte) 0xFF, (byte) 0xCA, (byte) 0x00, (byte) 0x00, (byte) 0x04 };
-//                    byte[] response = new byte[300];
-//                    int responseLength = 0;
-//                    try {
-//                        responseLength = mReader.transmit(slotNum, command, command.length, response,response.length);
-//                    } catch (ReaderException e) {
-//                        e.printStackTrace();
-//                        postToast(" errorr "+e.getMessage());
-//                    }
-//                    postToast("responseLength: " + responseLength);
-//                    postToast("response: " + response[0]);
-
-                int actionNum = Reader.CARD_WARM_RESET;
-                PowerParams params = new PowerParams();
-                params.slotNum = slotNum;
-                params.action = actionNum;
-
-                new PowerTask().execute(params);
-
-//                    try {
-//                        // Get ATR
-//                        postToast("Slot " + slotNum + ": Getting ATR...");
-//                        byte[] atr = mReader.getAtr(slotNum);
-//
-//                        // Show ATR
-//                        if (atr != null) {
-//                            postToast("ATR:");
-//                            logBuffer(atr, atr.length);
-//                        } else {
-//                            postToast("ATR: None");
-//                        }
-//
-//                    } catch (IllegalArgumentException e) {
-//                        postToast(e.toString());
-//                    }
             }
-
-//                // Show output
-//                runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        postToast(outputString);
-//                    }
-//                });
         });
 
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
@@ -433,7 +384,6 @@ public class MainActivity extends AppCompatActivity {
         else{
             fiscal_printer.setImageDrawable(getResources().getDrawable(R.drawable.fiscal_off));
         }
-        initQuickButtons();
 
         initRecyclerView();
 
@@ -450,7 +400,7 @@ public class MainActivity extends AppCompatActivity {
                  AssortmentRealm realmResult = mRealm.where(AssortmentRealm.class).equalTo("barcodes.bar",inpput.getText().toString()).findFirst();
                  if(realmResult != null){
                      AssortmentRealm assortmentFind = mRealm.copyFromRealm(realmResult);
-                     addAssortmentToBill(assortmentFind,inpput.getText().toString());
+                     addAssortmentToBill(assortmentFind,1,inpput.getText().toString(),true);
                      inpput.setText("");
                      initRecyclerView();
                  }
@@ -466,29 +416,9 @@ public class MainActivity extends AppCompatActivity {
             if(item_newbill_clicked){
                 double quantity = billStringEntry.getQuantity();
                 quantity += 1;
-                double sum = billStringEntry.getPriceWithDiscount() * quantity;
-                final double[] totalForPay = {0};
-                double finalQuantity = quantity;
-                mRealm.executeTransaction(realm -> {
-//                    BillString billStringRealmResults = realm.where(BillString.class).equalTo("id", billUid).and().equalTo("id",billStringEntry.getId()).findFirst();
-//                    if (billStringRealmResults != null) {
-//                        billStringRealmResults.setSum(sum);
-//                        billStringRealmResults.setQuantity(finalQuantity);
-//                    }
-                    billStringEntry.setQuantity(finalQuantity);
-                    billStringEntry.setSum(sum);
-
-                    Bill billEntryRealmResults = realm.where(Bill.class).equalTo("id", billUid).findFirst();
-                    if (billEntryRealmResults != null) {
-                        billEntryRealmResults.setSum(billEntryRealmResults.getSum() + billStringEntry.getPrice());
-                        billEntryRealmResults.setSumWithDiscount(billEntryRealmResults.getSumWithDiscount() + billStringEntry.getPriceWithDiscount());
-                        totalForPay[0] = billEntryRealmResults.getSumWithDiscount();
-                    }
-
-                });
-//                initRecyclerView();
-                txt_total_sum_for_pay.setText(String.format("%.2f", totalForPay[0]).replace(",","."));
-                adapterString.notifyDataSetChanged();
+                double sum = billStringEntry.getPrice() * quantity;
+                double sumWithDisc = billStringEntry.getPriceWithDiscount() * quantity;
+                editLineCount(sumWithDisc,sum,quantity);
             }
             else{
                 Toast.makeText(MainActivity.this, "Alegeti pozitia!", Toast.LENGTH_SHORT).show();
@@ -499,44 +429,15 @@ public class MainActivity extends AppCompatActivity {
                 double qoantity = billStringEntry.getQuantity();
                 if(qoantity - 1 >0){
                     qoantity  -= 1;
-                    double sum = billStringEntry.getPriceWithDiscount() * qoantity;
-                    double finalQuantity = qoantity;
-                    final double[] totalForPay = {0};
-                    mRealm.executeTransaction(realm -> {
-//                        BillString billStringRealmResults = realm.where(BillString.class).equalTo("id", billUid).and().equalTo("id",billStringEntry.getId()).findFirst();
-//                        if (billStringRealmResults != null) {
-//                            billStringRealmResults.setSum(sum);
-//                            billStringRealmResults.setQuantity(finalQuantity);
-//                        }
-                        billStringEntry.setQuantity(finalQuantity);
-                        billStringEntry.setSum(sum);
-                        Bill billEntryRealmResults = realm.where(Bill.class).equalTo("id", billUid).findFirst();
-                        if (billEntryRealmResults != null) {
-                            billEntryRealmResults.setSum(billEntryRealmResults.getSum() - billStringEntry.getPrice());
-                            billEntryRealmResults.setSumWithDiscount(billEntryRealmResults.getSumWithDiscount() - billStringEntry.getPriceWithDiscount());
-                            totalForPay[0] = billEntryRealmResults.getSumWithDiscount();
-                        }
-                    });
-//                    initRecyclerView();
-                    txt_total_sum_for_pay.setText(String.format("%.2f", totalForPay[0]).replace(",","."));
-                    adapterString.notifyDataSetChanged();
+                    double sum = billStringEntry.getPrice() * qoantity;
+                    double sumWithDisc = billStringEntry.getPriceWithDiscount() * qoantity;
+                    editLineCount(sumWithDisc, sum, qoantity);
                 }
 
             }
             else{
                 Toast.makeText(MainActivity.this, "Alegeti pozitia!", Toast.LENGTH_SHORT).show();
             }
-        });
-        btn_list_bill.setOnClickListener(v -> startActivityForResult(new Intent(".ListBills"), REQUEST_ACTIVITY_LIST_BILL));
-        btn_new_bill.setOnClickListener(v -> {
-            billUid = null;
-            initRecyclerView();
-        });
-        btn_asl_list.setOnClickListener(v -> {
-            Intent listBill = new Intent(".Assortiment");
-
-            listBill.putExtra("id",billUid);
-            startActivityForResult(listBill, REQUEST_ACTIVITY_ASSORTIMENT);
         });
         btn_edit_item.setOnClickListener(v -> {
             if(item_newbill_clicked) {
@@ -587,16 +488,11 @@ public class MainActivity extends AppCompatActivity {
                 btn_ok.setOnClickListener(v133 -> {
                     if (!txtTotalCount.getText().toString().equals("0") && !txtTotalCount.getText().toString().equals("") && !txtTotalCount.getText().toString().equals("0.0") && !txtTotalCount.getText().toString().equals("0.00") ) {
                         double qoantity = Double.valueOf(txtTotalCount.getText().toString());
-
                         double sum = billStringEntry.getPrice() * qoantity;
-
-                        mRealm.executeTransaction(realm -> {
-                            billStringEntry.setSum(sum);
-                            billStringEntry.setQuantity(qoantity);
-                        });
+                        double sumWithDisc = billStringEntry.getPriceWithDiscount() * qoantity;
+                        editLineCount(sumWithDisc,sum,qoantity);
 
                         setCount.dismiss();
-                        adapterString.notifyDataSetChanged();
                     }else {
                         Toast.makeText(MainActivity.this, "Introduceti cantitatea!", Toast.LENGTH_SHORT).show();
                     }
@@ -612,6 +508,18 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "Alegeti pozitia!", Toast.LENGTH_SHORT).show();
             }
         });
+        btn_list_bill.setOnClickListener(v -> startActivityForResult(new Intent(".ListBills"), REQUEST_ACTIVITY_LIST_BILL));
+        btn_new_bill.setOnClickListener(v -> {
+            billUid = null;
+            initRecyclerView();
+        });
+        btn_asl_list.setOnClickListener(v -> {
+            Intent listBill = new Intent(".Assortiment");
+
+            listBill.putExtra("id",billUid);
+            startActivityForResult(listBill, REQUEST_ACTIVITY_ASSORTIMENT);
+        });
+
         btn_delete_item.setOnClickListener(v -> {
             if(item_newbill_clicked) {
                 mRealm.executeTransaction(realm -> {
@@ -619,7 +527,7 @@ public class MainActivity extends AppCompatActivity {
                     if (billStringRealmResults != null) {
                         billStringRealmResults.setDeleted(true);
                         billStringRealmResults.setDeletionDate(new Date().getTime());
-                        billStringRealmResults.setDeleteBy(((GlobalVariables)getApplication()).getUser().getId());
+                        billStringRealmResults.setDeleteBy(((BaseApplication)getApplication()).getUser().getId());
                     }
                     Bill billEntryRealmResults = realm.where(Bill.class).equalTo("id", billUid).findFirst();
                     if (billEntryRealmResults != null) {
@@ -682,6 +590,7 @@ public class MainActivity extends AppCompatActivity {
             btn_delete.setOnClickListener(v145 -> { if (!tv_input_barcode.getText().toString().equals("")) tv_input_barcode.setText(tv_input_barcode.getText().toString().substring(0, tv_input_barcode.getText().toString().length() - 1)); });
             btn_clear.setOnClickListener(v146 -> tv_input_barcode.setText(""));
             btn_search.setOnClickListener(v147 -> {
+                tv_input_barcode.setText("");
                 if(tv_input_barcode.getText().toString().length() == 13 || tv_input_barcode.getText().toString().length() == 8){
                     assortmentEntry[0] = mRealm.where(AssortmentRealm.class).equalTo("barcodes.bar",tv_input_barcode.getText().toString()).findFirst();
                 }
@@ -691,8 +600,6 @@ public class MainActivity extends AppCompatActivity {
                 if(assortmentEntry[0] != null){
                     AssortmentRealm assortmentFind = mRealm.copyFromRealm(assortmentEntry[0]);
                     txtName.setText(assortmentFind.getName());
-                    txtPriceWithDiscount.setText(String.format("%.2f",assortmentFind.getPrice()).replace(",","."));
-
                     double priceWithDisc = -1;
 
                     if(!assortmentFind.getPromotions().isEmpty()){
@@ -750,8 +657,9 @@ public class MainActivity extends AppCompatActivity {
                     else{
                         priceWithDisc = assortmentFind.getPrice();
                     }
-                    txtPriceWithoutDiscount.setText(String.format("%.2f",priceWithDisc).replace(",","."));
 
+                    txtPriceWithDiscount.setText(String.format("%.2f",priceWithDisc).replace(",","."));
+                    txtPriceWithoutDiscount.setText(String.format("%.2f",assortmentFind.getPrice()).replace(",","."));
                 }
                 else{
                     txtName.setText("Nu a fost gasit!");
@@ -765,7 +673,7 @@ public class MainActivity extends AppCompatActivity {
             });
             btn_add.setOnClickListener(v149 -> {
                 AssortmentRealm assortmentFind = mRealm.copyFromRealm(assortmentEntry[0]);
-                addAssortmentToBill(assortmentFind,tv_input_barcode.getText().toString());
+                addAssortmentToBill(assortmentFind,1,tv_input_barcode.getText().toString(),true);
                 if_check_priceActive = false;
                 checkPriceDialog.dismiss();
             });
@@ -781,7 +689,6 @@ public class MainActivity extends AppCompatActivity {
                     {
                         int keycode = KEvent.getKeyCode();
                         int keyunicode = KEvent.getUnicodeChar(KEvent.getMetaState() );
-                        char character = (char) keyunicode;
 
                         switch (keycode) {
                             case KeyEvent.KEYCODE_1 : {
@@ -825,6 +732,8 @@ public class MainActivity extends AppCompatActivity {
                                 tv_input_barcode.requestFocus();
                             }break;
                             case KeyEvent.KEYCODE_ENTER : {
+                                tv_input_barcode.setText("");
+
                                 if(tv_input_barcode.getText().toString().length() == 13 || tv_input_barcode.getText().toString().length() == 8){
                                     assortmentEntry[0] = mRealm.where(AssortmentRealm.class).equalTo("barcodes.bar",tv_input_barcode.getText().toString()).findFirst();
                                 }
@@ -832,6 +741,7 @@ public class MainActivity extends AppCompatActivity {
                                     assortmentEntry[0] =  mRealm.where(AssortmentRealm.class).equalTo("barcodes.bar",tv_input_barcode.getText().toString()).findFirst();
                                 }
                                 if(assortmentEntry[0] != null){
+
                                     AssortmentRealm assortmentFind = mRealm.copyFromRealm(assortmentEntry[0]);
                                     txtName.setText(assortmentFind.getName());
                                     txtPriceWithDiscount.setText(String.format("%.2f",assortmentFind.getPrice()).replace(",","."));
@@ -959,7 +869,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 if(assortmentEntry != null){
                     AssortmentRealm assortmentFind = mRealm.copyFromRealm(assortmentEntry);
-                    addAssortmentToBill(assortmentFind,tv_input_barcode.getText().toString());
+                    addAssortmentToBill(assortmentFind,1,tv_input_barcode.getText().toString(),true);
                 }
                 else{
                     Toast.makeText(MainActivity.this, "Nu a fost gasit!", Toast.LENGTH_SHORT).show();
@@ -1034,7 +944,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                             if(assortmentEntry != null){
                                 AssortmentRealm assortmentFind = mRealm.copyFromRealm(assortmentEntry);
-                                addAssortmentToBill(assortmentFind,tv_input_barcode.getText().toString());
+                                addAssortmentToBill(assortmentFind,1,tv_input_barcode.getText().toString(),true);
                             }
                             else{
                                 Toast.makeText(MainActivity.this, "Nu a fost gasit!", Toast.LENGTH_SHORT).show();
@@ -1281,7 +1191,10 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 if (!contains) {
-                    txt_input_sum.append(".");
+                    if(txt_input_sum.getText().toString().equals(""))
+                        txt_input_sum.append("0.");
+                    else
+                        txt_input_sum.append(".");
                 }
             });
 
@@ -1290,10 +1203,22 @@ public class MainActivity extends AppCompatActivity {
             btn_Cancel.setOnClickListener(v120 -> { payment.dismiss(); billPaymentedSum = 0; });
 
             payment.show();
+            payment.getWindow().setLayout(800,730);
 
-            payment.getWindow().setLayout(770,730);
 
         });
+
+        checkDiscount.setOnClickListener(v->{
+            byte[] comman = { (byte) 0xFF, (byte) 0xCA, (byte) 0x00, (byte) 0x0, (byte) 0x0 };
+
+            TransmitParams params = new TransmitParams();
+            params.slotNum = 0;
+            params.controlCode = 3500;
+            params.command = comman;
+
+            new TransmitTask().execute(params);
+        });
+        initQuickButtons();
 
         // NFC settings
         readFromIntent(getIntent());
@@ -1303,6 +1228,7 @@ public class MainActivity extends AppCompatActivity {
         tagDetected.addCategory(Intent.CATEGORY_DEFAULT);
         writeTagFilters = new IntentFilter[] { tagDetected };
     }
+
     View.OnClickListener test = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -1346,11 +1272,11 @@ public class MainActivity extends AppCompatActivity {
                 if (printFiscalCheck) {
                     if(workFisc == 1){
                         DatecsFiscalDevice fiscalDevice = null;
-                        if( ((GlobalVariables) getApplication()).getMyFiscalDevice() != null){
-                            fiscalDevice = ((GlobalVariables) getApplication()).getMyFiscalDevice();
+                        if( ((BaseApplication) getApplication()).getMyFiscalDevice() != null){
+                            fiscalDevice = ((BaseApplication) getApplication()).getMyFiscalDevice();
                         }
                         if(fiscalDevice != null && fiscalDevice.isConnectedDeviceV2()){
-                            resultCloseReceip = ((GlobalVariables) getApplication()).printFiscalReceipt(fiscalReceipt, billStrings, paymentType, inputSum, billPaymentTypes,(shiftEntry.getBillCounter() + 1));
+                            resultCloseReceip = ((BaseApplication) getApplication()).printFiscalReceipt(fiscalReceipt, billStrings, paymentType, inputSum, billPaymentTypes,(shiftEntry.getBillCounter() + 1));
                             if (resultCloseReceip != 0) {
                                 BillPaymentType billPaymentType= new BillPaymentType();
                                 billPaymentType.setId(UUID.randomUUID().toString());
@@ -1359,7 +1285,7 @@ public class MainActivity extends AppCompatActivity {
                                 billPaymentType.setPaymentCode(Integer.valueOf(code));
                                 billPaymentType.setPaymentTypeID(paymentType.getExternalId());
                                 billPaymentType.setSum(inputSum);
-                                billPaymentType.setAuthor(((GlobalVariables) getApplication()).getUser().getId());
+                                billPaymentType.setAuthor(((BaseApplication) getApplication()).getUser().getId());
                                 billPaymentType.setCreateDate(new Date().getTime());
 
                                 int finalResultCloseReceip = resultCloseReceip;
@@ -1369,7 +1295,7 @@ public class MainActivity extends AppCompatActivity {
                                         bill.setReceiptNumFiscalMemory(finalResultCloseReceip);
                                         bill.setState(1);
                                         bill.setCloseDate(new Date().getTime());
-                                        bill.setClosedBy(((GlobalVariables) getApplication()).getUser().getId());
+                                        bill.setClosedBy(((BaseApplication) getApplication()).getUser().getId());
                                         bill.getBillPaymentTypes().add(billPaymentType);
 
                                     }
@@ -1391,7 +1317,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                     if(workFisc == 2){
-                       ((GlobalVariables) getApplication()).printReceiptFiscalService(billStrings, paymentType, inputSum, billPaymentTypes);
+                       ((BaseApplication) getApplication()).printReceiptFiscalService(billStrings, paymentType, inputSum, billPaymentTypes);
 
                         BillPaymentType billPaymentType= new BillPaymentType();
                         billPaymentType.setId(UUID.randomUUID().toString());
@@ -1400,7 +1326,7 @@ public class MainActivity extends AppCompatActivity {
                         billPaymentType.setPaymentCode(Integer.valueOf(code));
                         billPaymentType.setPaymentTypeID(paymentType.getExternalId());
                         billPaymentType.setSum(inputSum);
-                        billPaymentType.setAuthor(((GlobalVariables) getApplication()).getUser().getId());
+                        billPaymentType.setAuthor(((BaseApplication) getApplication()).getUser().getId());
                         billPaymentType.setCreateDate(new Date().getTime());
 
                         mRealm.executeTransaction(realm ->{
@@ -1409,7 +1335,7 @@ public class MainActivity extends AppCompatActivity {
                                 bill.setReceiptNumFiscalMemory(0);
                                 bill.setState(1);
                                 bill.setCloseDate(new Date().getTime());
-                                bill.setClosedBy(((GlobalVariables) getApplication()).getUser().getId());
+                                bill.setClosedBy(((BaseApplication) getApplication()).getUser().getId());
                                 bill.getBillPaymentTypes().add(billPaymentType);
 
                             }
@@ -1435,7 +1361,7 @@ public class MainActivity extends AppCompatActivity {
                     billPaymentType.setPaymentCode(Integer.valueOf(code));
                     billPaymentType.setPaymentTypeID(paymentType.getExternalId());
                     billPaymentType.setSum(sumBillToPay - billPaymentedSum);
-                    billPaymentType.setAuthor(((GlobalVariables) getApplication()).getUser().getId());
+                    billPaymentType.setAuthor(((BaseApplication) getApplication()).getUser().getId());
                     billPaymentType.setCreateDate(new Date().getTime());
 
                     mRealm.executeTransaction(realm ->{
@@ -1444,7 +1370,7 @@ public class MainActivity extends AppCompatActivity {
                             bill.setReceiptNumFiscalMemory(0);
                             bill.setState(1);
                             bill.setCloseDate(new Date().getTime());
-                            bill.setClosedBy(((GlobalVariables) getApplication()).getUser().getId());
+                            bill.setClosedBy(((BaseApplication) getApplication()).getUser().getId());
                             bill.getBillPaymentTypes().add(billPaymentType);
                         }
                     });
@@ -1471,7 +1397,7 @@ public class MainActivity extends AppCompatActivity {
                 billPaymentType.setPaymentCode(Integer.valueOf(code));
                 billPaymentType.setPaymentTypeID(paymentType.getExternalId());
                 billPaymentType.setSum(inputSum);
-                billPaymentType.setAuthor(((GlobalVariables) getApplication()).getUser().getId());
+                billPaymentType.setAuthor(((BaseApplication) getApplication()).getUser().getId());
                 billPaymentType.setCreateDate(new Date().getTime());
                 //TODO add billPayment type to bill
                 mRealm.executeTransaction(realm ->{
@@ -1488,6 +1414,43 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
+
+    private void editLineCount(double sumWithDiscount, double sum, double quantity){
+        final double[] sumBill = {0};
+
+        mRealm.executeTransaction(realm -> {
+            billStringEntry.setQuantity(quantity);
+            billStringEntry.setSum(sum);
+            billStringEntry.setSumWithDiscount(sumWithDiscount);
+
+            double sumTotal = 0;
+            double sumWithDisc = 0;
+
+            RealmResults<BillString> result = realm.where(BillString.class)
+                    .equalTo("billID",billUid)
+                    .and()
+                    .equalTo("isDeleted",false)
+                    .findAll();
+            if(!result.isEmpty()){
+                for (BillString string: result){
+                    sumTotal += string.getSum();
+                    sumWithDisc += string.getSumWithDiscount();
+                }
+            }
+            sumBill[0] = sumWithDisc;
+
+            Bill billEntryRealmResults = realm.where(Bill.class).equalTo("id", billUid).findFirst();
+            if (billEntryRealmResults != null) {
+                billEntryRealmResults.setSum(sumTotal);
+                billEntryRealmResults.setSumWithDiscount(sumWithDisc);
+            }
+
+        });
+
+        txt_total_sum_for_pay.setText(String.format("%.2f", sumBill[0]).replace(",","."));
+        adapterString.notifyDataSetChanged();
+    }
+
     @Override
     protected void onDestroy() {
         // Close reader
@@ -1508,6 +1471,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
+
 
         isFiscalPrinter = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork", 0) == 1;
 
@@ -1591,139 +1556,191 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void createNewBill(String uid){
-        Bill bill = new Bill();
-        bill.setId(uid);
-        bill.setCreateDate(new Date().getTime());
-        bill.setShiftReceiptNumSoftware(shiftEntry.getBillCounter() + 1);
-        bill.setAuthor(((GlobalVariables)getApplication()).getUser().getId());
-        bill.setSumWithDiscount(0.0);
-        bill.setSum(0.0);
-        bill.setState(0);
-        bill.setShiftId(shiftEntry.getId());
-        bill.setSinchronized(false);
-        String version ="0.0";
-        try {
-            PackageInfo pInfo = this.getPackageManager().getPackageInfo(getPackageName(), 0);
-            version = pInfo.versionName;
-        } catch (PackageManager.NameNotFoundException e) {
-            e.printStackTrace();
-        }
-        bill.setCurrentSoftwareVersion(version);
-        bill.setDeviceId(getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("DeviceId",null));
-
-        mRealm.executeTransaction(realm -> {
-            Shift shift = realm.where(Shift.class).equalTo("id", shiftEntry.getId()).findFirst();
-            if (shift != null) {
-               shift.setBillCounter(shiftEntry.getBillCounter() + 1);
-               shiftEntry.setBillCounter(shiftEntry.getBillCounter() + 1);
+    private static void createNewBill(String uid){
+        if(shiftEntry != null){
+            Bill bill = new Bill();
+            bill.setId(uid);
+            bill.setCreateDate(new Date().getTime());
+            bill.setShiftReceiptNumSoftware(shiftEntry.getBillCounter() + 1);
+            bill.setAuthor( BaseApplication.getInstance().getUser().getId());
+            bill.setSumWithDiscount(0.0);
+            bill.setSum(0.0);
+            bill.setState(0);
+            bill.setShiftId(shiftEntry.getId());
+            bill.setSinchronized(false);
+            String version ="0.0";
+            try {
+                PackageInfo pInfo = BaseApplication.getInstance().getPackageManager().getPackageInfo(BaseApplication.getInstance().getPackageName(), 0);
+                version = pInfo.versionName;
+            } catch (PackageManager.NameNotFoundException e) {
+                e.printStackTrace();
             }
-            realm.insert(bill);
-        });
+            bill.setCurrentSoftwareVersion(version);
+            bill.setDeviceId(BaseApplication.getInstance().getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("DeviceId",null));
+
+            mRealm.executeTransaction(realm -> {
+                Shift shift = realm.where(Shift.class).equalTo("id", shiftEntry.getId()).findFirst();
+                if (shift != null) {
+                    shift.setBillCounter(shiftEntry.getBillCounter() + 1);
+                    shiftEntry.setBillCounter(shiftEntry.getBillCounter() + 1);
+                }
+                realm.insert(bill);
+            });
+        }
+        else{
+            Toast.makeText(MainActivity.getContext(), "Tura nu este activa", Toast.LENGTH_SHORT).show();
+        }
+
     }
 
-    private void addAssortmentToBill(AssortmentRealm assortmentEntry,String barcode){
+    public static void deleteItemFromBill(@NonNull AssortmentRealm item,boolean updateInterface){
+        mRealm.executeTransaction(realm -> {
+            BillString string = realm.where(BillString.class).equalTo("assortmentExternID", item.getId()).and().equalTo("barcode","swipe").findFirst();
+            if(string != null){
+                string.setDeleted(true);
+                string.setDeleteBy(BaseApplication.getInstance().getUser().getId());
+                string.setDeletionDate(new Date().getTime());
+            }
+        });
+
+        if(updateInterface)
+            initRecyclerView();
+    }
+
+    public static void addAssortmentToBill(@NonNull AssortmentRealm assortmentEntry, double count, String barcode, boolean updateInterface){
+        int countArray = adapterString.getCount();
+        BillString lastBillString = adapterString.getItem(countArray - 1);
+
         if(billUid == null) {
             billUid = UUID.randomUUID().toString();
             createNewBill((billUid));
         }
-        BillString billString = new BillString();
-        double priceWithDisc = -1;
 
-        Promotion promo = null;
+        if(lastBillString!= null && assortmentEntry.getId().equals(lastBillString.getAssortmentExternID()) ){
+            double sumBefore = lastBillString.getSum();
+            double sumWithDiscBefore = lastBillString.getSumWithDiscount();
+            double quantity = lastBillString.getQuantity() + count;
+            double sum = lastBillString.getPrice() * quantity;
+            double sumWithDisc = lastBillString.getPriceWithDiscount() * quantity;
 
-        if(!assortmentEntry.getPromotions().isEmpty()){
-            promo = assortmentEntry.getPromotions().first();
 
-            long startDate = replaceDate(promo.getStartDate());
-            long endDate = replaceDate(promo.getEndDate());
-            Date curentDate = new Date();
-            long currDate = curentDate.getTime();
+            mRealm.executeTransaction(realm -> {
+                BillString string = realm.where(BillString.class).equalTo("id", lastBillString.getId()).findFirst();
+                if(string != null){
+                    string.setQuantity(quantity);
+                    string.setSum(sum);
+                    string.setSumWithDiscount(sumWithDisc);
+                }
 
-            long timeBegin = 0;
-            long timeEnd = 0;
+                Bill billEntryRealmResults = realm.where(Bill.class).equalTo("id", billUid).findFirst();
+                if (billEntryRealmResults != null) {
+                    billEntryRealmResults.setSum(billEntryRealmResults.getSum() + (sum - sumBefore));
+                    billEntryRealmResults.setSumWithDiscount(billEntryRealmResults.getSumWithDiscount() + (sumWithDisc - sumWithDiscBefore));
+                }
+            });
+        }
+        else{
+            BillString billString = new BillString();
+            double priceWithDisc = -1;
 
-            if(promo.getTimeBegin() != null)    timeBegin = replaceDate(promo.getTimeBegin());
-            if(promo.getTimeEnd() != null)    timeEnd = replaceDate(promo.getTimeEnd());
+            Promotion promo = null;
 
-            if(currDate > startDate && currDate < endDate){
-                if(timeBegin != 0 && timeEnd != 0){
-                    Date timeStart = new Date(timeBegin);
-                    int hourS = timeStart.getHours();
-                    int minS = timeStart.getMinutes();
+            if(!assortmentEntry.getPromotions().isEmpty()){
+                promo = assortmentEntry.getPromotions().first();
 
-                    Date timeFinis = new Date(timeEnd);
-                    int hourE = timeFinis.getHours();
-                    int minE = timeFinis.getMinutes();
+                long startDate = replaceDate(promo.getStartDate());
+                long endDate = replaceDate(promo.getEndDate());
+                Date curentDate = new Date();
+                long currDate = curentDate.getTime();
 
-                    Date one = new Date();
-                    one.setHours(hourS);
-                    one.setMinutes(minS);
-                    one.setSeconds(0);
+                long timeBegin = 0;
+                long timeEnd = 0;
 
-                    Date two = new Date();
-                    two.setHours(hourE);
-                    two.setMinutes(minE);
-                    two.setSeconds(0);
+                if(promo.getTimeBegin() != null)    timeBegin = replaceDate(promo.getTimeBegin());
+                if(promo.getTimeEnd() != null)    timeEnd = replaceDate(promo.getTimeEnd());
 
-                    if(hourE < hourS)
-                        two.setDate(two.getDate() + 1);
+                if(currDate > startDate && currDate < endDate){
+                    if(timeBegin != 0 && timeEnd != 0){
+                        Date timeStart = new Date(timeBegin);
+                        int hourS = timeStart.getHours();
+                        int minS = timeStart.getMinutes();
 
-                    if(curentDate.after(one) && curentDate.before(two)){
+                        Date timeFinis = new Date(timeEnd);
+                        int hourE = timeFinis.getHours();
+                        int minE = timeFinis.getMinutes();
+
+                        Date one = new Date();
+                        one.setHours(hourS);
+                        one.setMinutes(minS);
+                        one.setSeconds(0);
+
+                        Date two = new Date();
+                        two.setHours(hourE);
+                        two.setMinutes(minE);
+                        two.setSeconds(0);
+
+                        if(hourE < hourS)
+                            two.setDate(two.getDate() + 1);
+
+                        if(curentDate.after(one) && curentDate.before(two)){
+                            priceWithDisc = promo.getPrice();
+                            billString.setPromoLineID(promo.getId());
+                            billString.setPromoPrice(promo.getPrice());
+                        }
+                        else{
+                            priceWithDisc = assortmentEntry.getPrice();
+                        }
+                    }
+                    else{
                         priceWithDisc = promo.getPrice();
                         billString.setPromoLineID(promo.getId());
                         billString.setPromoPrice(promo.getPrice());
                     }
-                    else{
-                        priceWithDisc = assortmentEntry.getPrice();
-                    }
                 }
                 else{
-                    priceWithDisc = promo.getPrice();
-                    billString.setPromoLineID(promo.getId());
-                    billString.setPromoPrice(promo.getPrice());
+                    priceWithDisc = assortmentEntry.getPrice();
                 }
             }
             else{
                 priceWithDisc = assortmentEntry.getPrice();
             }
+
+            billString.setCreateBy(BaseApplication.getInstance().getUser().getId());
+            billString.setAssortmentExternID(assortmentEntry.getId());
+            billString.setAssortmentFullName(assortmentEntry.getName());
+            billString.setBillID(billUid);
+            billString.setId(UUID.randomUUID().toString());
+            billString.setQuantity(count);
+            billString.setPrice(assortmentEntry.getPrice());
+            billString.setPriceLineID(assortmentEntry.getPriceLineId());
+            if(promo !=null)
+                billString.setPromoLineID(promo.getId());
+            billString.setBarcode(barcode);
+            billString.setVat(assortmentEntry.getVat());
+            billString.setCreateDate(new Date().getTime());
+            billString.setDeleted(false);
+            billString.setPriceWithDiscount(priceWithDisc);
+
+            billString.setSum(assortmentEntry.getPrice() * count);
+            billString.setSumWithDiscount(priceWithDisc * count);
+
+            double finalPriceWithDisc = priceWithDisc;
+            mRealm.executeTransaction(realm -> {
+                Bill billEntryRealmResults = realm.where(Bill.class).equalTo("id", billUid).findFirst();
+                if (billEntryRealmResults != null) {
+                    billEntryRealmResults.setSum(billEntryRealmResults.getSum() + (assortmentEntry.getPrice() * count));
+                    billEntryRealmResults.setSumWithDiscount(billEntryRealmResults.getSumWithDiscount() + (finalPriceWithDisc * count));
+                    billEntryRealmResults.getBillStrings().add(billString);
+                }
+            });
         }
-        else{
-            priceWithDisc = assortmentEntry.getPrice();
-        }
 
-        billString.setCreateBy(((GlobalVariables)getApplication()).getUser().getId());
-        billString.setAssortmentExternID(assortmentEntry.getId());
-        billString.setAssortmentFullName(assortmentEntry.getName());
-        billString.setBillID(billUid);
-        billString.setId(UUID.randomUUID().toString());
-        billString.setQuantity(1);
-        billString.setPrice(assortmentEntry.getPrice());
-        billString.setPriceLineID(assortmentEntry.getPriceLineId());
-        if(promo !=null)
-            billString.setPromoLineID(promo.getId());
-        billString.setBarcode(barcode);
-        billString.setVat(assortmentEntry.getVat());
-        billString.setCreateDate(new Date().getTime());
-        billString.setDeleted(false);
-        billString.setPriceWithDiscount(priceWithDisc);
-        billString.setSum(assortmentEntry.getPrice());
-        billString.setSumWithDiscount(priceWithDisc);
+        if(updateInterface)
+            initRecyclerView();
 
-        double finalPriceWithDisc = priceWithDisc;
-        mRealm.executeTransaction(realm -> {
-            Bill billEntryRealmResults = realm.where(Bill.class).equalTo("id", billUid).findFirst();
-            if (billEntryRealmResults != null) {
-                billEntryRealmResults.setSum(billEntryRealmResults.getSum() + assortmentEntry.getPrice());
-                billEntryRealmResults.setSumWithDiscount(billEntryRealmResults.getSumWithDiscount() + finalPriceWithDisc);
-                billEntryRealmResults.getBillStrings().add(billString);
-            }
-        });
-
-        initRecyclerView();
     }
 
-    private long replaceDate(String date){
+    public static long replaceDate(String date){
         if(date !=null ){
             date = date.replace("/Date(","");
             date = date.replace("+0200)/","");
@@ -1764,13 +1781,22 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == REQUEST_ACTIVITY_ASSORTIMENT){
             if(resultCode==RESULT_OK){
-                billUid = data.getStringExtra("BillID");
                 initRecyclerView();
             }
         }
         else if(requestCode == REQUEST_ACTIVITY_LIST_BILL){
             if(resultCode == RESULT_OK){
-                billUid = data.getStringExtra("BillID");
+                initRecyclerView();
+            }
+            else{
+                mRealm.executeTransaction(realm -> {
+                    Bill bill = mRealm.where(Bill.class).equalTo("id",billUid).findFirst();
+                    if (bill != null) {
+                        int state = bill.getState();
+                        if(state == 2)
+                            billUid = null;
+                    }
+                });
                 initRecyclerView();
             }
         }
@@ -1890,6 +1916,8 @@ public class MainActivity extends AppCompatActivity {
         super.onNewIntent(intent);
         setIntent(intent);
         readFromIntent(intent);
+        if(myFiscalDevice == null || !myFiscalDevice.isConnectedDeviceV2())
+            fiscal_printer.setImageDrawable(getResources().getDrawable(R.drawable.fiscal_off));
     }
     private void readFromIntent(Intent intent) {
         String action = intent.getAction();
@@ -1989,24 +2017,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initQuickButtons(){
+        final int[] sizeGroup = {0};
+        ArrayList<QuickGroupRealm> list = new ArrayList<>();
+
         mRealm.executeTransaction(realm -> {
             RealmResults<QuickGroupRealm> result = realm.where(QuickGroupRealm.class).findAll();
             if(!result.isEmpty()) {
+                sizeGroup[0] = result.size();
                 for (int i = 0; i < result.size(); i++){
                     QuickGroupRealm quickGroupRealm = realm.copyFromRealm(result.get(i));
-                    List<String> string = quickGroupRealm.getAssortmentId();
-                    tab.addTab(tab.newTab().setText("" + quickGroupRealm.getGroupName()));
+                    list.add(quickGroupRealm);
+
                 }
             }
         });
-        for ( int i = 0; i < 5 ;i++){
-            tab.addTab(tab.newTab().setText("Test " + i));
-        }
-        adapter = new TabAdapter(getSupportFragmentManager(), tab.getTabCount());
-        viewPager.setAdapter(adapter);
-        viewPager.setOffscreenPageLimit(1);
-        viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tab));
+
+        ViewPagerDynamicTabs viewPagerAdapter = new ViewPagerDynamicTabs(getSupportFragmentManager(), sizeGroup[0],list);
+        viewPagerTabs.setAdapter(viewPagerAdapter);
+        tab.setupWithViewPager(viewPagerTabs);
+
     }
+
 
     private void initUIElements(){
         btn_list_bill=findViewById(R.id.button_list_bills);
@@ -2018,9 +2049,6 @@ public class MainActivity extends AppCompatActivity {
         btn_edit_item=findViewById(R.id.btn_edit_item_new_bill);
         btn_delete_item = findViewById(R.id.btn_delete_item_new_bill);
 
-//        gridLayout_quickButtons = findViewById(R.id.grid_quick_buttons);
-//        gridLayout_quickButtons.measure(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-
         btn_new_bill = findViewById(R.id.button_new_bill);
         btn_check_price = findViewById(R.id.button_check_price);
         btn_add_position = findViewById(R.id.button_add_posotion);
@@ -2028,6 +2056,9 @@ public class MainActivity extends AppCompatActivity {
         fiscal_printer = findViewById(R.id.txt_fiscal_device_state);
         tv_shift_state = findViewById(R.id.txt_shift_state);
         LW_NewBill = findViewById(R.id.LW_NewBill);
+
+        checkDiscount = findViewById(R.id.button_check_discount);
+        btnApplyDiscount = findViewById(R.id.button_apply_discount);
 //        tv_name_magazin = findViewById(R.id.txt_name_magazine);
 
         tv_primit_lei = findViewById(R.id.tv_primit_lei);
@@ -2035,7 +2066,7 @@ public class MainActivity extends AppCompatActivity {
         tv_reducere_lei = findViewById(R.id.tv_reducere_lei);
 
         //dynamic tabs
-        viewPager =  findViewById(R.id.viewPager);
+        viewPagerTabs =  findViewById(R.id.viewPager);
         tab = findViewById(R.id.tabLayout);
 
         frm_add_position = findViewById(R.id.btn_add_position);
@@ -2058,9 +2089,8 @@ public class MainActivity extends AppCompatActivity {
         if(ip != null && port != null){
             String uri = ip + ":" + port;
 
-            GetStateFiscalService getStateFiscalService = ApiUtils.getStateFiscalService(uri);
-
-            Call<SimpleResult> call = getStateFiscalService.getState();
+            CommandServices commandServices = ApiUtils.commandFPService(uri);
+            Call<SimpleResult> call = commandServices.getState();
             call.enqueue(new Callback<SimpleResult>() {
                 @Override
                 public void onResponse(Call<SimpleResult> call, Response<SimpleResult> response) {
@@ -2083,21 +2113,21 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void initRecyclerView(){
+    private static void initRecyclerView(){
         final RealmResults<BillString>[] results = new RealmResults[]{null};
         final Bill[] bill = new Bill[1];
         mRealm.executeTransaction(realm -> {
-                    Shift result = mRealm.where(Shift.class).equalTo("closed", false).findFirst();
-                    if (result != null) {
-                        shiftEntry = mRealm.copyFromRealm(result);
-                        bill[0] = mRealm.where(Bill.class).equalTo("shiftId", shiftEntry.getId()).and().equalTo("state", 0).and().equalTo("id",billUid).findFirst();
-                        if (bill[0] != null) {
-                            billUid = bill[0].getId();
-                            results[0] = mRealm.where(BillString.class).equalTo("billID", billUid).and().equalTo("isDeleted", false).sort("createDate").findAll();
+            Shift result = mRealm.where(Shift.class).equalTo("closed", false).findFirst();
+            if (result != null) {
+                shiftEntry = mRealm.copyFromRealm(result);
+                bill[0] = mRealm.where(Bill.class).equalTo("shiftId", shiftEntry.getId()).and().equalTo("state", 0).and().equalTo("id",billUid).findFirst();
+                if (bill[0] != null) {
+                    billUid = bill[0].getId();
+                    results[0] = mRealm.where(BillString.class).equalTo("billID", billUid).and().equalTo("isDeleted", false).sort("createDate").findAll();
 
-                        }
-                    }
-                });
+                }
+            }
+        });
         if(results[0] != null){
             adapterString = new CustomNewBillRealmAdapter(results[0]);
             txt_total_sum_for_pay.setText(String.format("%.2f", bill[0].getSumWithDiscount()).replace(",","."));
@@ -2184,96 +2214,115 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected Exception doInBackground(UsbDevice... params) {
-
             Exception result = null;
 
             try {
-
                 mReader.open(params[0]);
-
-            } catch (Exception e) {
-
+            }
+            catch (Exception e) {
                 result = e;
             }
-
             return result;
         }
 
         @Override
         protected void onPostExecute(Exception result) {
-
             if (result != null) {
-
                 postToast(result.toString());
-
-            } else {
-
-                postToast("Reader name: " + mReader.getReaderName());
-
-                int numSlots = mReader.getNumSlots();
-//                    postToast("Number of slots: " + numSlots);
-
-                // Add slot items
-                mSlotAdapter.clear();
-                for (int i = 0; i < numSlots; i++) {
-                    mSlotAdapter.add(Integer.toString(i));
-                }
+            }
+            else {
+                postToast("Reader: " + mReader.getReaderName());
             }
         }
     }
-
     private class CloseTask extends AsyncTask<Void, Void, Void> {
 
         @Override
         protected Void doInBackground(Void... params) {
-
             mReader.close();
             return null;
         }
-
-        @Override
-        protected void onPostExecute(Void result) {
-
-        }
-
     }
-
-    private class PowerParams {
-
+    private class TransmitParams {
+        public byte[] command;
         public int slotNum;
-        public int action;
+        public int controlCode;
     }
-
-    private class PowerResult {
-
-        public byte[] atr;
+    private class TransmitProgress {
+        public byte[] command;
+        public int commandLength;
+        public byte[] response;
+        public int responseLength;
         public Exception e;
     }
+    private class TransmitTask extends AsyncTask<TransmitParams, Void, TransmitProgress> {
 
-    private class PowerTask extends AsyncTask<PowerParams, Void, PowerResult> {
         @Override
-        protected PowerResult doInBackground(PowerParams... params) {
-            PowerResult result = new PowerResult();
+        protected TransmitProgress doInBackground(TransmitParams... params) {
+            TransmitProgress progress = new TransmitProgress();
+            int responseLength = 0;
+
+            byte[] responses = new byte[16];
+
             try {
-                result.atr = mReader.power(params[0].slotNum, params[0].action);
-            } catch (Exception e) {
-                result.e = e;
+                responseLength = mReader.control(0,3500, params[0].command, params[0].command.length, responses, responses.length);
+
+                progress.command = params[0].command;
+                progress.commandLength = params[0].command.length;
+                progress.response = responses;
+                progress.responseLength = responseLength;
+                progress.e = null;
             }
-            return result;
+            catch (Exception e) {
+                progress.command = null;
+                progress.commandLength = 0;
+                progress.response = null;
+                progress.responseLength = 0;
+                progress.e = e;
+            }
+            return progress;
         }
 
         @Override
-        protected void onPostExecute(PowerResult result) {
-            if (result.e != null) {
-                postToast(result.e.toString());
-            } else {
-                // Show ATR
-                if (result.atr != null) {
-                    logBuffer(result.atr, result.atr.length);
+        protected void onPostExecute(TransmitProgress transmitProgress) {
+            if (transmitProgress.e == null) {
 
-                } else {
-                    postToast("ATR: None");
+//                for (byte b : transmitProgress.response) {
+//                    postToast("byte " + b);
+//                }
+
+                //int MIFARE_CLASSIC_UID_LENGTH = 4;
+                StringBuffer uid = new StringBuffer();
+                for (int i = 0; i < (transmitProgress.responseLength - 2); i++) {
+
+                    uid.append(String.format("%02X", transmitProgress.response[i]));
+                    if (i < transmitProgress.responseLength - 3) {
+                        uid.append(":");
+                    }
+
+                    postToast("string form " + String.format("%02X ", transmitProgress.response[i]));
                 }
+
+                // TODO plugin should just return the UID as byte[]
+
+                postToast(" uid.toString()" +  uid.toString());
+
+//                StringBuilder sb = new StringBuilder();
+//
+//                for (byte page :  transmitProgress.response) {
+//                    int b = page & 0xff;
+//                    if (b < 0x10)
+//                        sb.append("");
+//                    sb.append(b);
+//                }
+//                postToast("sb " + sb.toString());
+//
+//                String cardCode = getMD5HashCardCode(sb.toString());
+
+                //TODO if need verification
+            }
+            else{
+                postToast(transmitProgress.e.getMessage());
             }
         }
     }
@@ -2303,7 +2352,7 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
                 } finally {
-                    ((GlobalVariables)getApplication()).setMyFiscalDevice(PrinterManager.instance.getFiscalDevice());
+                    ((BaseApplication)getApplication()).setMyFiscalDevice(PrinterManager.instance.getFiscalDevice());
                     myFiscalDevice = PrinterManager.instance.getFiscalDevice();
 
                     if(myFiscalDevice != null && myFiscalDevice.isConnectedDeviceV2()){
@@ -2353,6 +2402,60 @@ public class MainActivity extends AppCompatActivity {
         return bufferString;
     }
 
+    private byte[] toByteArray(String hexString) {
+
+        int hexStringLength = hexString.length();
+        byte[] byteArray = null;
+        int count = 0;
+        char c;
+        int i;
+
+        // Count number of hex characters
+        for (i = 0; i < hexStringLength; i++) {
+
+            c = hexString.charAt(i);
+            if (c >= '0' && c <= '9' || c >= 'A' && c <= 'F' || c >= 'a'
+                    && c <= 'f') {
+                count++;
+            }
+        }
+
+        byteArray = new byte[(count + 1) / 2];
+        boolean first = true;
+        int len = 0;
+        int value;
+        for (i = 0; i < hexStringLength; i++) {
+
+            c = hexString.charAt(i);
+            if (c >= '0' && c <= '9') {
+                value = c - '0';
+            } else if (c >= 'A' && c <= 'F') {
+                value = c - 'A' + 10;
+            } else if (c >= 'a' && c <= 'f') {
+                value = c - 'a' + 10;
+            } else {
+                value = -1;
+            }
+
+            if (value >= 0) {
+
+                if (first) {
+
+                    byteArray[len] = (byte) (value << 4);
+
+                } else {
+
+                    byteArray[len] |= value;
+                    len++;
+                }
+
+                first = !first;
+            }
+        }
+
+        return byteArray;
+    }
+
     public static String getMD5HashCardCode(String message) {
         MessageDigest m = null;
         try {
@@ -2379,5 +2482,9 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    public static Context getContext (){
+        return context;
     }
 }
