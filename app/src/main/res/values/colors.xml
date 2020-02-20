@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#008577</color>
+    <color name="colorPrimary">#008A7C</color>
     <color name="colorPrimaryDark">#00574B</color>
     <color name="colorAccent">#D81B60</color>
-    <color name="blue_color">#37DAAF</color>
+    <color name="blue_color">#2E3746</color>
     <color name="list_bills_appbar">#FCFCFC</color>
     <color name="toolbar_color">#4C4E51</color>
     <color name="header_list">#F2F3F3</color>
-    <color name="colorCaroDark">#944e59</color>
+    <color name="colorCaroDark">#944E59</color>
+    <color name="form_loginColor">#616E83</color>
+    <color name="tab_background">#FAFAFA</color>
+    <color name="devider_main">#2D000000</color>
 </resources>

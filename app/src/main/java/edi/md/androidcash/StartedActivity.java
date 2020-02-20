@@ -21,7 +21,6 @@ import android.os.StrictMode;
 import android.provider.Settings;
 import android.util.Base64;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
@@ -30,12 +29,13 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -60,40 +60,27 @@ import java.util.TimeZone;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import edi.md.androidcash.NetworkUtils.EposResult.AuthentificateUserResult;
-import edi.md.androidcash.NetworkUtils.EposResult.TokenReceivedFromAutenficateUser;
-import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
 import edi.md.androidcash.NetworkUtils.BrokerResultBody.Body.BodyRegisterApp;
 import edi.md.androidcash.NetworkUtils.BrokerResultBody.GetURIResult;
 import edi.md.androidcash.NetworkUtils.BrokerResultBody.RegisterApplicationResult;
+import edi.md.androidcash.NetworkUtils.EposResult.AuthentificateUserResult;
+import edi.md.androidcash.NetworkUtils.EposResult.TokenReceivedFromAutenficateUser;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
 import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
 import edi.md.androidcash.NetworkUtils.User;
 import edi.md.androidcash.Utils.Rfc2898DerivesBytes;
 import edi.md.androidcash.connectors.AbstractConnector;
 import edi.md.androidcash.connectors.UsbDeviceConnector;
 import io.realm.Realm;
-import io.realm.RealmResults;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
+import static edi.md.androidcash.BaseApplication.SharedPrefWorkPlaceSettings;
 
 public class StartedActivity extends AppCompatActivity {
-
-    TextView txt_other_methods;
-    ImageButton btn_idno_auth, btn_pass_auth, btn_card_auth, btn_exit;
-    Button btn_go;
-    LinearLayout others, others_buttons, frame_start, frame_idno, frame_pass, frame_card, frame_text_card, frame_btn_login;
-    EditText et_user_name, et_user_password, et_idno, et_user_idno, et_pass_idno, et_password;
-
-    SimpleDateFormat sdfChisinau;
-    TimeZone tzInChisinau;
-
-    public static final int REQUEST_ID_MULTIPLE_PERMISSIONS = 1;
-    public static final int DATECS_USB_VID = 65520;
-    public static final int FTDI_USB_VID = 1027;
-
+    public static final int REQUEST_ID_MULTIPLE_PERMISSIONS = 1, DATECS_USB_VID = 65520, FTDI_USB_VID = 1027;
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
     private PendingIntent mPermissionIntent;
     private UsbManager mManager;
@@ -105,19 +92,24 @@ public class StartedActivity extends AppCompatActivity {
 
     //Reader ACR
     private Reader mReader;
+    boolean isFiscalPrinter = false;
 
-    //connection broker
-    BodyRegisterApp bodyRegisterApp;
-    String brokerInstallationID = null;
+    //layout with authentificate forms
+    ConstraintLayout layoutRegister, layoutLogin;
+    //views register device form
+    EditText RetIDNOCompany,RetEmail, RetPassword;
+    Button btnRegister;
+    ProgressBar RpgBar;
 
-    private void postToast(final String message) {
-        this.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(StartedActivity.this, message, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
+    //views login user form
+    EditText LetUserName, LetPassword;
+    Button btnLogin;
+    TextView LtvOthersAuthMethods, LtvForgotPass;
+    ProgressBar Lpgbar;
+
+    //format date and time zone
+    SimpleDateFormat simpleDateFormat;
+    TimeZone timeZone;
 
     private class OpenTask extends AsyncTask<UsbDevice, Void, Exception> {
         @Override
@@ -136,10 +128,10 @@ public class StartedActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Exception result) {
             if (result != null) {
-                postToast(result.toString());
+                fail(result.toString());
             }
             else {
-                postToast("Reader: " + mReader.getReaderName());
+                fail("Reader: " + mReader.getReaderName());
             }
         }
     }
@@ -206,31 +198,30 @@ public class StartedActivity extends AppCompatActivity {
                         sb.append("");
                     sb.append(b);
                 }
-                postToast("sb " + sb.toString());
+                fail("sb " + sb.toString());
 
                 String cardCode = getMD5HashCardCode(sb.toString());
 
-                if(frame_card.getVisibility() == View.VISIBLE){
-                    Realm realms = Realm.getDefaultInstance();
-                    realms.executeTransaction(realm -> {
-                        User userCard = realm.where(User.class).equalTo("cardBarcode",cardCode).findFirst();
-
-                        if(userCard != null){
-                            User authentificateUser = realm.copyFromRealm(userCard);
-                            Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                            ((BaseApplication)getApplication()).setUser(authentificateUser);
-                            startActivity(main);
-                            finish();
-                        }
-                    });
-                }
+//                if(frame_card.getVisibility() == View.VISIBLE){
+//                    Realm realms = Realm.getDefaultInstance();
+//                    realms.executeTransaction(realm -> {
+//                        User userCard = realm.where(User.class).equalTo("cardBarcode",cardCode).findFirst();
+//
+//                        if(userCard != null){
+//                            User authentificateUser = realm.copyFromRealm(userCard);
+//                            Intent main = new Intent(StartedActivity.this,MainActivity.class);
+//                            ((BaseApplication)getApplication()).setUser(authentificateUser);
+//                            startActivity(main);
+//                            finish();
+//                        }
+//                    });
+//                }
             }
             else{
-                postToast(transmitProgress.e.getMessage());
+                fail(transmitProgress.e.getMessage());
             }
         }
     }
-
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
 
@@ -315,9 +306,6 @@ public class StartedActivity extends AppCompatActivity {
         }
     };
 
-
-    boolean isFiscalPrinter = false;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -337,39 +325,36 @@ public class StartedActivity extends AppCompatActivity {
         filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
         filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
         registerReceiver(mReceiver, filter);
+//------------------------------------------------------------------------------------------------------------------------------------------
+        setContentView(R.layout.activity_start);
+        //init constraint layouts with authentificate form
+        layoutRegister = findViewById(R.id.csl_register_form);
+        layoutLogin = findViewById(R.id.csl_login_form);
 
-        setContentView(R.layout.activity_started);
+        //init UI view register form
+        RetIDNOCompany = findViewById(R.id.et_idno_company_register);
+        RetEmail = findViewById(R.id.et_email_user_register);
+        RetPassword = findViewById(R.id.et_password_register_user);
+        RpgBar = findViewById(R.id.progressBar_register);
+        btnRegister = findViewById(R.id.btn_register_device);
 
-        txt_other_methods = findViewById(R.id.txt_other_methods);
-        btn_idno_auth = findViewById(R.id.idno_buton_auth);
-        btn_pass_auth = findViewById(R.id.pass_buton_auth);
-        btn_card_auth = findViewById(R.id.card_buton_auth);
-        others = findViewById(R.id.LL_other_methods);
-        others_buttons = findViewById(R.id.LL_butons_methods);
-        frame_start = findViewById(R.id.LL_frames);
-        frame_idno = findViewById(R.id.LL_idnp);
-        frame_card = findViewById(R.id.LL_card_auth);
-        frame_pass = findViewById(R.id.LL_pass);
-        frame_text_card = findViewById(R.id.LL_text_card_auth);
-        btn_go = findViewById(R.id.btn_login);
-        frame_btn_login = findViewById(R.id.LL_btn_login);
-        btn_exit = findViewById(R.id.btn_exit_app);
-        et_user_name = findViewById(R.id.et_user_name);
-        et_user_password = findViewById(R.id.et_password_user);
-        et_idno = findViewById(R.id.et_idno_login);
-        et_user_idno = findViewById(R.id.et_user_idno);
-        et_pass_idno = findViewById(R.id.et_password_idno);
-        et_password = findViewById(R.id.et_passwords);
+        //init UI view login form
+        LetUserName = findViewById(R.id.et_login_user_form);
+        LetPassword = findViewById(R.id.et_password_login_user);
+        LtvForgotPass = findViewById(R.id.tv_forgot_pass_login_form);
+        LtvOthersAuthMethods = findViewById(R.id.txt_other_auth_methods);
+        Lpgbar = findViewById(R.id.progressBar_login_form);
+        btnLogin = findViewById(R.id.btn_login_user_form);
 
+        //check if it device support NFC
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
-
-        if (nfcAdapter == null) {
+        if (nfcAdapter == null)
             Toast.makeText(this, "This device doesn't support NFC.", Toast.LENGTH_LONG).show();
-        }
 
+        //ask necessary permisions
         AskForPermissions();
 
-        // Initialize reader ACR
+        // Initialize reader ACR (ACS 122 U)
         mReader = new Reader(mManager);
         mReader.setOnStateChangeListener((slotNum, prevState, currState) -> {
             if (prevState < Reader.CARD_UNKNOWN || prevState > Reader.CARD_SPECIFIC) {
@@ -394,7 +379,7 @@ public class StartedActivity extends AppCompatActivity {
                             sb.append("");
                         sb.append(b);
                     }
-                    postToast("String builder " + sb.toString());
+                    fail("String builder " + sb.toString());
 
                     //int MIFARE_CLASSIC_UID_LENGTH = 4;
                     StringBuffer uid = new StringBuffer();
@@ -407,7 +392,7 @@ public class StartedActivity extends AppCompatActivity {
 
                     }
                     // TODO plugin should just return the UID as byte[]
-                    postToast("uid " + uid.toString());
+                    fail("uid " + uid.toString());
                 } catch (ReaderException e) {
                     e.printStackTrace();
                 }
@@ -425,201 +410,158 @@ public class StartedActivity extends AppCompatActivity {
             }
         });
 
-        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-        StrictMode.setThreadPolicy(policy);
+        //set format date and time zone in Chisinau
+        simpleDateFormat = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy");
+        timeZone = TimeZone.getTimeZone("Europe/Chisinau");
+        simpleDateFormat.setTimeZone(timeZone);
 
-        //формат даты для проверок времени
-        sdfChisinau = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy");
-        tzInChisinau = TimeZone.getTimeZone("Europe/Chisinau");
-        sdfChisinau.setTimeZone(tzInChisinau);
+        //get instalation id from broker
+        String brokerInstallationID = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getString("InstallationID", null);
 
-        //преверяем brokerInstallationID
-        brokerInstallationID = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getString("InstallationID", null);
-
-        //в зависимости от ID  ставим форму регистраций или авторизаций (null - registerForm)
+        //check instalation id , if it's null set register form visibility and others "gone"
         if (brokerInstallationID == null) {
-            registerForm();
+            layoutRegister.setVisibility(View.VISIBLE);
+            layoutLogin.setVisibility(View.GONE);
         } else {
-            //если ID не null то запрашиваем URI
+            layoutRegister.setVisibility(View.GONE);
+            layoutLogin.setVisibility(View.VISIBLE);
+            //if instalation id is not null receive URI from breoker server
             doGetURIFromBrokerServer(brokerInstallationID, false);
 
-            //паралельно ставим формы аутентификаций в зависимости от настроек входа в программу, по умолчанию 0 - логин и пароль
-            int posAuth = getSharedPreferences("WorkPlace", MODE_PRIVATE).getInt("AuthPosition", 0);
+            //set identification forms, depending on the settings for entering the program, default 0 - login and password
+
+            int posAuth = getSharedPreferences(SharedPrefWorkPlaceSettings, MODE_PRIVATE).getInt("AuthPosition", 0);
 
             switch (posAuth) {
-                case 0:
-                    loginForm();
-                    break;
-                case 1:
-                    passwordForm();
-                    break;
-                case 2:
-                    cardForm();
+                case 0:{
+                    layoutLogin.setVisibility(View.VISIBLE);
+                    layoutRegister.setVisibility(View.GONE);
+                }
                     break;
             }
         }
 
-        txt_other_methods.setOnClickListener(v -> {
-            others.setVisibility(View.INVISIBLE);
-            others_buttons.setVisibility(View.VISIBLE);
+        btnRegister.setOnClickListener(v ->{
+            RpgBar.setVisibility(View.VISIBLE);
+            String idno = RetIDNOCompany.getText().toString();
+            String email = RetEmail.getText().toString();
+            String pass = RetPassword.getText().toString();
+
+            //get android unique id for send to broker server
+            String androidID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+
+            //data send to register app in broker server
+            BodyRegisterApp registerApp = new BodyRegisterApp();
+            registerApp.setDeviceId(androidID);
+            registerApp.setPlatform(2); // 2 - android
+            registerApp.setProductType(1); // 1 - casa Market
+            registerApp.setEmail(email);
+            registerApp.setIdno(idno);
+            registerApp.setPassword(pass);
+
+            //save register data on local device
+            getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).edit()
+                    .putString("DeviceId",androidID)
+                    .putString("Email",email)
+                    .putString("IDNO",idno)
+                    .putString("Password",pass)
+                    .apply();
+
+            //register app on broker
+            doRegisterAppToBrokerServer(registerApp);
         });
 
-        btn_idno_auth.setOnClickListener(v -> changeLoginForm());
-        btn_pass_auth.setOnClickListener(v -> changePasswordForm());
-        btn_card_auth.setOnClickListener(v -> changeCardForm());
+        btnLogin.setOnClickListener(v1 ->{
+            Lpgbar.setVisibility(View.VISIBLE);
 
-        btn_go.setOnClickListener(v -> {
-            //если это окно регистраций то получаем данные и регистрируем приложение
-            if (frame_idno.getVisibility() == View.VISIBLE) {
-                String idno = et_idno.getText().toString().trim();
-                String email = et_user_idno.getText().toString().trim();
-                String pass = et_pass_idno.getText().toString().trim();
+            //save user password only app is runing
+            BaseApplication.getInstance().setUserPasswordsNotHashed(LetPassword.getText().toString());
 
-                String androidID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+            //hash SHA1 password
+            String passGenerate = GetSHA1HashUserPassword("This is the code for UserPass",LetPassword.getText().toString()).replace("\n","");
 
-                bodyRegisterApp = new BodyRegisterApp();
-                bodyRegisterApp.setDeviceId(androidID);
-                bodyRegisterApp.setPlatform(2); // 2 - android
-                bodyRegisterApp.setProductType(1); // 1 - casa Market
-                bodyRegisterApp.setEmail(email);
-                bodyRegisterApp.setIdno(idno);
-                bodyRegisterApp.setPassword(pass);
+            //search in local data base user with such data
+            Realm realm = Realm.getDefaultInstance();
+            User result = realm.where(User.class)
+                    .equalTo("userName",LetUserName.getText().toString())
+                    .and()
+                    .equalTo("password",passGenerate)
+                    .findFirst();
+            if(result != null) {
+                //such user found,save this user while app is running
+                BaseApplication.getInstance().setUser(realm.copyFromRealm(result));
 
-                //сохраняем регистрационные данные
-                getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).edit()
-                        .putString("DeviceId",androidID)
-                        .putString("Email",email)
-                        .putString("IDNO",idno)
-                        .putString("Password",pass)
-                        .apply();
-                //регистрируем приложение
-                doRegisterAppToBrokerServer();
+                Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                startActivity(main);
+
+                finish();
             }
-            //окно логина и пароля
-            else if(frame_start.getVisibility() == View.VISIBLE){
-                User authentificateUser = new User();
-                BaseApplication.getInstance().setUserPasswordsNotHashed(et_user_password.getText().toString());
-                String passGenerate = GetSHA1HashUserPassword("This is the code for UserPass",et_user_password.getText().toString()).replace("\n","");
+            else{
+                //user not found in local data bases then we connect to accounting system for receive token and verify user
+                String uri = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("URI",null);
+                String install_id = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("InstallationID",null);
 
-                Realm realm = Realm.getDefaultInstance();
-                User result = realm.where(User.class)
-                        .equalTo("userName",et_user_name.getText().toString())
-                        .and()
-                        .equalTo("password",passGenerate)
-                        .findFirst();
-                if(result != null) {
-                    authentificateUser = realm.copyFromRealm(result);
-                    //пароли совпадают и проходим аутентификацию
-                    Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                    BaseApplication.getInstance().setUser(authentificateUser);
-                    startActivity(main);
-                    finish();
-                }
-                else{
-                    //если пользователь не найден то показываем
-                    String uri = getSharedPreferences("Settings",MODE_PRIVATE).getString("URI",null);
-                    String install_id = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("InstallationID",null);
+                CommandServices commandServices = ApiUtils.commandEposService(uri);
+                Call<AuthentificateUserResult> call = commandServices.autentificateUser(install_id,LetUserName.getText().toString(),LetPassword.getText().toString());
+                call.enqueue(new Callback<AuthentificateUserResult>() {
+                    @Override
+                    public void onResponse(Call<AuthentificateUserResult> call, Response<AuthentificateUserResult> response) {
+                        AuthentificateUserResult authentificateUserResult = response.body();
+                        if(authentificateUserResult != null){
 
-                    CommandServices commandServices = ApiUtils.commandEposService(uri);
+                            //get information for token
+                            TokenReceivedFromAutenficateUser token = authentificateUserResult.getAuthentificateUserResult();
+                            if(token.getErrorCode() == 0){
+                                //save token in shared preferense
+                                String date = token.getTokenValidTo();
+                                date = date.replace("/Date(","");
+                                date = date.replace("+0200)/","");
+                                long dateLong = Long.parseLong(date);
 
-                    Call<AuthentificateUserResult> call = commandServices.autentificateUser(install_id,et_user_name.getText().toString(),et_user_password.getText().toString());
+                                getSharedPreferences(SharedPrefSettings,MODE_PRIVATE)
+                                        .edit()
+                                        .putString("Token",token.getToken())
+                                        .putLong("TokenValidTo",dateLong)
+                                        .apply();
 
-                    User finalAuthentificateUser = authentificateUser;
-                    call.enqueue(new Callback<AuthentificateUserResult>() {
-                        @Override
-                        public void onResponse(Call<AuthentificateUserResult> call, Response<AuthentificateUserResult> response) {
-                            AuthentificateUserResult authentificateUserResult = response.body();
-                            if(authentificateUserResult != null){
-                                TokenReceivedFromAutenficateUser token = authentificateUserResult.getAuthentificateUserResult();
-                                if(token.getErrorCode() == 0){
-                                    getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).edit().putString("Token",token.getToken()).apply();
-                                    String date = token.getTokenValidTo();
-                                    date = date.replace("/Date(","");
-                                    date = date.replace("+0200)/","");
-                                    long dateLong = Long.parseLong(date);
-                                    getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).edit().putLong("TokenValidTo",dateLong).apply();
-                                    Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                                    BaseApplication.getInstance().setUser(finalAuthentificateUser);
-                                    startActivity(main);
-                                    finish();
-                                }
-                                else{
-                                    AlertDialog.Builder dialog_user = new AlertDialog.Builder(StartedActivity.this);
-                                    dialog_user.setTitle("Atentie!");
-                                    dialog_user.setMessage("Eroare!Codul: " + token.getErrorCode());
-                                    dialog_user.setPositiveButton("Ok", (dialog, which) -> {
-                                        dialog.dismiss();
-                                    });
-                                    dialog_user.setNeutralButton("Oricum intra",(dialog,which) -> {
-                                        Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                                        BaseApplication.getInstance().setUser(finalAuthentificateUser);
-                                        startActivity(main);
-                                        finish();
-                                    });
-                                    dialog_user.show();
-                                }
+                                Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                                BaseApplication.getInstance().setUser(new User());
+                                startActivity(main);
+                                Lpgbar.setVisibility(View.INVISIBLE);
+                                finish();
                             }
                             else{
-                                AlertDialog.Builder dialog_user = new AlertDialog.Builder(StartedActivity.this);
-                                dialog_user.setTitle("Atentie!");
-                                dialog_user.setMessage("Nu este raspuns de la serviciu!");
-                                dialog_user.setPositiveButton("Ok", (dialog, which) -> {
-                                    dialog.dismiss();
-                                });
-                                dialog_user.setNeutralButton("Oricum intra",(dialog,which) -> {
-                                    Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                                    BaseApplication.getInstance().setUser(finalAuthentificateUser);
-                                    startActivity(main);
-                                    finish();
-                                });
-                                dialog_user.show();
+                                Toast.makeText(StartedActivity.this, "Error to authentificate user!"+ token.getErrorCode(), Toast.LENGTH_SHORT).show();
                             }
                         }
+                    }
 
-                        @Override
-                        public void onFailure(Call<AuthentificateUserResult> call, Throwable t) {
-                            AlertDialog.Builder dialog_user = new AlertDialog.Builder(StartedActivity.this);
-                            dialog_user.setTitle("Atentie!");
-                            dialog_user.setMessage("Eroare!");
-                            dialog_user.setPositiveButton("Ok", (dialog, which) -> {
-                                dialog.dismiss();
-                            });
-                            dialog_user.setNeutralButton("Oricum intra",(dialog,which) -> {
-                                Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                                BaseApplication.getInstance().setUser(finalAuthentificateUser);
-                                startActivity(main);
-                                finish();
-                            });
-                            dialog_user.show();
-                        }
-                    });
-                }
+                    @Override
+                    public void onFailure(Call<AuthentificateUserResult> call, Throwable t) {
+                        Lpgbar.setVisibility(View.INVISIBLE);
+                        AlertDialog.Builder dialog_user = new AlertDialog.Builder(StartedActivity.this);
+                        dialog_user.setTitle("Atentie!");
+                        dialog_user.setMessage("Eroare!");
+                        dialog_user.setPositiveButton("Ok", (dialog, which) -> {
+                            dialog.dismiss();
+                        });
+                        dialog_user.setNeutralButton("Oricum intra",(dialog,which) -> {
+                            Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                            BaseApplication.getInstance().setUser(new User());
+                            startActivity(main);
+                            finish();
+                        });
+                        dialog_user.show();
+                    }
+                });
             }
-            //если это окно пароля
-            else if(frame_pass.getVisibility() == View.VISIBLE){
 
-            }
         });
 
-        btn_exit.setOnClickListener(v -> {
-            LayoutInflater inflater = StartedActivity.this.getLayoutInflater();
-            final View dialogView = inflater.inflate(R.layout.dialog_exit_app, null);
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
 
-            final AlertDialog exitApp = new AlertDialog.Builder(StartedActivity.this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
-            exitApp.setCancelable(false);
-            exitApp.setView(dialogView);
-
-            Button btn_Cancel = dialogView.findViewById(R.id.btn_no_close);
-            Button btn_ok = dialogView.findViewById(R.id.btn_yes_close);
-
-            btn_Cancel.setOnClickListener(v1 -> exitApp.dismiss());
-
-            btn_ok.setOnClickListener(v12 -> finish());
-
-            exitApp.show();
-        });
-
-        // NFC settings
+        //read NFC tegs and card block
         readFromIntent(getIntent());
 
         pendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
@@ -631,28 +573,31 @@ public class StartedActivity extends AppCompatActivity {
         initUSBDevice();
     }
 
-    private void doRegisterAppToBrokerServer(){
+    private void doRegisterAppToBrokerServer(BodyRegisterApp bodyRegisterApp){
         CommandServices commandServices = ApiUtils.commandBrokerService();
         Call<RegisterApplicationResult> call = commandServices.registerApplicationCall(bodyRegisterApp);
         call.enqueue(new Callback<RegisterApplicationResult>() {
             @Override
             public void onResponse(Call<RegisterApplicationResult> call, Response<RegisterApplicationResult> response) {
                 RegisterApplicationResult result = response.body();
+
                 if (result == null){
-                    Toast.makeText(StartedActivity.this, "Nu a fost primit raspuns de la server!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(StartedActivity.this, "Response from broker server is null!", Toast.LENGTH_SHORT).show();
                 }
                 else{
-                    int erroreCode = result.getErrorCode();
+                    int errorCode = result.getErrorCode();
                     String instalation_id = result.getInstalationId();
 
-                    if(erroreCode == 0 && instalation_id != null){
-                        //если регистрация прошла успешно ,сохраняем Install ID
-                        getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).edit().putString("InstallationID",instalation_id).apply();
-                        getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).edit().putString("CompanyName",result.getName()).apply();
-                        //и запрашиваем URI по данному ID
+                    if(errorCode == 0 && instalation_id != null){
+                        //if app registered succesful , save instalation id and comapany name
+                        getSharedPreferences(SharedPrefSettings,MODE_PRIVATE)
+                                .edit()
+                                .putString("InstallationID",instalation_id)
+                                .putString("CompanyName",result.getName())
+                                .apply();
+                        //after register app ,get URI for accounting system on broker server
                         doGetURIFromBrokerServer(instalation_id,true);
                     }
-                    //TODO надо ставить проверку на других ошибок
                     else {
                         Toast.makeText(StartedActivity.this, result.getErrorMessage(), Toast.LENGTH_SHORT).show();
                     }
@@ -661,7 +606,8 @@ public class StartedActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<RegisterApplicationResult> call, Throwable t) {
-                Toast.makeText(StartedActivity.this, "Conect to broker error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                RpgBar.setVisibility(View.INVISIBLE);
+                Toast.makeText(StartedActivity.this, "Connect to broker error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -673,25 +619,26 @@ public class StartedActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<GetURIResult> call, Response<GetURIResult> response) {
                 GetURIResult uriResult = response.body();
-                //получаем ответ от запроса URI
                 if(uriResult != null){
                     int erroreCode = uriResult.getErrorCode();
                     String uri = uriResult.getUri();
                     String dateValid = uriResult.getInstalationidvalidto();
                     String dateServer = uriResult.getDateNow();
-                    //сохраняем время с устройство когда получили ответ
+                    //save time when registered app and received instalation id
                     long currentDate = new Date().getTime();
 
-                    if(erroreCode == 0 && uri != null){  // если все успешно то проходим дальше
-                        //получаем время валидаций ID
+                    if(erroreCode == 0 && uri != null){
+                        //get time valid instalation id
                         dateValid = dateValid.replace("/Date(","");
                         dateValid = dateValid.replace("+0200)/","");
                         long validDate = Long.parseLong(dateValid);
-                        //получаем время с брокер сервера
+
+                        //get time from broker server
                         dateServer = dateServer.replace("/Date(","");
                         dateServer = dateServer.replace("+0200)/","");
                         long serverDate = Long.parseLong(dateServer);
-                        //сохраняем все полученые данные
+
+                        //save the received data
                         getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).edit()
                                 .putString("URI",uri)
                                 .putLong("DateValid",validDate)
@@ -699,14 +646,12 @@ public class StartedActivity extends AppCompatActivity {
                                 .putLong("ServerDate",serverDate)
                                 .apply();
                     }
-                    //TODO надо ставить проверку на других ошибок
                     else {
                         Toast.makeText(StartedActivity.this, uriResult.getErrorMessage(), Toast.LENGTH_SHORT).show();
                     }
-                    processAfterGetURI(registerApp);
                 }
                 else {
-                    Toast.makeText(StartedActivity.this, "Get uri iss null", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(StartedActivity.this, "Response from broker server is null!", Toast.LENGTH_SHORT).show();
                 }
                 processAfterGetURI(registerApp);
             }
@@ -719,6 +664,8 @@ public class StartedActivity extends AppCompatActivity {
         });
     }
     private void processAfterGetURI (boolean registeredApp){
+        RpgBar.setVisibility(View.INVISIBLE);
+
         //берем данные о URI и ID инсталяций
         long dateValid_URI = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getLong("DateValid",0);
         long dateGetURI = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getLong("DateGetURI",0);
@@ -741,77 +688,9 @@ public class StartedActivity extends AppCompatActivity {
         //если проходим регистрацию то после открываем главное окно
         //если это не регистрация то ничего не делаем, дальше идет проверка по логину/ пароля/ карточки
         if (registeredApp){
-            loginForm();
-//            startActivity(new Intent(StartedActivity.this,MainActivity.class));
-//            BaseApplication.getInstance().setUser(null);
-//            finish();
+            layoutLogin.setVisibility(View.VISIBLE);
+            layoutRegister.setVisibility(View.GONE);
         }
-    }
-
-    private void registerForm(){
-        frame_card.setVisibility(View.INVISIBLE);
-        frame_text_card.setVisibility(View.INVISIBLE);
-        frame_start.setVisibility(View.INVISIBLE);
-        frame_pass.setVisibility(View.INVISIBLE);
-        others.setVisibility(View.INVISIBLE);
-        frame_idno.setVisibility(View.VISIBLE);
-        frame_btn_login.setVisibility(View.VISIBLE);
-    }
-    private void loginForm(){
-        frame_card.setVisibility(View.INVISIBLE);
-        frame_text_card.setVisibility(View.INVISIBLE);
-        frame_idno.setVisibility(View.INVISIBLE);
-        frame_pass.setVisibility(View.INVISIBLE);
-        others.setVisibility(View.VISIBLE);
-        others_buttons.setVisibility(View.INVISIBLE);
-        frame_start.setVisibility(View.VISIBLE);
-        frame_btn_login.setVisibility(View.VISIBLE);
-    }
-    private void passwordForm(){
-        frame_card.setVisibility(View.INVISIBLE);
-        frame_text_card.setVisibility(View.INVISIBLE);
-        frame_start.setVisibility(View.INVISIBLE);
-        frame_idno.setVisibility(View.INVISIBLE);
-        others.setVisibility(View.VISIBLE);
-        others_buttons.setVisibility(View.INVISIBLE);
-        frame_btn_login.setVisibility(View.VISIBLE);
-        frame_pass.setVisibility(View.VISIBLE);
-    }
-    private void cardForm(){
-        frame_start.setVisibility(View.INVISIBLE);
-        frame_pass.setVisibility(View.INVISIBLE);
-        frame_idno.setVisibility(View.INVISIBLE);
-        frame_btn_login.setVisibility(View.INVISIBLE);
-        others_buttons.setVisibility(View.INVISIBLE);
-        others.setVisibility(View.VISIBLE);
-        frame_card.setVisibility(View.VISIBLE);
-        frame_text_card.setVisibility(View.VISIBLE);
-    }
-
-    private void changeLoginForm(){
-        frame_card.setVisibility(View.INVISIBLE);
-        frame_text_card.setVisibility(View.INVISIBLE);
-        frame_idno.setVisibility(View.INVISIBLE);
-        frame_pass.setVisibility(View.INVISIBLE);
-        frame_start.setVisibility(View.VISIBLE);
-        frame_btn_login.setVisibility(View.VISIBLE);
-    }
-    private void changePasswordForm(){
-        frame_card.setVisibility(View.INVISIBLE);
-        frame_text_card.setVisibility(View.INVISIBLE);
-        frame_start.setVisibility(View.INVISIBLE);
-        frame_idno.setVisibility(View.INVISIBLE);
-        frame_btn_login.setVisibility(View.VISIBLE);
-        frame_pass.setVisibility(View.VISIBLE);
-    }
-    private void changeCardForm(){
-        frame_start.setVisibility(View.INVISIBLE);
-        frame_pass.setVisibility(View.INVISIBLE);
-        frame_idno.setVisibility(View.INVISIBLE);
-        frame_btn_login.setVisibility(View.INVISIBLE);
-        others_buttons.setVisibility(View.VISIBLE);
-        frame_card.setVisibility(View.VISIBLE);
-        frame_text_card.setVisibility(View.VISIBLE);
     }
 
     private void logBuffer(byte[] buffer, int bufferLength) {
@@ -826,7 +705,7 @@ public class StartedActivity extends AppCompatActivity {
         }
 
 
-        postToast(sb.toString());
+        fail(sb.toString());
 
         for (int i = 0; i < bufferLength; i++) {
 
@@ -839,7 +718,7 @@ public class StartedActivity extends AppCompatActivity {
 
                 if (bufferString != "") {
 
-                    postToast(bufferString);
+                    fail(bufferString);
                     bufferString = "";
                 }
             }
@@ -883,20 +762,21 @@ public class StartedActivity extends AppCompatActivity {
                             sb.append(b);
                         }
                         String cardCode = getMD5HashCardCode(sb.toString());
-                        if(frame_card.getVisibility() == View.VISIBLE){
-                            Realm realms = Realm.getDefaultInstance();
-                            realms.executeTransaction(realm -> {
-                                User userCard = realm.where(User.class).equalTo("cardBarcode",cardCode).findFirst();
 
-                                if(userCard != null){
-                                    User authentificateUser = realm.copyFromRealm(userCard);
-                                    Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                                    ((BaseApplication)getApplication()).setUser(authentificateUser);
-                                    startActivity(main);
-                                    finish();
-                                }
-                            });
-                        }
+//                        if(layoutLogin.getVisibility() == View.VISIBLE){
+//                            Realm realms = Realm.getDefaultInstance();
+//                            realms.executeTransaction(realm -> {
+//                                User userCard = realm.where(User.class).equalTo("cardBarcode",cardCode).findFirst();
+//
+//                                if(userCard != null){
+//                                    User authentificateUser = realm.copyFromRealm(userCard);
+//                                    Intent main = new Intent(StartedActivity.this,MainActivity.class);
+//                                    ((BaseApplication)getApplication()).setUser(authentificateUser);
+//                                    startActivity(main);
+//                                    finish();
+//                                }
+//                            });
+//                        }
 
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -939,20 +819,21 @@ public class StartedActivity extends AppCompatActivity {
                         }
 
                         String cardCode = getMD5HashCardCode(sb.toString());
-                        if(frame_card.getVisibility() == View.VISIBLE){
-                            Realm realms = Realm.getDefaultInstance();
-                            realms.executeTransaction(realm -> {
-                                User userCard = realm.where(User.class).equalTo("cardBarcode",cardCode).findFirst();
 
-                                if(userCard != null){
-                                    User authentificateUser = realm.copyFromRealm(userCard);
-                                    Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                                    ((BaseApplication)getApplication()).setUser(authentificateUser);
-                                    startActivity(main);
-                                    finish();
-                                }
-                            });
-                        }
+//                        if(frame_card.getVisibility() == View.VISIBLE){
+//                            Realm realms = Realm.getDefaultInstance();
+//                            realms.executeTransaction(realm -> {
+//                                User userCard = realm.where(User.class).equalTo("cardBarcode",cardCode).findFirst();
+//
+//                                if(userCard != null){
+//                                    User authentificateUser = realm.copyFromRealm(userCard);
+//                                    Intent main = new Intent(StartedActivity.this,MainActivity.class);
+//                                    ((BaseApplication)getApplication()).setUser(authentificateUser);
+//                                    startActivity(main);
+//                                    finish();
+//                                }
+//                            });
+//                        }
 
                         byte[] id = tagFromIntent.getId();
                         Log.d("NFC", "MifareClassic Reverse " + toReversedHex(id));
@@ -1026,7 +907,6 @@ public class StartedActivity extends AppCompatActivity {
 
     private void deviceConnect(final AbstractConnector item) {
 
-        appendLog("item.getConnectorType(): " + item.getConnectorType());
         item.getConnectorType();
         final Thread thread = new Thread(new Runnable() {
             @Override
@@ -1034,27 +914,23 @@ public class StartedActivity extends AppCompatActivity {
                 try {
                     try {
                         item.connect();
-                        appendLog("item conect ");
                     } catch (Exception e) {
                         fail("Connection error: " + e.getMessage());
-                        appendLog("Connection error item: " + e.getMessage());
                         return;
                     }
 
                     try {
                         PrinterManager.instance.init(item);
-                        appendLog("item init: ");
                     } catch (Exception e) {
                         try {
                             item.close();
-                            appendLog("item close: ");
+
                         } catch (IOException e1) {
                             fail("Error e1: " + e1.getMessage() + " close");
-                            appendLog("Error e1: " + e1.getMessage() + " close");
+
                             e1.printStackTrace();
                         }
                         fail("Error: " + e.getMessage());
-                        appendLog("Error init item: " + e.getMessage());
                         return;
                     }
 
@@ -1085,6 +961,8 @@ public class StartedActivity extends AppCompatActivity {
         // Unregister receiver
         unregisterReceiver(mReceiver);
         super.onDestroy();
+
+        Lpgbar.setVisibility(View.INVISIBLE);
 //        unregisterReceiver(mUsbDeviceDetachedReceiver);
 //        unregisterReceiver(mUsbDeviceAttachedReceiver);
     }
@@ -1268,40 +1146,6 @@ public class StartedActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
             }
         });
-    }
-
-    public void appendLog(String text) {
-        File file = null;
-        File teste = new File(Environment.getExternalStorageDirectory(),"/IntelectSoft");
-        if (!teste.mkdirs()) {
-            Log.e("LOG TAG", "Directory not created");
-        }
-        file = new File(Environment.getExternalStorageDirectory(),"/IntelectSoft/CashNew_log.txt");
-        if (!file.exists()) {
-            try {
-                file.createNewFile();
-            }
-            catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        try {
-            //BufferedWriter for performance, true to set append to file flag
-            BufferedWriter buf = new BufferedWriter(new FileWriter(file, true));
-            Date datess = new Date();
-            // To TimeZone Europe/Chisinau
-            SimpleDateFormat sdfChisinau = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss");
-            TimeZone tzInChisinau = TimeZone.getTimeZone("Europe/Chisinau");
-            sdfChisinau.setTimeZone(tzInChisinau);
-            String sDateInChisinau = sdfChisinau.format(datess); // Convert to String first
-            String err = sDateInChisinau+ ": ConectorActivity: " + text;
-            buf.append(err);
-            //buf.write(text);
-            buf.newLine();
-            buf.close(); }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
 

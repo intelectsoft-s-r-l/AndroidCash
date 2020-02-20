@@ -5,7 +5,7 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content">
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_cancel"
         style="@android:style/Widget.DeviceDefault.Button.Toggle"
         android:layout_width="0dp"
@@ -13,26 +13,28 @@
         android:layout_marginStart="4dp"
         android:layout_marginTop="32dp"
         android:layout_marginBottom="8dp"
-        android:layout_weight="1"
+        android:gravity="center"
         android:background="@drawable/background_button_payment"
         android:text="Cancel"
-        android:textSize="40sp"
+        android:textColor="@android:color/white"
+        android:textSize="24sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="@+id/btn_add_position_clear"
         app:layout_constraintStart_toEndOf="@+id/btn_ok"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_0" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_ok"
         style="@android:style/Widget.DeviceDefault.Light.Button.Toggle"
         android:layout_width="0dp"
         android:layout_height="70dp"
         android:layout_marginEnd="4dp"
         android:layout_marginBottom="8dp"
-        android:layout_weight="1"
         android:background="@drawable/background_button_payment"
+        android:gravity="center"
         android:text="OK"
-        android:textSize="40sp"
+        android:textColor="@android:color/white"
+        android:textSize="24sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/btn_cancel"
         app:layout_constraintStart_toStartOf="@+id/btn_add_position_delete"
@@ -45,7 +47,7 @@
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="8dp"
-        android:text="Adauga pozitie"
+        android:text="Add position"
         android:textColor="@android:color/background_dark"
         android:textSize="24sp"
         app:layout_constraintBottom_toTopOf="@+id/et_input_data"
@@ -74,14 +76,16 @@
         app:layout_constraintStart_toStartOf="@+id/btn_add_position_7"
         app:layout_constraintTop_toBottomOf="@+id/textView2" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_1"
-        android:layout_width="140dp"
+        android:layout_width="120dp"
         android:layout_height="80dp"
         android:layout_marginEnd="4dp"
         android:layout_marginBottom="4dp"
         android:background="@drawable/background_button_payment"
         android:text="1"
+        android:textColor="@android:color/white"
+        android:gravity="center"
         android:textSize="40sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_delete"
         app:layout_constraintEnd_toStartOf="@+id/btn_add_position_2"
@@ -89,55 +93,65 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_4" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_delete"
-        android:layout_width="140dp"
+        android:layout_width="120dp"
         android:layout_height="80dp"
         android:layout_marginBottom="32dp"
-        android:drawableStart="@drawable/arrow_down_white_36dp"
         android:background="@drawable/background_button_payment"
+        android:drawableStart="@drawable/arrow_down_white_36dp"
+        android:gravity="center"
+        android:text="d"
+        android:textColor="@android:color/white"
+        android:textSize="40sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_ok"
         app:layout_constraintEnd_toStartOf="@+id/btn_add_position_0"
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_1" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_0"
-        android:layout_width="140dp"
+        android:layout_width="120dp"
         android:layout_height="80dp"
         android:layout_marginStart="4dp"
         android:layout_marginBottom="32dp"
         android:background="@drawable/background_button_payment"
         android:text="0"
+        android:textColor="@android:color/white"
+        android:gravity="center"
         android:textSize="40sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_ok"
         app:layout_constraintEnd_toStartOf="@+id/btn_add_position_clear"
         app:layout_constraintStart_toEndOf="@+id/btn_add_position_delete"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_2" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_clear"
-        android:layout_width="140dp"
+        android:layout_width="120dp"
         android:layout_height="80dp"
         android:layout_marginStart="4dp"
         android:layout_marginBottom="32dp"
         android:background="@drawable/background_button_payment"
         android:text="C"
+        android:textColor="@android:color/white"
+        android:gravity="center"
         android:textSize="40sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_cancel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/btn_add_position_0"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_3" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_4"
-        android:layout_width="140dp"
+        android:layout_width="120dp"
         android:layout_height="80dp"
         android:layout_marginEnd="4dp"
         android:layout_marginBottom="4dp"
         android:background="@drawable/background_button_payment"
         android:text="4"
+        android:textColor="@android:color/white"
+        android:gravity="center"
         android:textSize="40sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_1"
         app:layout_constraintEnd_toStartOf="@+id/btn_add_position_5"
@@ -145,14 +159,15 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_7" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_7"
-        android:layout_width="140dp"
+        android:layout_width="120dp"
         android:layout_height="80dp"
         android:layout_marginEnd="4dp"
         android:layout_marginBottom="4dp"
-        android:background="@drawable/background_button_payment"
+        android:gravity="center"
         android:text="7"
+        android:textColor="@android:color/white"
         android:textSize="40sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_4"
         app:layout_constraintEnd_toStartOf="@+id/btn_add_position_8"
@@ -160,83 +175,95 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/et_input_data" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_2"
-        android:layout_width="140dp"
+        android:layout_width="120dp"
         android:layout_height="80dp"
         android:layout_marginEnd="4dp"
         android:layout_marginBottom="4dp"
         android:background="@drawable/background_button_payment"
         android:text="2"
+        android:textColor="@android:color/white"
+        android:gravity="center"
         android:textSize="40sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_0"
         app:layout_constraintEnd_toStartOf="@+id/btn_add_position_3"
         app:layout_constraintStart_toEndOf="@+id/btn_add_position_1"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_5" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_5"
-        android:layout_width="140dp"
+        android:layout_width="120dp"
         android:layout_height="80dp"
         android:layout_marginEnd="4dp"
         android:layout_marginBottom="4dp"
         android:background="@drawable/background_button_payment"
         android:text="5"
+        android:textColor="@android:color/white"
+        android:gravity="center"
         android:textSize="40sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_2"
         app:layout_constraintEnd_toStartOf="@+id/btn_add_position_6"
         app:layout_constraintStart_toEndOf="@+id/btn_add_position_4"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_8" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_8"
-        android:layout_width="140dp"
+        android:layout_width="120dp"
         android:layout_height="80dp"
         android:layout_marginTop="8dp"
         android:layout_marginEnd="4dp"
         android:layout_marginBottom="4dp"
         android:background="@drawable/background_button_payment"
         android:text="8"
+        android:textColor="@android:color/white"
+        android:gravity="center"
         android:textSize="40sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_5"
         app:layout_constraintEnd_toStartOf="@+id/btn_add_position_9"
         app:layout_constraintStart_toEndOf="@+id/btn_add_position_7"
         app:layout_constraintTop_toBottomOf="@+id/et_input_data" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_3"
-        android:layout_width="140dp"
+        android:layout_width="120dp"
         android:layout_height="80dp"
         android:layout_marginBottom="4dp"
         android:background="@drawable/background_button_payment"
         android:text="3"
+        android:textColor="@android:color/white"
+        android:gravity="center"
         android:textSize="40sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_clear"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/btn_add_position_2"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_6" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_6"
-        android:layout_width="140dp"
+        android:layout_width="120dp"
         android:layout_height="80dp"
         android:layout_marginBottom="4dp"
         android:background="@drawable/background_button_payment"
         android:text="6"
+        android:textColor="@android:color/white"
+        android:gravity="center"
         android:textSize="40sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_3"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/btn_add_position_5"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_9" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_9"
-        android:layout_width="140dp"
+        android:layout_width="120dp"
         android:layout_height="80dp"
         android:layout_marginTop="8dp"
         android:layout_marginBottom="4dp"
         android:background="@drawable/background_button_payment"
         android:text="9"
+        android:textColor="@android:color/white"
+        android:gravity="center"
         android:textSize="40sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_6"
         app:layout_constraintEnd_toEndOf="parent"

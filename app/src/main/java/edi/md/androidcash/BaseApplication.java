@@ -73,24 +73,28 @@ public class BaseApplication extends Application {
     public static BaseApplication instance = null;
     private Realm mRealm;
 
-    TimerTask timerTaskSync;
-    Timer sync;
-    TimerTask timerTaskSyncBackground;
-    Timer syncBackground;
+    private TimerTask timerTaskSync;
+    private Timer sync;
+    private TimerTask timerTaskSyncBackground;
+    private Timer syncBackground;
 
     public DatecsFiscalDevice myFiscalDevice = null;
     private User user = null;
     private String userPassWithoutHash;
     private Shift shift = null;
 
+    //SharedPreference name
     public static final String SharedPrefSyncSettings = "SyncSetting";
     public static final String SharedPrefFiscalService = "FiscalService";
     public static final String SharedPrefSettings = "Settings";
     public static final String SharedPrefWorkPlaceSettings = "WorkPlace";
 
-    boolean pressed = false;
-    boolean inProccesSync = false;
-    private ProgressDialog pDialog;
+    //SharedPreference variable
+    public static final String ModeFiscalWork = "ModeFiscalWork";
+    public static final String deviceId = "DeviceId";
+
+    //Badge tabs
+    private int badgeNumbers = 0;
 
     @Override
     public void onCreate() {
@@ -100,7 +104,7 @@ public class BaseApplication extends Application {
 
         instance = this;
 
-        final RealmConfiguration configuration = new RealmConfiguration.Builder().name("cash.realm").schemaVersion(1).migration(new RealmMigrations()).build();
+        final RealmConfiguration configuration = new RealmConfiguration.Builder().name("cash.realm").schemaVersion(2).migration(new RealmMigrations()).build();
         Realm.setDefaultConfiguration(configuration);
         Realm.getInstance(configuration);
         mRealm  = Realm.getDefaultInstance();
@@ -130,11 +134,12 @@ public class BaseApplication extends Application {
         super.onTerminate();
     }
 
-    @NonNull
     public User getUser() {
         return user;
     }
-
+    public String getUserId(){
+        return user.getId();
+    }
     public String getUserPasswordsNotHashed(){
       return userPassWithoutHash;
     }
@@ -145,206 +150,27 @@ public class BaseApplication extends Application {
         this.user = user;
     }
 
-    @NonNull
     public Shift getShift() {
         return shift;
+    }
+    public String getShiftID(){
+        return shift.getId();
     }
     public void setShift(Shift shift) {
         this.shift = shift;
     }
 
-    public void sendShiftToServer(Shift shift){
-        String uri = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("URI",null);
-        String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("InstallationID","null");
-        CommandServices commandServices = ApiUtils.commandEposService(uri);
-
-        SaveShift saveShift = new SaveShift();
-        SendShiftToServer sendShiftToServer = new SendShiftToServer();
-
-        saveShift.setiD(shift.getId());
-        saveShift.setCashID(shift.getWorkPlaceId());
-        saveShift.setOpenedById(shift.getAuthor());
-
-        SimpleDateFormat format = new SimpleDateFormat("Z");
-        Date date = new Date(shift.getStartDate());
-        String createDate = "/Date(" + String.valueOf(shift.getStartDate()) + format.format(date) + ")/";
-        saveShift.setCreationDate(createDate);
-
-        if(shift.isClosed()){
-            Date dateClosed = new Date(shift.getEndDate());
-            String closedDate = "/Date(" + String.valueOf(shift.getEndDate()) + format.format(dateClosed) + ")/";
-            saveShift.setClosed(shift.isClosed());
-            saveShift.setClosingDate(closedDate);
-            saveShift.setClosedByID(shift.getClosedBy());
-        }
-
-        sendShiftToServer.setShift(saveShift);
-        sendShiftToServer.setToken(token);
-
-        Call<ResultEposSimple> call = commandServices.saveShiftCall(sendShiftToServer);
-        call.enqueue(new Callback<ResultEposSimple>() {
-            @Override
-            public void onResponse(Call<ResultEposSimple> call, Response<ResultEposSimple> response) {
-                ResultEposSimple resultEposSimple = response.body();
-                if(resultEposSimple != null){
-                    int error = resultEposSimple.getErrorCode();
-
-                    if(error == 0){
-                        mRealm  = Realm.getDefaultInstance();
-                        mRealm.executeTransaction(realm -> {
-                            Shift results = mRealm.where(Shift.class).equalTo("id",saveShift.getiD()).findFirst();
-                            if(results != null){
-                                results.setSended(true);
-                            }
-                        });
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(Call<ResultEposSimple> call, Throwable t) {
-                String tt= t.getMessage();
-            }
-        });
-
+    public int getBadgeNumbers() {
+        return badgeNumbers;
     }
 
-    public void sendBilltToServer(RealmResults<Bill> billRealmResults){
-        String uri = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("URI",null);
-        String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("InstallationID","null");
-        CommandServices commandServices = ApiUtils.commandEposService(uri);
-
-        SimpleDateFormat format = new SimpleDateFormat("Z");
-
-        RealmList<Bill> billRealmList = new RealmList<>();
-
-        for(Bill bill:billRealmResults){
-            billRealmList.add(bill);
-
-            SendBillsToServer sendBillsToServer = new SendBillsToServer();
-
-            List<SaveBill> listBill = new ArrayList<>();
-            List<SaveBillLine> listLines = new ArrayList<>();
-            List<SaveBillPayment> listBillPayment = new ArrayList<>();
-
-            SaveBill saveBill = new SaveBill();
-
-            saveBill.setID(bill.getId());
-            saveBill.setClosedByID(bill.getClosedBy());
-
-            Date date = new Date(bill.getCloseDate());
-            String closingDate = "/Date(" + String.valueOf(bill.getCloseDate()) + format.format(date) + ")/";
-            saveBill.setClosingDate(closingDate);
-
-            Date dateCreate = new Date(bill.getCreateDate());
-            String createDate = "/Date(" + String.valueOf(bill.getCreateDate()) + format.format(dateCreate) + ")/";
-            saveBill.setCreationDate(createDate);
-
-            saveBill.setDiscountCardId(bill.getDiscountCardId());
-
-            RealmList<BillString> billStringRealm = bill.getBillStrings();
-            for(BillString billString: billStringRealm){
-                SaveBillLine saveBillLine = new SaveBillLine();
-
-                saveBillLine.setCount(billString.getQuantity());
-                saveBillLine.setCreatedByID(billString.getCreateBy());
-
-                Date dateCreateLine = new Date(billString.getCreateDate());
-                String createDateLine = "/Date(" + String.valueOf(billString.getCreateDate()) + format.format(dateCreateLine) + ")/";
-                saveBillLine.setCreationDate(createDateLine);
-
-                saveBillLine.setDeletedByID(billString.getDeleteBy());
-
-                Date dateDelet = new Date(billString.getDeletionDate());
-                String deletingDate = "/Date(" + String.valueOf(billString.getDeletionDate()) + format.format(dateDelet) + ")/";
-                saveBillLine.setDeletionDate(deletingDate);
-
-                saveBillLine.setIsDeleted(billString.isDeleted());
-                saveBillLine.setPrice(billString.getPrice());
-                saveBillLine.setPriceLineID(billString.getPriceLineID());
-                saveBillLine.setPromoPrice(billString.getPromoPrice());
-                saveBillLine.setSum(billString.getSum());
-                saveBillLine.setSumWithDiscount(billString.getSumWithDiscount());
-                saveBillLine.setVATQuote(billString.getVat());
-
-                listLines.add(saveBillLine);
-            }
-
-            RealmList<BillPaymentType> billPaymentTypeRealmList = bill.getBillPaymentTypes();
-            for(BillPaymentType billPaymentType: billPaymentTypeRealmList){
-                SaveBillPayment saveBillPayment = new SaveBillPayment();
-
-                saveBillPayment.setCreatedByID(billPaymentType.getAuthor());
-                saveBillPayment.setID(billPaymentType.getId());
-                saveBillPayment.setPaymentTypeID(billPaymentType.getPaymentTypeID());
-                saveBillPayment.setSum(billPaymentType.getSum());
-
-                Date createDatePayment = new Date(billPaymentType.getCreateDate());
-                String createDatePayments = "/Date(" + String.valueOf(billPaymentType.getCreateDate()) + format.format(createDatePayment) + ")/";
-                saveBillPayment.setCreationDate(createDatePayments);
-
-                listBillPayment.add(saveBillPayment);
-            }
-
-            saveBill.setNumber(bill.getShiftReceiptNumSoftware());
-            saveBill.setOpenedByID(bill.getAuthor());
-
-            saveBill.setLines(listLines);
-            saveBill.setPayments(listBillPayment);
-
-            listBill.add(saveBill);
-
-            sendBillsToServer.setBills(listBill);
-            sendBillsToServer.setShiftID(bill.getShiftId());
-            sendBillsToServer.setToken(token);
-
-
-
-            Call<ResultEposSimple> call = commandServices.saveBillCall(sendBillsToServer);
-            call.enqueue(new Callback<ResultEposSimple>() {
-                @Override
-                public void onResponse(Call<ResultEposSimple> call, Response<ResultEposSimple> response) {
-                    ResultEposSimple resultEposSimple = response.body();
-                    if(resultEposSimple != null){
-                        int error = resultEposSimple.getErrorCode();
-
-                        if(error == 0){
-                            String bilId = saveBill.getID();
-                            mRealm  = Realm.getDefaultInstance();
-                            mRealm.executeTransaction(realm -> {
-                                Bill bilRealm = realm.where(Bill.class).equalTo("id",bilId).findFirst();
-                                if(bilRealm != null){
-                                    bilRealm.setSinchronized(true);
-                                }
-                            });
-                    }
-                        else{
-                            String bilId = saveBill.getID();
-                            mRealm  = Realm.getDefaultInstance();
-                            mRealm.executeTransaction(realm -> {
-                                Bill bilRealm = realm.where(Bill.class).equalTo("id",bilId).findFirst();
-                                if(bilRealm != null){
-                                    bilRealm.setSinchronized(false);
-                                    bilRealm.setInProcessOfSync(2);
-                                }
-
-                            });
-
-                        }
-                    }
-                }
-                @Override
-                public void onFailure(Call<ResultEposSimple> call, Throwable t) {
-                    String tt= t.getMessage();
-                }
-            });
-        }
+    public void setBadgeNumbers(int badgeNumbers) {
+        this.badgeNumbers = badgeNumbers;
     }
 
     public DatecsFiscalDevice getMyFiscalDevice() {
         return myFiscalDevice;
     }
-
     public void setMyFiscalDevice(DatecsFiscalDevice myFiscalDevice) {
         this.myFiscalDevice = myFiscalDevice;
     }
@@ -464,7 +290,6 @@ public class BaseApplication extends Application {
             return Integer.valueOf(resCloseBill);
         }
     }
-
     public void printReceiptFiscalService (RealmList<BillString> billString, PaymentType paymentType, double suma, RealmList<BillPaymentType> paymentList){
         List<BillPaymentFiscalService> paymentFiscalServices = new ArrayList<>();
         List<BillLineFiscalService> lineFiscalService = new ArrayList<>();
@@ -548,6 +373,7 @@ public class BaseApplication extends Application {
         }
     }
 
+    //fiscal device operation
     private String regSalesVar0Version0 (String PluName, String taxCod,String price,String count,String DiscType,String Discval,String Departament){
         String InputStringRegSales = "";
         InputStringRegSales = InputStringRegSales + PluName + "\t";
@@ -667,10 +493,193 @@ public class BaseApplication extends Application {
         }
     }
 
-    private void postToast(final String message) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
-    }
+    //sync shift and bills to server background
+    public void sendShiftToServer(Shift shift){
+        String uri = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("URI",null);
+        String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("InstallationID","null");
+        CommandServices commandServices = ApiUtils.commandEposService(uri);
 
+        SaveShift saveShift = new SaveShift();
+        SendShiftToServer sendShiftToServer = new SendShiftToServer();
+
+        saveShift.setiD(shift.getId());
+        saveShift.setCashID(shift.getWorkPlaceId());
+        saveShift.setOpenedById(shift.getAuthor());
+
+        SimpleDateFormat format = new SimpleDateFormat("Z");
+        Date date = new Date(shift.getStartDate());
+        String createDate = "/Date(" + String.valueOf(shift.getStartDate()) + format.format(date) + ")/";
+        saveShift.setCreationDate(createDate);
+
+        if(shift.isClosed()){
+            Date dateClosed = new Date(shift.getEndDate());
+            String closedDate = "/Date(" + String.valueOf(shift.getEndDate()) + format.format(dateClosed) + ")/";
+            saveShift.setClosed(shift.isClosed());
+            saveShift.setClosingDate(closedDate);
+            saveShift.setClosedByID(shift.getClosedBy());
+        }
+
+        sendShiftToServer.setShift(saveShift);
+        sendShiftToServer.setToken(token);
+
+        Call<ResultEposSimple> call = commandServices.saveShiftCall(sendShiftToServer);
+        call.enqueue(new Callback<ResultEposSimple>() {
+            @Override
+            public void onResponse(Call<ResultEposSimple> call, Response<ResultEposSimple> response) {
+                ResultEposSimple resultEposSimple = response.body();
+                if(resultEposSimple != null){
+                    int error = resultEposSimple.getErrorCode();
+
+                    if(error == 0){
+                        mRealm  = Realm.getDefaultInstance();
+                        mRealm.executeTransaction(realm -> {
+                            Shift results = mRealm.where(Shift.class).equalTo("id",saveShift.getiD()).findFirst();
+                            if(results != null){
+                                results.setSended(true);
+                            }
+                        });
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResultEposSimple> call, Throwable t) {
+                String tt= t.getMessage();
+            }
+        });
+
+    }
+    public void sendBilltToServer(RealmResults<Bill> billRealmResults){
+        String uri = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("URI",null);
+        String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("InstallationID","null");
+        CommandServices commandServices = ApiUtils.commandEposService(uri);
+
+        SimpleDateFormat format = new SimpleDateFormat("Z");
+
+        RealmList<Bill> billRealmList = new RealmList<>();
+
+        for(Bill bill:billRealmResults){
+            billRealmList.add(bill);
+
+            SendBillsToServer sendBillsToServer = new SendBillsToServer();
+
+            List<SaveBill> listBill = new ArrayList<>();
+            List<SaveBillLine> listLines = new ArrayList<>();
+            List<SaveBillPayment> listBillPayment = new ArrayList<>();
+
+            SaveBill saveBill = new SaveBill();
+
+            saveBill.setID(bill.getId());
+            saveBill.setClosedByID(bill.getClosedBy());
+
+            Date date = new Date(bill.getCloseDate());
+            String closingDate = "/Date(" + String.valueOf(bill.getCloseDate()) + format.format(date) + ")/";
+            saveBill.setClosingDate(closingDate);
+
+            Date dateCreate = new Date(bill.getCreateDate());
+            String createDate = "/Date(" + String.valueOf(bill.getCreateDate()) + format.format(dateCreate) + ")/";
+            saveBill.setCreationDate(createDate);
+
+            saveBill.setDiscountCardId(bill.getDiscountCardId());
+
+            RealmList<BillString> billStringRealm = bill.getBillStrings();
+            for(BillString billString: billStringRealm){
+                SaveBillLine saveBillLine = new SaveBillLine();
+
+                saveBillLine.setCount(billString.getQuantity());
+                saveBillLine.setCreatedByID(billString.getCreateBy());
+
+                Date dateCreateLine = new Date(billString.getCreateDate());
+                String createDateLine = "/Date(" + String.valueOf(billString.getCreateDate()) + format.format(dateCreateLine) + ")/";
+                saveBillLine.setCreationDate(createDateLine);
+
+                saveBillLine.setDeletedByID(billString.getDeleteBy());
+
+                Date dateDelet = new Date(billString.getDeletionDate());
+                String deletingDate = "/Date(" + String.valueOf(billString.getDeletionDate()) + format.format(dateDelet) + ")/";
+                saveBillLine.setDeletionDate(deletingDate);
+
+                saveBillLine.setIsDeleted(billString.isDeleted());
+                saveBillLine.setPrice(billString.getPrice());
+                saveBillLine.setPriceLineID(billString.getPriceLineID());
+                saveBillLine.setPromoPrice(billString.getPromoPrice());
+                saveBillLine.setSum(billString.getSum());
+                saveBillLine.setSumWithDiscount(billString.getSumWithDiscount());
+                saveBillLine.setVATQuote(billString.getVat());
+
+                listLines.add(saveBillLine);
+            }
+
+            RealmList<BillPaymentType> billPaymentTypeRealmList = bill.getBillPaymentTypes();
+            for(BillPaymentType billPaymentType: billPaymentTypeRealmList){
+                SaveBillPayment saveBillPayment = new SaveBillPayment();
+
+                saveBillPayment.setCreatedByID(billPaymentType.getAuthor());
+                saveBillPayment.setID(billPaymentType.getId());
+                saveBillPayment.setPaymentTypeID(billPaymentType.getPaymentTypeID());
+                saveBillPayment.setSum(billPaymentType.getSum());
+
+                Date createDatePayment = new Date(billPaymentType.getCreateDate());
+                String createDatePayments = "/Date(" + String.valueOf(billPaymentType.getCreateDate()) + format.format(createDatePayment) + ")/";
+                saveBillPayment.setCreationDate(createDatePayments);
+
+                listBillPayment.add(saveBillPayment);
+            }
+
+            saveBill.setNumber(bill.getShiftReceiptNumSoftware());
+            saveBill.setOpenedByID(bill.getAuthor());
+
+            saveBill.setLines(listLines);
+            saveBill.setPayments(listBillPayment);
+
+            listBill.add(saveBill);
+
+            sendBillsToServer.setBills(listBill);
+            sendBillsToServer.setShiftID(bill.getShiftId());
+            sendBillsToServer.setToken(token);
+
+
+
+            Call<ResultEposSimple> call = commandServices.saveBillCall(sendBillsToServer);
+            call.enqueue(new Callback<ResultEposSimple>() {
+                @Override
+                public void onResponse(Call<ResultEposSimple> call, Response<ResultEposSimple> response) {
+                    ResultEposSimple resultEposSimple = response.body();
+                    if(resultEposSimple != null){
+                        int error = resultEposSimple.getErrorCode();
+
+                        if(error == 0){
+                            String bilId = saveBill.getID();
+                            mRealm  = Realm.getDefaultInstance();
+                            mRealm.executeTransaction(realm -> {
+                                Bill bilRealm = realm.where(Bill.class).equalTo("id",bilId).findFirst();
+                                if(bilRealm != null){
+                                    bilRealm.setSinchronized(true);
+                                }
+                            });
+                        }
+                        else{
+                            String bilId = saveBill.getID();
+                            mRealm  = Realm.getDefaultInstance();
+                            mRealm.executeTransaction(realm -> {
+                                Bill bilRealm = realm.where(Bill.class).equalTo("id",bilId).findFirst();
+                                if(bilRealm != null){
+                                    bilRealm.setSinchronized(false);
+                                    bilRealm.setInProcessOfSync(2);
+                                }
+
+                            });
+
+                        }
+                    }
+                }
+                @Override
+                public void onFailure(Call<ResultEposSimple> call, Throwable t) {
+                    String tt= t.getMessage();
+                }
+            });
+        }
+    }
     private void sheduleSendBillSHiftToServer(){
         timerTaskSync = new TimerTask() {
             @Override
@@ -699,6 +708,7 @@ public class BaseApplication extends Application {
 
     }
 
+    //sync in background assortment
     private void sheduleUpdateAuto(){
         timerTaskSyncBackground = new TimerTask() {
             @Override
@@ -749,7 +759,6 @@ public class BaseApplication extends Application {
         };
 
     }
-
     public void autoUpdateAssortment (){
         boolean enableAutoSync = getSharedPreferences(SharedPrefSyncSettings,MODE_PRIVATE).getBoolean("AutoSync",false);
 
@@ -763,7 +772,6 @@ public class BaseApplication extends Application {
             }
         }
     }
-
     public void insertNewAssortment (List<AssortmentServiceEntry> list, List<QuickGroup>  listGroup){
 
 //        pDialog = new ProgressDialog(this);
@@ -813,10 +821,10 @@ public class BaseApplication extends Application {
                 ass.setQuickGroupName(assortmentServiceEntry.getQuickGroupName());
                 ass.setStockBalance(assortmentServiceEntry.getStockBalance());
                 ass.setStockBalanceDate(assortmentServiceEntry.getStockBalanceDate());
-                ass.setSaleStartTime(MainActivity.replaceDate(assortmentServiceEntry.getSaleStartTime()));
-                ass.setSaleEndTime(MainActivity.replaceDate(assortmentServiceEntry.getSaleEndTime()));
-                ass.setPriceLineStartDate(MainActivity.replaceDate(assortmentServiceEntry.getPriceLineStartDate()));
-                ass.setPriceLineEndDate(MainActivity.replaceDate(assortmentServiceEntry.getPriceLineEndDate()));
+//                ass.setSaleStartTime(MainActivity.replaceDate(assortmentServiceEntry.getSaleStartTime()));
+//                ass.setSaleEndTime(MainActivity.replaceDate(assortmentServiceEntry.getSaleEndTime()));
+//                ass.setPriceLineStartDate(MainActivity.replaceDate(assortmentServiceEntry.getPriceLineStartDate()));
+//                ass.setPriceLineEndDate(MainActivity.replaceDate(assortmentServiceEntry.getPriceLineEndDate()));
 
                 realm.insert(ass);
             }
@@ -838,5 +846,9 @@ public class BaseApplication extends Application {
         }));
 
 //        pDialog.dismiss();
+    }
+
+    private void postToast(final String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 }

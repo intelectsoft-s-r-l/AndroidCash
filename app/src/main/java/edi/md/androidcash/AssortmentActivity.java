@@ -91,6 +91,7 @@ public class AssortmentActivity extends AppCompatActivity {
     CustomAssortmentFolderRealmAdapter folderRealmAdapter;
     CustomAssortmentRealmAdapter assortmentRealmAdapter;
     CustomSwipedAdapterAssortmentItem adapterAssortmentItem;
+
     private ArrayList<AssortmentRealm> imageModelArrayList;
 
     private Paint p = new Paint();
@@ -189,8 +190,8 @@ public class AssortmentActivity extends AppCompatActivity {
                         if(assortmentRealm.getBarcodes() != null && assortmentRealm.getBarcodes().first() != null)
                             barcode = assortmentRealm.getBarcodes().first().getBar();
 
-//                        addAssortmentToBill(assortmentRealm,Double.valueOf(txtTotalCount.getText().toString()), barcode);
-                        MainActivity.addAssortmentToBill(assortmentRealm,Double.valueOf(txtTotalCount.getText().toString()), barcode,false);
+//                        addItemsToOpenedBill(assortmentRealm,Double.valueOf(txtTotalCount.getText().toString()), barcode);
+//                        MainActivity.addItemsToOpenedBill(assortmentRealm,Double.valueOf(txtTotalCount.getText().toString()), barcode,false);
                         setCount.dismiss();
                         Intent result = new Intent();
                         result.putExtra("BillID",billID);
@@ -271,7 +272,7 @@ public class AssortmentActivity extends AppCompatActivity {
                         if(assortmentRealm.getBarcodes() != null && assortmentRealm.getBarcodes().first() != null && !assortmentRealm.getBarcodes().isEmpty())
                             barcode = assortmentRealm.getBarcodes().first().getBar();
 
-                        MainActivity.addAssortmentToBill(assortmentRealm,Double.valueOf(txtTotalCount.getText().toString()), barcode,false);
+//                        MainActivity.addItemsToOpenedBill(assortmentRealm,Double.valueOf(txtTotalCount.getText().toString()), barcode,false);
                         setCount.dismiss();
 
                     }else {
@@ -605,14 +606,14 @@ public class AssortmentActivity extends AppCompatActivity {
                 int position = viewHolder.getAdapterPosition();
                 if (direction == ItemTouchHelper.RIGHT){
                     AssortmentRealm item = adapterAssortmentItem.getItem(position);
-                    MainActivity.addAssortmentToBill(item,1,"swipe",false);
+//                    MainActivity.addItemsToOpenedBill(item,1,"swipe",false);
                     // showing snack bar with Undo option
                     Snackbar snackbar = Snackbar.make(getWindow().getDecorView().getRootView(), item.getName() + " adaugat!", Snackbar.LENGTH_LONG);
                     snackbar.setAction("UNDO", new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
                             // undo is selected, restore the deleted item
-                            MainActivity.deleteItemFromBill(item,false);
+//                            MainActivity.deleteItemFromBill(item,false);
                         }
                     });
                     snackbar.setActionTextColor(Color.YELLOW);
