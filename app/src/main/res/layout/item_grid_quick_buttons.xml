@@ -18,7 +18,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/baseline_folder_white_48dp" />
+        app:srcCompat="@drawable/baseline_folder_gray_48dp" />
 
     <TextView
         android:id="@+id/btn_assortment"

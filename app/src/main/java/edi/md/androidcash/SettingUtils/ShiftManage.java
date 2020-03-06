@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -14,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.contentcapture.ContentCaptureCondition;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -71,12 +73,15 @@ public class ShiftManage extends Fragment {
     //Declare timer
     CountDownTimer cTimer = null;
 
-    private ProgressDialog progress;
+    private static ProgressDialog progress;
 
     DatecsFiscalDevice myFiscalDevice;
 
     private Realm mRealm;
     Shift shiftEntry;
+
+    private static Context context;
+    private static Activity activity;
 
     @Nullable
     @Override
@@ -107,6 +112,8 @@ public class ShiftManage extends Fragment {
 
         Shift result = mRealm.where(Shift.class).equalTo("closed",false).findFirst();
 
+        context = getContext();
+        activity = getActivity();
         if(result != null){
             shiftEntry = mRealm.copyFromRealm(result);
 
@@ -479,8 +486,8 @@ public class ShiftManage extends Fragment {
         }
     }
 
-    private void printZReport(){
-        progress = new ProgressDialog(getContext());
+    public static void printZReport(){
+        progress = new ProgressDialog(context);
         progress.setCancelable(true);
         progress.setTitle("Z report is working !!!");
         progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
@@ -501,13 +508,13 @@ public class ShiftManage extends Fragment {
                 } finally {
                     progress.dismiss();
                 }
-                getActivity().runOnUiThread(new Runnable() {
+                activity.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        DialogZXReportsSummary dialogSummary = new DialogZXReportsSummary(getActivity(), reportSummary);
+                        DialogZXReportsSummary dialogSummary = new DialogZXReportsSummary(activity, reportSummary);
                         dialogSummary.show();
                         DisplayMetrics metrics = new DisplayMetrics(); //get metrics of screen
-                        getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
+                        activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
                         int width = (int) (metrics.widthPixels * 0.5); //set width to 50% of display
                         int height = (int) (metrics.heightPixels * 0.9); //set height to 90% of display
                         dialogSummary.getWindow().setLayout(width, height); //set layout
@@ -520,7 +527,7 @@ public class ShiftManage extends Fragment {
     }
 
     //DIALOG  ZXReportsSummary
-    public class DialogZXReportsSummary extends Dialog implements View.OnClickListener {
+    public static class DialogZXReportsSummary extends Dialog implements View.OnClickListener {
         private final cmdReport.ReportSummary summary;
 
         private DialogZXReportsSummary(Activity a, cmdReport.ReportSummary summary) {

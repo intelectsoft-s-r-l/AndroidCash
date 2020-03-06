@@ -4,8 +4,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -13,6 +15,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager.widget.ViewPager;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
@@ -21,6 +24,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
+import edi.md.androidcash.AssortmentActivity;
+import edi.md.androidcash.DynamicTabs.DynamicFragment;
 import edi.md.androidcash.DynamicTabs.ViewPagerDynamicTabs;
 import edi.md.androidcash.MainActivity;
 import edi.md.androidcash.R;
@@ -41,20 +46,31 @@ public class FragmentAssortmentList extends Fragment {
     ImageButton btnHome;
     GridAssortmentListAdapter adapter;
     String guidItem = "00000000-0000-0000-0000-000000000000";
+    LinearLayout layout_buttons;
+    ViewGroup container;
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View rootViewAdmin = inflater.inflate(R.layout.fragment_assortment_list, container, false);
-
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup containerGroup, @Nullable Bundle savedInstanceState) {
+        View rootViewAdmin = inflater.inflate(R.layout.fragment_assortment_list, containerGroup, false);
+        container =  containerGroup;
         mRealm = Realm.getDefaultInstance();
 
         grid = rootViewAdmin.findViewById(R.id.gv_assortment_list);
         btnHome = rootViewAdmin.findViewById(R.id.img_btn_home_assortment);
+        layout_buttons = rootViewAdmin.findViewById(R.id.ll_tree_way);
 
-        homeAssortment(container);
+        homeAssortment();
 
-        btnHome.setOnClickListener(v-> homeAssortment(container));
+        btnHome.setOnClickListener(v-> {
+            ViewGroup parent  = (ViewGroup) v.getParent();
+            int count = parent.getChildCount();
+
+            for (int i=count-1; i>0; i--){
+                parent.removeViewAt(i);
+            }
+            homeAssortment();
+        });
 
         grid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -68,15 +84,46 @@ public class FragmentAssortmentList extends Fragment {
                     }
                 }
                 else if(adapter.getItem(i) != null && adapter.getItem(i).isFolder()){
-                    findAssortmentFromFolder(container,adapter.getItem(i).getId());
+                    AssortmentRealm assortmentRealm = adapter.getItem(i);
+                    guidItem = assortmentRealm.getId();
+
+                    MaterialButton button = new MaterialButton(getActivity());
+                    button.setText(assortmentRealm.getName());
+                    button.setTag(assortmentRealm);
+                    button.setOnClickListener(butons_);
+
+                    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT);
+                    layout_buttons.addView(button,lp);
+
+                    findAssortmentFromFolder(adapter.getItem(i).getId());
                 }
             }
         });
 
         return rootViewAdmin;
     }
+    View.OnClickListener butons_ = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            AssortmentRealm assortmentEntry = (AssortmentRealm)view.getTag();
+            ViewGroup parent  = (ViewGroup) view.getParent();
+            int count = parent.getChildCount();
 
-    private void homeAssortment (@Nullable ViewGroup container){
+            for (int i=count-1; i>0; i--){
+                Button vi = (Button) parent.getChildAt(i);
+                AssortmentRealm entry = (AssortmentRealm)vi.getTag();
+                if(!entry.getId().equals(assortmentEntry.getId())){
+                    parent.removeViewAt(i);
+                }
+                else if(entry.getId().equals(assortmentEntry.getId())){
+                    break;
+                }
+            }
+            findAssortmentFromFolder(assortmentEntry.getId());
+        }
+    };
+
+    private void homeAssortment (){
         guidItem = "00000000-0000-0000-0000-000000000000";
 
         ArrayList<AssortmentRealm> listArray = new ArrayList<>();
@@ -108,7 +155,7 @@ public class FragmentAssortmentList extends Fragment {
             }
         }
         int contHM = container.getMeasuredHeight();
-        int heightButton = (contHM - 69) / 4;
+        int heightButton = (contHM - 74) / 4;
 
         sortAssortmentList(listArray);
 
@@ -116,7 +163,7 @@ public class FragmentAssortmentList extends Fragment {
         grid.setAdapter(adapter);
     }
 
-    private void findAssortmentFromFolder(@Nullable ViewGroup container,String id){
+    private void findAssortmentFromFolder(String id){
         ArrayList<AssortmentRealm> listArray = new ArrayList<>();
 
         mRealm.executeTransaction(realm -> {
@@ -131,22 +178,22 @@ public class FragmentAssortmentList extends Fragment {
             }
         });
 
-        if(listArray.size() % 5 != 0.0){
+        if(listArray.size() % 4 != 0.0){
             do{
                 AssortmentRealm test = null;
                 listArray.add(test);
             }
-            while ((listArray.size() + 1) % 5 == 0);
+            while ((listArray.size() + 1) % 4 == 0);
         }
 
-        if(listArray.size() < 15){
-            while ((listArray.size() < 15)){
+        if(listArray.size() < 16){
+            while ((listArray.size() < 16)){
                 AssortmentRealm test = null;
                 listArray.add(test);
             }
         }
         int contHM = container.getMeasuredHeight();
-        int heightButton = (contHM - 20) / 3;
+        int heightButton = (contHM - 75) / 4;
 
         sortAssortmentList(listArray);
 

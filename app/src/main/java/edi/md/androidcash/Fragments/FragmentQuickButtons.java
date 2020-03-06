@@ -59,8 +59,7 @@ public class FragmentQuickButtons extends Fragment {
                 }
             }
         });
-
-        viewPager.setAdapter(viewPagerAdapter);
+        viewPager.setAdapter(null);
         viewPagerAdapter = new ViewPagerDynamicTabs(getActivity().getSupportFragmentManager(), sizeGroup[0],list);
 
         viewPager.setAdapter(viewPagerAdapter);
@@ -69,4 +68,6 @@ public class FragmentQuickButtons extends Fragment {
 
         return rootViewAdmin;
     }
+
+
 }

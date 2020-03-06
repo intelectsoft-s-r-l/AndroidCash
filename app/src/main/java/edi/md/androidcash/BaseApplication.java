@@ -93,9 +93,6 @@ public class BaseApplication extends Application {
     public static final String ModeFiscalWork = "ModeFiscalWork";
     public static final String deviceId = "DeviceId";
 
-    //Badge tabs
-    private int badgeNumbers = 0;
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -160,14 +157,6 @@ public class BaseApplication extends Application {
         this.shift = shift;
     }
 
-    public int getBadgeNumbers() {
-        return badgeNumbers;
-    }
-
-    public void setBadgeNumbers(int badgeNumbers) {
-        this.badgeNumbers = badgeNumbers;
-    }
-
     public DatecsFiscalDevice getMyFiscalDevice() {
         return myFiscalDevice;
     }
@@ -203,7 +192,7 @@ public class BaseApplication extends Application {
                     String price = String.format("%.2f", billStringEntry.getPrice()).replace(",",".");
                     String count = String.format("%.2f", billStringEntry.getQuantity()).replace(",",".");
 
-                    double discVal = billStringEntry.getPrice() - billStringEntry.getPriceWithDiscount();
+                    double discVal = billStringEntry.getSum() - billStringEntry.getSumWithDiscount();
 
                     String resultStringRegSales = "";
                     if(discVal == 0) {
@@ -267,8 +256,6 @@ public class BaseApplication extends Application {
                 else{
                     return 0;
                 }
-
-
             }
             else {
                 cancelSale(fiscalReceipt);

@@ -17,6 +17,7 @@ import androidx.fragment.app.Fragment;
 import java.util.ArrayList;
 import java.util.List;
 
+import edi.md.androidcash.Fragments.FragmentAssortmentList;
 import edi.md.androidcash.MainActivity;
 import edi.md.androidcash.R;
 import edi.md.androidcash.RealmHelper.AssortmentRealm;
@@ -40,6 +41,8 @@ public class DynamicFragment extends Fragment {
     private GridQuickButtonAssortmentAdapter assortmentAdapter;
 
     private Realm mRealm;
+
+    public static int height = 0;
 
     public DynamicFragment(int section_number, String name) {
         sectionNumber = section_number;
@@ -92,6 +95,7 @@ public class DynamicFragment extends Fragment {
             }
             int contHM = container.getMeasuredHeight();
             int heightButton = (contHM - 8) / 4;
+            height = heightButton;
             assortmentAdapter = new GridQuickButtonAssortmentAdapter(getContext(),R.layout.item_grid_quick_buttons,list,heightButton);
 
             gridView.setAdapter(assortmentAdapter);

@@ -62,7 +62,9 @@ public class FragmentBills extends Fragment {
             });
 
         CustomRCBillListRealmAdapter adapterBillList = new CustomRCBillListRealmAdapter(results[0],true);
-
+        BadgeDrawable badge = MainActivity.tabLayout.getTabAt(2).getOrCreateBadge();
+        badge.setVisible(true);
+        badge.setNumber(results[0].size());
         recyclerView.setAdapter(adapterBillList);
     }
 

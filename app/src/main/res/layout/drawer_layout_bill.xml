@@ -5,14 +5,13 @@
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
     tools:openDrawer="right">
-
 
     <include
         layout="@layout/activity_salesmain"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:layout_below="@id/appbar" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/nav_view"
@@ -20,11 +19,10 @@
         android:layout_height="match_parent"
         android:layout_gravity="right"
         android:background="@color/list_bills_appbar"
-        android:clickable="true"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark">
+        android:clickable="true">
 
         <com.google.android.material.appbar.AppBarLayout
-            android:id="@+id/appbar"
+            android:id="@+id/appbasr"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="#1c1c1c"
@@ -36,10 +34,17 @@
             app:layout_constraintTop_toTopOf="parent">
 
             <androidx.appcompat.widget.Toolbar
-                android:id="@+id/toolbar"
+                android:id="@+id/toolbasr"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 android:elevation="10dp">
+
+                <ImageButton
+                    android:id="@+id/btnClose_drawer"
+                    style="@android:style/Widget.Holo.ImageButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/baseline_clear_white_36dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -47,7 +52,7 @@
                     android:text="Bill number: "
                     android:textAppearance="@style/TextAppearance.AppCompat.Body1"
                     android:textColor="@android:color/white"
-                    android:textSize="18sp" />
+                    android:textSize="24sp" />
 
                 <TextView
                     android:id="@+id/bill_number_nav"
@@ -56,7 +61,33 @@
                     android:text="15"
                     android:textAppearance="@style/TextAppearance.AppCompat.Body1"
                     android:textColor="@android:color/white"
-                    android:textSize="18sp" />
+                    android:textSize="24sp" />
+
+                <ImageButton
+                    android:id="@+id/btnDelete"
+                    style="@android:style/Widget.Holo.ImageButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="right"
+                    android:src="@drawable/delete_white_36dp" />
+
+
+                <ImageButton
+                    android:id="@+id/btnEdit"
+                    style="@android:style/Widget.Holo.ImageButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="right"
+                    android:src="@drawable/edit_white_36dp" />
+
+                <ImageButton
+                    android:id="@+id/btnPay"
+                    style="@android:style/Widget.Holo.ImageButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="right"
+                    android:src="@drawable/baseline_payment_white_36dp" />
+
             </androidx.appcompat.widget.Toolbar>
 
 
@@ -72,33 +103,23 @@
             app:layout_constraintBottom_toTopOf="@+id/list_string_item"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/appbar"
+            app:layout_constraintTop_toBottomOf="@+id/appbasr"
             app:layout_constraintVertical_bias="0.0"
             app:layout_constraintVertical_chainStyle="spread_inside">
-
-            <TextView
-                android:id="@+id/textView74"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:layout_weight="0.5"
-                android:gravity="center"
-                android:text="#"
-                android:textColor="@android:color/white"
-                android:textSize="16sp" />
 
             <TextView
                 android:id="@+id/textView78"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:layout_weight="3"
-                android:gravity="center_vertical"
+                android:gravity="center|center_vertical"
                 android:text="Name"
                 android:textColor="@android:color/white"
                 android:textSize="16sp" />
 
             <TextView
                 android:id="@+id/textView91"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="0.5"
                 android:gravity="center"
@@ -108,7 +129,7 @@
 
             <TextView
                 android:id="@+id/textView97"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="0.5"
                 android:gravity="center"
@@ -118,7 +139,7 @@
 
             <TextView
                 android:id="@+id/textView98"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="0.5"
                 android:gravity="center"
@@ -127,53 +148,12 @@
                 android:textSize="16sp" />
         </LinearLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnPay"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="32dp"
-            android:layout_marginBottom="8dp"
-            android:text="Pay"
-            android:textSize="18sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/btnEdit"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnEdit"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginBottom="8dp"
-            android:text="EDIT"
-            android:textSize="18sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/btnDelete"
-            app:layout_constraintStart_toEndOf="@+id/btnPay" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnDelete"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="32dp"
-            android:layout_marginBottom="8dp"
-            android:text="DELETE"
-            android:textSize="18sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/btnEdit" />
-
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/info_detail_bill"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
             android:padding="8dp"
-            app:layout_constraintBottom_toTopOf="@+id/btnPay"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="1.0"
             app:layout_constraintStart_toStartOf="parent"
@@ -305,5 +285,13 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/linearLayout5" />
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/nav_view_menu"
+        android:layout_width="280dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="left"
+        android:background="@color/colorAccent"
+        android:orientation="vertical" />
 
 </androidx.drawerlayout.widget.DrawerLayout>

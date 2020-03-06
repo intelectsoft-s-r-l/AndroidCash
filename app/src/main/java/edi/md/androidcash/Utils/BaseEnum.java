@@ -10,10 +10,10 @@ import java.lang.annotation.RetentionPolicy;
  */
 
 public class BaseEnum {
-    public static final int FISCAL_SERVICE = 1, FISCAL_DEVICE = 2 , NONE_SELECTED_FISCAL_MODE = 0;
+    public static final int FISCAL_SERVICE = 2, FISCAL_DEVICE = 1 , NONE_SELECTED_FISCAL_MODE = 0;
     public static final int DATECS_USB_VID = 65520, FTDI_USB_VID = 1027;
     public static final int BILL_CLOSED = 1, BILL_OPEN = 0, BILL_DELETED = 2;
-
+    public static final int Pay_Cash = 1, Pay_CreditCard = 2, Pay_Coupon = 3, Pay_BankTransfer = 4, Pay_ClientAccount = 5, Pay_TMH = 7, Pay_TME = 8;
 
     @IntDef({FISCAL_SERVICE, FISCAL_DEVICE, NONE_SELECTED_FISCAL_MODE})
     @Retention(RetentionPolicy.SOURCE)
@@ -28,5 +28,8 @@ public class BaseEnum {
     @Retention(RetentionPolicy.SOURCE)
     public @interface billState {
     }
-
+    @IntDef({Pay_Cash, Pay_CreditCard, Pay_Coupon, Pay_BankTransfer, Pay_ClientAccount, Pay_TMH, Pay_TME})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface payIndex {
+    }
 }

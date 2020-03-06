@@ -1,5 +1,10 @@
 package edi.md.androidcash.adapters;
 
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.ShapeDrawable;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,6 +21,7 @@ import com.google.android.material.badge.BadgeDrawable;
 import com.google.android.material.navigation.NavigationView;
 
 import java.text.SimpleDateFormat;
+import java.util.Random;
 import java.util.TimeZone;
 
 import edi.md.androidcash.MainActivity;
@@ -96,8 +102,6 @@ public class CustomRCBillListRealmAdapter extends RealmRecyclerViewAdapter<Bill,
         holder.itemView.setOnClickListener(v -> {
             MainActivity.draweOpen(mRealm.copyFromRealm(string));
         });
-
-
     }
 
 
@@ -109,7 +113,7 @@ public class CustomRCBillListRealmAdapter extends RealmRecyclerViewAdapter<Bill,
         private TextView client;
         private TextView payType;
         private TextView state;
-
+        private TextView colors;
 
         ViewHolderString(View itemView) {
             super(itemView);
@@ -120,6 +124,7 @@ public class CustomRCBillListRealmAdapter extends RealmRecyclerViewAdapter<Bill,
             state = itemView.findViewById(R.id.txt_state_bill_item);
             date = itemView.findViewById(R.id.txt_date_created_bill_item);
             hour = itemView.findViewById(R.id.txt_hour);
+            colors = itemView.findViewById(R.id.textView11);
 
 //            mDrawerLayout = (DrawerLayout)itemView.findViewById(R.id.drawer_layout);
         }
@@ -131,6 +136,26 @@ public class CustomRCBillListRealmAdapter extends RealmRecyclerViewAdapter<Bill,
             numberBill.setText(String.valueOf(bill.getShiftReceiptNumSoftware()));
             hour.setText(simpleDateFormatHourMD.format(bill.getCreateDate()));
             date.setText(simpleDateFormatMD.format(bill.getCreateDate()));
+            Drawable background = colors.getBackground();
+
+            if (background instanceof ShapeDrawable) {
+                Random rnd = new Random();
+                int color = Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+                ((ShapeDrawable)background).getPaint().setColor(color);
+                colors.setBackground(background);
+            }
+            else if (background instanceof GradientDrawable) {
+                Random rnd = new Random();
+                int color = Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+                ((GradientDrawable)background).setColor(color);
+                colors.setBackground(background);
+            }
+            else if (background instanceof ColorDrawable) {
+                Random rnd = new Random();
+                int color = Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+                ((ColorDrawable)background).setColor(color);
+                colors.setBackground(background);
+            }
 
             int states = bill.getState();
             if(states == BaseEnum.BILL_OPEN)

@@ -226,22 +226,15 @@ public class StartedActivity extends AppCompatActivity {
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
 
         public void onReceive(Context context, Intent intent) {
-
             String action = intent.getAction();
-
             if (ACTION_USB_PERMISSION.equals(action)) {
-
                 synchronized (this) {
-
                     UsbDevice device = (UsbDevice) intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-
                     if(isFiscalPrinter){
                         if (device.getManufacturerName().equals("Datecs")) {
                             if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-
                                 AbstractConnector connector = new UsbDeviceConnector(StartedActivity.this, mManager, device);
                                 HashMap<String, UsbDevice> deviceList = mManager.getDeviceList();
-
                                 Iterator<UsbDevice> deviceIterator = deviceList.values().iterator();
                                 while (deviceIterator.hasNext()) {
                                     UsbDevice devices = deviceIterator.next();
@@ -250,7 +243,6 @@ public class StartedActivity extends AppCompatActivity {
                                             mManager.requestPermission(devices, mPermissionIntent);
                                         }
                                     }
-
                                 }
                                 deviceConnect(connector);
                             }
@@ -309,9 +301,9 @@ public class StartedActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //set full screen mode
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+//        //set full screen mode
+//        requestWindowFeature(Window.FEATURE_NO_TITLE);
+//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         // Get USB manager
         mManager = (UsbManager) getSystemService(Context.USB_SERVICE);
@@ -631,11 +623,13 @@ public class StartedActivity extends AppCompatActivity {
                         //get time valid instalation id
                         dateValid = dateValid.replace("/Date(","");
                         dateValid = dateValid.replace("+0200)/","");
+                        dateValid = dateValid.replace("+0300)/","");
                         long validDate = Long.parseLong(dateValid);
 
                         //get time from broker server
                         dateServer = dateServer.replace("/Date(","");
                         dateServer = dateServer.replace("+0200)/","");
+                        dateServer = dateServer.replace("+0300)/","");
                         long serverDate = Long.parseLong(dateServer);
 
                         //save the received data
@@ -979,6 +973,8 @@ public class StartedActivity extends AppCompatActivity {
     @Override
     public void onResume(){
         super.onResume();
+        hideSystemUI();
+
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
 
         if (nfcAdapter != null) {
@@ -1071,20 +1067,42 @@ public class StartedActivity extends AppCompatActivity {
 
         return byteArray;
     }
+
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) {
-            View mDecorView = getWindow().getDecorView();
-            mDecorView.setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+            hideSystemUI();
         }
     }
+
+    private void hideSystemUI() {
+        // Enables regular immersive mode.
+        // For "lean back" mode, remove SYSTEM_UI_FLAG_IMMERSIVE.
+        // Or for "sticky immersive," replace it with SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        View decorView = getWindow().getDecorView();
+        decorView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        // Set the content to appear under the system bars so that the
+                        // content doesn't resize when the system bars hide and show.
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        // Hide the nav bar and status bar
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN);
+    }
+
+    // Shows the system bars by removing all the flags
+// except for the ones that make the content appear under the system bars.
+    private void showSystemUI() {
+        View decorView = getWindow().getDecorView();
+        decorView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+    }
+
     @Override
     public boolean dispatchTouchEvent(@NonNull MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -1147,6 +1165,4 @@ public class StartedActivity extends AppCompatActivity {
             }
         });
     }
-
-
 }
