@@ -225,11 +225,15 @@ public class ShiftManage extends Fragment {
                                         int workFisc = getActivity().getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork",0);
 
                                         if(workFisc == BaseEnum.FISCAL_DEVICE) {
-                                            if (myFiscalDevice != null && myFiscalDevice.isConnectedDeviceV2())
-                                                printZReport();
+//                                            if (myFiscalDevice != null && myFiscalDevice.isConnectedDeviceV2())
+//                                                BaseApplication.printZReport(activity);
                                         }
-                                        if(workFisc == BaseEnum.FISCAL_SERVICE)
-                                            printZReportFiscalService();
+                                        if(workFisc == BaseEnum.FISCAL_SERVICE){
+                                            String ip = getActivity().getSharedPreferences(SharedPrefFiscalService, MODE_PRIVATE).getString("IpAdressFiscalService",null);
+                                            String port = getActivity().getSharedPreferences(SharedPrefFiscalService, MODE_PRIVATE).getString("PortFiscalService",null);
+//                                            BaseApplication.printZReportFiscalService(getActivity(),ip,port);
+                                        }
+
                                     })
                                     .setNegativeButton("No", (dialogInterface, i) -> dialogInterface.dismiss())
                                     .show();
@@ -322,8 +326,6 @@ public class ShiftManage extends Fragment {
                 }
                 else
                     postMessage("Смена закрыта или не действительна!");
-
-
             }
         });
         cash_out.setOnClickListener(new View.OnClickListener() {
@@ -412,45 +414,6 @@ public class ShiftManage extends Fragment {
         return rootViewAdmin;
     }
 
-    private void printZReportFiscalService(){
-        progress = new ProgressDialog(getContext());
-        progress.setCancelable(true);
-        progress.setTitle("Z report is working !!!");
-        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        progress.setCancelable(false);
-        progress.show();
-
-        String ip = getActivity().getSharedPreferences(SharedPrefFiscalService, MODE_PRIVATE).getString("IpAdressFiscalService",null);
-        String port = getActivity().getSharedPreferences(SharedPrefFiscalService, MODE_PRIVATE).getString("PortFiscalService",null);
-        if(ip != null && port != null) {
-            String uri = ip + ":" + port;
-
-            CommandServices commandServices = ApiUtils.commandFPService(uri);
-            Call<ZResponse> responseCall = commandServices.printZReport();
-
-            responseCall.enqueue(new Callback<ZResponse>() {
-                @Override
-                public void onResponse(Call<ZResponse> call, Response<ZResponse> response) {
-                    ZResponse zResponse = response.body();
-                    if(zResponse != null){
-                        PrintReportZResult reportZResult = zResponse.getPrintReportZResult();
-                        int errorCode = reportZResult.getErrorCode();
-                        if(errorCode == 0){
-                            progress.dismiss();
-                        }
-
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<ZResponse> call, Throwable t) {
-                    progress.dismiss();
-                    postMessage(t.getMessage());
-                }
-            });
-        }
-    }
-
     private void postMessage(String message){
         Toast.makeText(getContext(),message,Toast.LENGTH_SHORT).show();
     }
@@ -486,90 +449,6 @@ public class ShiftManage extends Fragment {
         }
     }
 
-    public static void printZReport(){
-        progress = new ProgressDialog(context);
-        progress.setCancelable(true);
-        progress.setTitle("Z report is working !!!");
-        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        progress.setCancelable(false);
-        progress.show();
-        final int[] reportNumber = {0};
-        final cmdReport.ReportSummary reportSummary = new cmdReport.ReportSummary();
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                // do the thing that takes a long time
-                try {
-                    cmdReport cmd = new cmdReport();
-                    reportNumber[0] = cmd.PrintZreport(reportSummary);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    progress.dismiss();
-                }
-                activity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        DialogZXReportsSummary dialogSummary = new DialogZXReportsSummary(activity, reportSummary);
-                        dialogSummary.show();
-                        DisplayMetrics metrics = new DisplayMetrics(); //get metrics of screen
-                        activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
-                        int width = (int) (metrics.widthPixels * 0.5); //set width to 50% of display
-                        int height = (int) (metrics.heightPixels * 0.9); //set height to 90% of display
-                        dialogSummary.getWindow().setLayout(width, height); //set layout
-                        progress.dismiss();
-
-                    }
-                });
-            }
-        }).start();
-    }
-
-    //DIALOG  ZXReportsSummary
-    public static class DialogZXReportsSummary extends Dialog implements View.OnClickListener {
-        private final cmdReport.ReportSummary summary;
-
-        private DialogZXReportsSummary(Activity a, cmdReport.ReportSummary summary) {
-            super(a);
-            this.summary = summary;
-        }
-
-        @Override
-        protected void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            requestWindowFeature(Window.FEATURE_NO_TITLE);
-            setContentView(R.layout.dialog_xz_summary);
-
-            TextView tvTaxA = findViewById(R.id.tvTaxA);
-            TextView tvTaxB = findViewById(R.id.tvTaxB);
-            TextView tvTaxC = findViewById(R.id.tvTaxC);
-            TextView tvTaxD = findViewById(R.id.tvTaxD);
-            TextView tvTaxE = findViewById(R.id.tvTaxE);
-            TextView tvTaxF = findViewById(R.id.tvTaxF);
-            TextView tvTaxG = findViewById(R.id.tvTaxG);
-            TextView tvTaxH = findViewById(R.id.tvTaxH);
-            Button btnOk = findViewById(R.id.btn_dialogOk);
-            btnOk.setOnClickListener(this);
-
-            tvTaxA.setText(String.valueOf(summary.totalA));
-            tvTaxB.setText(String.valueOf(summary.totalB));
-            tvTaxC.setText(String.valueOf(summary.totalC));
-            tvTaxD.setText(String.valueOf(summary.totalD));
-            tvTaxE.setText(String.valueOf(summary.totalE));
-            tvTaxF.setText(String.valueOf(summary.totalF));
-            tvTaxG.setText(String.valueOf(summary.totalG));
-            tvTaxH.setText(String.valueOf(summary.totalH));
-
-        }
-
-        //DIALOG ON CLICK OK
-        @Override
-        public void onClick(View v) {
-            dismiss();
-
-        }
-    }
 
     //Cash in / cash out
     private boolean cash_IN_OUT(String valueOfCurrency) {

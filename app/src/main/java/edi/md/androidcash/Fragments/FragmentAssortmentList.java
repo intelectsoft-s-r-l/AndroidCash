@@ -13,24 +13,16 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
 
-import edi.md.androidcash.AssortmentActivity;
-import edi.md.androidcash.DynamicTabs.DynamicFragment;
-import edi.md.androidcash.DynamicTabs.ViewPagerDynamicTabs;
 import edi.md.androidcash.MainActivity;
 import edi.md.androidcash.R;
 import edi.md.androidcash.RealmHelper.AssortmentRealm;
-import edi.md.androidcash.RealmHelper.QuickGroupRealm;
 import edi.md.androidcash.adapters.GridAssortmentListAdapter;
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -45,7 +37,7 @@ public class FragmentAssortmentList extends Fragment {
     GridView grid;
     ImageButton btnHome;
     GridAssortmentListAdapter adapter;
-    String guidItem = "00000000-0000-0000-0000-000000000000";
+//    String guidItem = "00000000-0000-0000-0000-000000000000";
     LinearLayout layout_buttons;
     ViewGroup container;
 
@@ -85,7 +77,7 @@ public class FragmentAssortmentList extends Fragment {
                 }
                 else if(adapter.getItem(i) != null && adapter.getItem(i).isFolder()){
                     AssortmentRealm assortmentRealm = adapter.getItem(i);
-                    guidItem = assortmentRealm.getId();
+//                    guidItem = assortmentRealm.getId();
 
                     MaterialButton button = new MaterialButton(getActivity());
                     button.setText(assortmentRealm.getName());
@@ -124,13 +116,12 @@ public class FragmentAssortmentList extends Fragment {
     };
 
     private void homeAssortment (){
-        guidItem = "00000000-0000-0000-0000-000000000000";
 
         ArrayList<AssortmentRealm> listArray = new ArrayList<>();
 
         mRealm.executeTransaction(realm -> {
             RealmResults<AssortmentRealm> result = realm.where(AssortmentRealm.class)
-                    .equalTo("parentID",guidItem)
+                    .equalTo("parentID","00000000-0000-0000-0000-000000000000")
                     .and()
                     .sort("isFolder")
                     .findAll();

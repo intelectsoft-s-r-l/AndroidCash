@@ -54,8 +54,6 @@ public class GeneralPageSet extends Fragment {
 
     SharedPreferences sPrefWorkPlace;
 
-
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -80,7 +78,6 @@ public class GeneralPageSet extends Fragment {
         mAuthMethod.setSelection(pos);
 
         String uri = getActivity().getSharedPreferences("Settings",MODE_PRIVATE).getString("URI",null);
-
         String token = getActivity().getSharedPreferences("Settings",MODE_PRIVATE).getString("Token",null);
         long validToken = getActivity().getSharedPreferences("Settings",MODE_PRIVATE).getLong("TokenValidTo",0);
         long currentTime = new Date().getTime();
@@ -91,7 +88,6 @@ public class GeneralPageSet extends Fragment {
             String login = BaseApplication.getInstance().getUser().getUserName();
             String pass = BaseApplication.getInstance().getUserPasswordsNotHashed();
             setmAuthMethod ( login, pass);
-
         }
 
         mSelectWorkPlace.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {

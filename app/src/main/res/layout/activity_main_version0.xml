@@ -34,7 +34,7 @@
     </com.google.android.material.appbar.AppBarLayout>
 
     <include
-        layout="@layout/content_salesmain"
+        layout="@layout/content_main_version0"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/appbar" />

@@ -1,11 +1,15 @@
 package edi.md.androidcash;
 
+import android.app.Activity;
+import android.app.Dialog;
 import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.hardware.usb.UsbDevice;
@@ -20,6 +24,7 @@ import android.os.CountDownTimer;
 import android.os.StrictMode;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.KeyEvent;
@@ -28,12 +33,18 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
 import android.view.WindowManager;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SearchView;
+import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -53,6 +64,7 @@ import androidx.viewpager.widget.ViewPager;
 import com.acs.smartcard.Reader;
 import com.datecs.fiscalprinter.SDK.model.DatecsFiscalDevice;
 import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReceipt;
+import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReport;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
@@ -63,19 +75,32 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import edi.md.androidcash.DatcesNewFile.PrinterManager;
 import edi.md.androidcash.Fragments.FragmentBills;
+import edi.md.androidcash.NetworkUtils.EposResult.AuthentificateUserResult;
+import edi.md.androidcash.NetworkUtils.EposResult.GetWorkPlaceService;
+import edi.md.androidcash.NetworkUtils.EposResult.GetWorkplacesResult;
+import edi.md.androidcash.NetworkUtils.EposResult.TokenReceivedFromAutenficateUser;
+import edi.md.androidcash.NetworkUtils.FiscalServiceResult.PrintReportZResult;
+import edi.md.androidcash.NetworkUtils.FiscalServiceResult.ZResponse;
 import edi.md.androidcash.NetworkUtils.PaymentType;
 import edi.md.androidcash.NetworkUtils.Promotion;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
+import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
+import edi.md.androidcash.NetworkUtils.WorkplaceEntry;
 import edi.md.androidcash.RealmHelper.AssortmentRealm;
 import edi.md.androidcash.RealmHelper.Bill;
 import edi.md.androidcash.RealmHelper.BillPaymentType;
 import edi.md.androidcash.RealmHelper.BillString;
+import edi.md.androidcash.RealmHelper.History;
 import edi.md.androidcash.RealmHelper.Shift;
 import edi.md.androidcash.Utils.BaseEnum;
 import edi.md.androidcash.adapters.CustomBillStringRealmListAdapter;
@@ -86,7 +111,11 @@ import edi.md.androidcash.connectors.UsbDeviceConnector;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmResults;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
+import static edi.md.androidcash.BaseApplication.SharedPrefFiscalService;
 import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
 import static edi.md.androidcash.BaseApplication.SharedPrefWorkPlaceSettings;
 import static edi.md.androidcash.BaseApplication.deviceId;
@@ -94,9 +123,10 @@ import static edi.md.androidcash.BaseApplication.deviceId;
 
 public class MainActivity extends AppCompatActivity {
     private static Context context;
+    private static Activity activity;
+    private static ProgressDialog progressDialogPrintReport;
     private static TextView tvDiscountBill, tvSubTotalBill;
-    private TextView tvCheckPriceItem;
-    private TextView tvScanBarcode, tvTotalSumBillPay;
+    private TextView tvScanBarcode;
     private static MaterialButton btnPay;
     MaterialButton btnNewBill, btnAddItem, btnCheckPrice, btnAddClient;
     private static RecyclerView recyclerView;
@@ -127,13 +157,12 @@ public class MainActivity extends AppCompatActivity {
 
     //datecs variables
     public DatecsFiscalDevice datecsFiscalDevice = null;
-    private cmdReceipt.FiscalReceipt datecsFiscalReceipt;
 
-    private static Button myDynamicPayTypeButton;
     static AlertDialog paymentDialog;
     private static cmdReceipt.FiscalReceipt fiscalReceipt;
 
-    private static String openedBillId;
+    private static String openedBillId, workPlaceID;
+
     private boolean shiftOpenButtonPay = false;
     private boolean shiftClosedButtonPay = false;
     private static double billPaymentedSum;
@@ -141,14 +170,25 @@ public class MainActivity extends AppCompatActivity {
     private static DrawerLayout drawer;
     private static ConstraintLayout drawerConstraint;
     private static ConstraintLayout navigationView;
-
     public static LayoutInflater inflater;
-
     static Display display;
 
     ViewPageAdapterRightMenu adapterRightMenu;
-    static TextView tvInputSumBillForPayment;
+    private static TextView tvInputSumBillForPayment;
     static double sumBillToPay;
+    private static TextView tvToPay;
+
+    private ConstraintLayout csl_sales;
+    private ConstraintLayout csl_shifts;
+    private ConstraintLayout csl_tickets;
+    private ConstraintLayout csl_reports;
+    private ConstraintLayout csl_finReport;
+    private ConstraintLayout csl_history;
+    private ConstraintLayout csl_settings;
+
+    private ProgressDialog pgH;
+    private List<WorkplaceEntry> workplaceEntryList = new ArrayList<>();
+    private SharedPreferences sharedPreferenceSettings, sharedPreferenceWorkPlace;
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
 
@@ -251,12 +291,12 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         context = this;
+        activity = this;
         mRealm = Realm.getDefaultInstance();
 
         recyclerView = findViewById(R.id.rc_list_billstring);
         btnPay = findViewById(R.id.btn_pay_bill);
         tvDiscountBill = findViewById(R.id.txt_discount_summ_bill);
-//        btnSettings = toolbar.findViewById(R.id.img_button_settings);
         btnAddItem = findViewById(R.id.btn_add_items);
         btnNewBill = findViewById(R.id.btn_new_bill);
         btnCheckPrice = findViewById(R.id.btn_check_price_);
@@ -271,6 +311,16 @@ public class MainActivity extends AppCompatActivity {
         btnAddClient= findViewById(R.id.btn_add_customer);
         inflater = MainActivity.this.getLayoutInflater();
 
+        csl_sales = findViewById(R.id.csl_sales);
+        csl_settings = findViewById(R.id.csl_setting_nav);
+        csl_history = findViewById(R.id.csl_history);
+        csl_finReport = findViewById(R.id.csl_fin_reports);
+        csl_reports = findViewById(R.id.csl_reports);
+
+        pgH = new ProgressDialog(this);
+        sharedPreferenceSettings = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE);
+        sharedPreferenceWorkPlace = getSharedPreferences(SharedPrefWorkPlaceSettings, MODE_PRIVATE);
+
         ((SimpleItemAnimator) recyclerView.getItemAnimator()).setSupportsChangeAnimations(false);
         initRecyclerView();
         findOpenedShift();
@@ -284,11 +334,12 @@ public class MainActivity extends AppCompatActivity {
         if (nfcAdapter == null)
             Toast.makeText(this, "This device doesn't support NFC.", Toast.LENGTH_LONG).show();
 
+        workPlaceID = getSharedPreferences(SharedPrefWorkPlaceSettings,MODE_PRIVATE).getString("WorkPlaceID",null);
+
         simpleDateFormatMD = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy");
         timeZoneMD = TimeZone.getTimeZone("Europe/Chisinau");
         simpleDateFormatMD.setTimeZone(timeZoneMD);
 
-        datecsFiscalReceipt = new cmdReceipt.FiscalReceipt();
         datecsFiscalDevice = ((BaseApplication)getApplication()).getMyFiscalDevice();
         // Initialize reader ACR
         mReader = new Reader(mUSBManager);
@@ -344,7 +395,24 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
-//        btnSettings.setOnClickListener(v -> startActivityForResult(new Intent(".Settings"),111));
+
+        csl_settings.setOnClickListener(v ->{
+            startActivityForResult(new Intent(this, SettingsActivity.class),BaseEnum.Activity_Settings);
+            drawer.closeDrawer(GravityCompat.START);
+        });
+        csl_history.setOnClickListener(view -> {
+            startActivityForResult(new Intent(this, HistoryActivity.class),BaseEnum.Activity_History);
+            drawer.closeDrawer(GravityCompat.START);
+        });
+        csl_finReport.setOnClickListener(view -> {
+            startActivityForResult(new Intent(this, FinancialRepActivity.class),BaseEnum.Activity_FinRep);
+            drawer.closeDrawer(GravityCompat.START);
+        });
+        csl_reports.setOnClickListener(view -> {
+            startActivityForResult(new Intent(this, ReportsActivity.class), BaseEnum.Activity_Reports);
+            drawer.closeDrawer(GravityCompat.START);
+        });
+
         btnNewBill.setOnClickListener(v->{
             if(openedBillId != null){
                 openedBillId = null;
@@ -352,368 +420,29 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         btnAddItem.setOnClickListener(v->{
-            View dialogView = inflater.inflate(R.layout.dialog_add_position, null);
-
-            final AlertDialog addPosition = new AlertDialog.Builder(MainActivity.this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
-            addPosition.setCancelable(false);
-            addPosition.setView(dialogView);
-            addPosition.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-
-            TextView tv_input_barcode = dialogView.findViewById(R.id.et_input_data);
-            TextView tv_barcode = dialogView.findViewById(R.id.text_code_barcode);
-            TextView tvNameItem = dialogView.findViewById(R.id.tvName_finded_item);
-            TextView tvCategoryNameItem = dialogView.findViewById(R.id.tvCategory_name_item);
-            TextView tvPriceItem = dialogView.findViewById(R.id.txt_price_add_item);
-            TextView tvDiscountItem = dialogView.findViewById(R.id.txt_discount_price_add_item);
-            ImageButton btn_Cancel = dialogView.findViewById(R.id.btnClose_add_item);
-            ImageButton btn_search = dialogView.findViewById(R.id.btn_search_barcode_add_item);
-            ImageButton btn_add = dialogView.findViewById(R.id.btn_add_item_to_bill);
-            MaterialButton btn_clear = dialogView.findViewById(R.id.btn_add_position_clear);
-            MaterialButton btn_delete = dialogView.findViewById(R.id.btn_add_position_delete);
-
-            MaterialButton number_1 = dialogView.findViewById(R.id.btn_add_position_1);
-            MaterialButton number_2 = dialogView.findViewById(R.id.btn_add_position_2);
-            MaterialButton number_3 = dialogView.findViewById(R.id.btn_add_position_3);
-            MaterialButton number_4 = dialogView.findViewById(R.id.btn_add_position_4);
-            MaterialButton number_5 = dialogView.findViewById(R.id.btn_add_position_5);
-            MaterialButton number_6 = dialogView.findViewById(R.id.btn_add_position_6);
-            MaterialButton number_7 = dialogView.findViewById(R.id.btn_add_position_7);
-            MaterialButton number_8 = dialogView.findViewById(R.id.btn_add_position_8);
-            MaterialButton number_9 = dialogView.findViewById(R.id.btn_add_position_9);
-            MaterialButton number_0 = dialogView.findViewById(R.id.btn_add_position_0);
-
-            number_1.setOnClickListener(v121 -> tv_input_barcode.append("1"));
-            number_2.setOnClickListener(v122 -> tv_input_barcode.append("2"));
-            number_3.setOnClickListener(v123 -> tv_input_barcode.append("3"));
-            number_4.setOnClickListener(v124 -> tv_input_barcode.append("4"));
-            number_5.setOnClickListener(v125 -> tv_input_barcode.append("5"));
-            number_6.setOnClickListener(v126 -> tv_input_barcode.append("6"));
-            number_7.setOnClickListener(v127 -> tv_input_barcode.append("7"));
-            number_8.setOnClickListener(v128 -> tv_input_barcode.append("8"));
-            number_9.setOnClickListener(v129 -> tv_input_barcode.append("9"));
-            number_0.setOnClickListener(v130 -> tv_input_barcode.append("0"));
-
-            btn_delete.setOnClickListener(v131 -> {
-                if (!tv_input_barcode.getText().toString().equals("")) {
-                    tv_input_barcode.setText(tv_input_barcode.getText().toString().substring(0, tv_input_barcode.getText().toString().length() - 1));
-                    btn_search.setVisibility(View.VISIBLE);
-                    btn_add.setVisibility(View.GONE);
-                }
-            });
-
-            btn_clear.setOnClickListener(v132 -> {
-                tv_input_barcode.setText("");
-                btn_add.setVisibility(View.GONE);
-                btn_search.setVisibility(View.GONE);
-                tv_barcode.setVisibility(View.VISIBLE);
-            });
-
-            tv_input_barcode.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                    if(!charSequence.equals("")){
-                        btn_search.setVisibility(View.VISIBLE);
-                        tv_barcode.setVisibility(View.GONE);
-                        btn_add.setVisibility(View.GONE);
-                        tvNameItem.setText("");
-                        tvCategoryNameItem.setText("");
-                        tvPriceItem.setText("MDL 0.00");
-                        tvDiscountItem.setText("MDL 0.00");
-                    }
-                }
-
-                @Override
-                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-                }
-
-                @Override
-                public void afterTextChanged(Editable editable) {
-
-                }
-            });
-
-            btn_search.setOnClickListener(v133 -> {
-                AssortmentRealm assortmentEntry;
-                AssortmentRealm assortmentEntryCategory;
-                if(tv_input_barcode.getText().toString().length() == 13 || tv_input_barcode.getText().toString().length() == 8){
-                    assortmentEntry = mRealm.where(AssortmentRealm.class).equalTo("barcodes.bar",tv_input_barcode.getText().toString()).or().equalTo("code",tv_input_barcode.getText().toString()).findFirst();
-                }
-                else{
-                    assortmentEntry =  mRealm.where(AssortmentRealm.class).equalTo("barcodes.bar",tv_input_barcode.getText().toString()).findFirst();
-                }
-                if(assortmentEntry != null){
-                    tv_input_barcode.setText("");
-
-                    AssortmentRealm assortmentFind = mRealm.copyFromRealm(assortmentEntry);
-                    assortmentEntryCategory = mRealm.where(AssortmentRealm.class).equalTo("id",assortmentFind.getParentID()).findFirst();
-
-                    tvNameItem.setText(assortmentFind.getName());
-
-                    if (assortmentEntryCategory != null) {
-                        tvCategoryNameItem.setText(assortmentEntryCategory.getName());
-                    }
-
-                    CheckedAssortmentItemToPromo promo = checkedAssortmentItemToPromo(assortmentFind);
-                    if (promo != null)
-                        tvDiscountItem.setText("MDL " + String.format("%.2f", promo.getPromoPrice()).replace(",","."));
-                    tvPriceItem.setText("MDL " + String.format("%.2f", assortmentFind.getPrice()).replace(",","."));
-
-                    btn_add.setVisibility(View.VISIBLE);
-                    btn_search.setVisibility(View.GONE);
-                    tv_barcode.setVisibility(View.GONE);
-
-                    btn_add.setOnClickListener(view -> {
-                        addPosition.dismiss();
-                        addItemsToOpenedBill(assortmentFind,1,tv_input_barcode.getText().toString(),true);
-                    });
-                }
-                else{
-                    tvNameItem.setText("");
-                    tvCategoryNameItem.setText("");
-                    tvPriceItem.setText("MDL 0.00");
-                    tvDiscountItem.setText("MDL 0.00");
-
-                    Toast.makeText(MainActivity.this, "Nu a fost gasit!", Toast.LENGTH_SHORT).show();
-                }
-            });
-
-
-
-            btn_Cancel.setOnClickListener(v134 -> {
-                addPosition.dismiss();
-            });
-
-            // Set the dialog to not focusable.
-            addPosition.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
-            addPosition.show();
-            addPosition.getWindow().setLayout(410,LinearLayout.LayoutParams.WRAP_CONTENT);
-
+            checkItem_Dialog(BaseEnum.Dialog_AddItem);
         });
         btnCheckPrice.setOnClickListener(view -> {
-            LayoutInflater inflater = MainActivity.this.getLayoutInflater();
-            View dialogView = inflater.inflate(R.layout.dialog_check_price, null);
-
-            final AlertDialog checkPriceDialog = new AlertDialog.Builder(MainActivity.this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
-            //checkPriceDialog.setCancelable(false);
-            checkPriceDialog.setView(dialogView);
-            checkPriceDialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-
-            tvCheckPriceItem = dialogView.findViewById(R.id.tv_check_pricedata);
-            Button btn_Cancel = dialogView.findViewById(R.id.btn_cancel_check_price);
-            Button btn_add = dialogView.findViewById(R.id.btn_add);
-            Button btn_search = dialogView.findViewById(R.id.btn_search);
-            Button btn_clear = dialogView.findViewById(R.id.btn_check_price_clear);
-            Button btn_delete = dialogView.findViewById(R.id.btn_check_price_delete);
-            final TextView txtName = dialogView.findViewById(R.id.txt_name_assortment);
-            final TextView txtPriceWithDiscount = dialogView.findViewById(R.id.price_with_discount);
-            final TextView txtPriceWithoutDiscount = dialogView.findViewById(R.id.price_without_discount);
-
-            Button number_1 = dialogView.findViewById(R.id.btn_check_price_1);
-            Button number_2 = dialogView.findViewById(R.id.btn_check_price_2);
-            Button number_3 = dialogView.findViewById(R.id.btn_check_price_3);
-            Button number_4 = dialogView.findViewById(R.id.btn_check_price_4);
-            Button number_5 = dialogView.findViewById(R.id.btn_check_price_5);
-            Button number_6 = dialogView.findViewById(R.id.btn_check_price_6);
-            Button number_7 = dialogView.findViewById(R.id.btn_check_price_7);
-            Button number_8 = dialogView.findViewById(R.id.btn_check_price_8);
-            Button number_9 = dialogView.findViewById(R.id.btn_check_price_9);
-            Button number_0 = dialogView.findViewById(R.id.btn_check_price_0);
-
-            number_1.setOnClickListener(v135 -> tvCheckPriceItem.append("1"));
-            number_2.setOnClickListener(v136 -> tvCheckPriceItem.append("2"));
-            number_3.setOnClickListener(v137 -> tvCheckPriceItem.append("3"));
-            number_4.setOnClickListener(v138 -> tvCheckPriceItem.append("4"));
-            number_5.setOnClickListener(v139 -> tvCheckPriceItem.append("5"));
-            number_6.setOnClickListener(v140 -> tvCheckPriceItem.append("6"));
-            number_7.setOnClickListener(v141 -> tvCheckPriceItem.append("7"));
-            number_8.setOnClickListener(v142 -> tvCheckPriceItem.append("8"));
-            number_9.setOnClickListener(v143 -> tvCheckPriceItem.append("9"));
-            number_0.setOnClickListener(v144 -> tvCheckPriceItem.append("0"));
-
-            final AssortmentRealm[] assortmentEntry = new AssortmentRealm[1];
-            btn_delete.setOnClickListener(v145 -> { if (!tvCheckPriceItem.getText().toString().equals("")) tvCheckPriceItem.setText(tvCheckPriceItem.getText().toString().substring(0, tvCheckPriceItem.getText().toString().length() - 1)); });
-            btn_clear.setOnClickListener(v146 -> tvCheckPriceItem.setText(""));
-            btn_search.setOnClickListener(v147 -> {
-                if(tvCheckPriceItem.getText().toString().length() == 13 || tvCheckPriceItem.getText().toString().length() == 8){
-                    assortmentEntry[0] = mRealm.where(AssortmentRealm.class).equalTo("barcodes.bar", tvCheckPriceItem.getText().toString()).findFirst();
-                }
-                else{
-                    assortmentEntry[0] =  mRealm.where(AssortmentRealm.class).equalTo("barcodes.bar", tvCheckPriceItem.getText().toString()).findFirst();
-                }
-                if(assortmentEntry[0] != null){
-                    AssortmentRealm assortmentFind = mRealm.copyFromRealm(assortmentEntry[0]);
-                    txtName.setText(assortmentFind.getName());
-
-                    CheckedAssortmentItemToPromo promo = checkedAssortmentItemToPromo(assortmentFind);
-                    if (promo != null)
-                        txtPriceWithDiscount.setText(String.format("%.2f", promo.getPromoPrice()).replace(",","."));
-
-                    txtPriceWithoutDiscount.setText(String.format("%.2f",assortmentFind.getPrice()).replace(",","."));
-                }
-                else{
-                    txtName.setText("Nu a fost gasit!");
-                    Toast.makeText(MainActivity.this, "Item not found!", Toast.LENGTH_SHORT).show();
-                }
-            });
-
-            btn_Cancel.setOnClickListener(v148 -> {
-                checkPriceDialog.dismiss();
-            });
-            btn_add.setOnClickListener(v149 -> {
-                AssortmentRealm assortmentFind = mRealm.copyFromRealm(assortmentEntry[0]);
-                addItemsToOpenedBill(assortmentFind,1, tvCheckPriceItem.getText().toString(),true);
-                checkPriceDialog.dismiss();
-            });
-            checkPriceDialog.show();
-
-            DialogInterface.OnKeyListener keylistener = new DialogInterface.OnKeyListener() {
-                @Override
-                public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent KEvent) {
-                    int keyaction = KEvent.getAction();
-
-                    if(keyaction == KeyEvent.ACTION_DOWN)
-                    {
-                        int keycode = KEvent.getKeyCode();
-                        int keyunicode = KEvent.getUnicodeChar(KEvent.getMetaState() );
-
-                        switch (keycode) {
-                            case KeyEvent.KEYCODE_1 : {
-                                tvCheckPriceItem.append("1");
-                                tvCheckPriceItem.requestFocus();
-                            }break;
-                            case KeyEvent.KEYCODE_2 : {
-                                tvCheckPriceItem.append("2");
-                                tvCheckPriceItem.requestFocus();
-                            }break;
-                            case KeyEvent.KEYCODE_3 : {
-                                tvCheckPriceItem.append("3");
-                                tvCheckPriceItem.requestFocus();
-                            }break;
-                            case KeyEvent.KEYCODE_4 : {
-                                tvCheckPriceItem.append("4");
-                                tvCheckPriceItem.requestFocus();
-                            }break;
-                            case KeyEvent.KEYCODE_5 : {
-                                tvCheckPriceItem.append("5");
-                                tvCheckPriceItem.requestFocus();
-                            }break;
-                            case KeyEvent.KEYCODE_6 : {
-                                tvCheckPriceItem.append("6");
-                                tvCheckPriceItem.requestFocus();
-                            }break;
-                            case KeyEvent.KEYCODE_7 : {
-                                tvCheckPriceItem.append("7");
-                                tvCheckPriceItem.requestFocus();
-                            }break;
-                            case KeyEvent.KEYCODE_8 : {
-                                tvCheckPriceItem.append("8");
-                                tvCheckPriceItem.requestFocus();
-                            }break;
-                            case KeyEvent.KEYCODE_9 : {
-                                tvCheckPriceItem.append("9");
-                                tvCheckPriceItem.requestFocus();
-                            }break;
-                            case KeyEvent.KEYCODE_0 : {
-                                tvCheckPriceItem.append("0");
-                                tvCheckPriceItem.requestFocus();
-                            }break;
-                            case KeyEvent.KEYCODE_ENTER : {
-                                if(tvCheckPriceItem.getText().toString().length() == 13 || tvCheckPriceItem.getText().toString().length() == 8){
-                                    assortmentEntry[0] = mRealm.where(AssortmentRealm.class).equalTo("barcodes.bar", tvCheckPriceItem.getText().toString()).findFirst();
-                                }
-                                else{
-                                    assortmentEntry[0] =  mRealm.where(AssortmentRealm.class).equalTo("barcodes.bar", tvCheckPriceItem.getText().toString()).findFirst();
-                                }
-                                if(assortmentEntry[0] != null){
-
-                                    AssortmentRealm assortmentFind = mRealm.copyFromRealm(assortmentEntry[0]);
-                                    txtName.setText(assortmentFind.getName());
-                                    txtPriceWithDiscount.setText(String.format("%.2f",assortmentFind.getPrice()).replace(",","."));
-                                    double priceWithDisc = -1;
-
-                                    if(!assortmentFind.getPromotions().isEmpty()){
-                                        Promotion promo = assortmentFind.getPromotions().first();
-
-                                        long startDate = replaceDate(promo.getStartDate());
-                                        long endDate = replaceDate(promo.getEndDate());
-                                        Date curentDate = new Date();
-                                        long currDate = curentDate.getTime();
-
-                                        long timeBegin = 0;
-                                        long timeEnd = 0;
-
-                                        if(promo.getTimeBegin() != null)    timeBegin = replaceDate(promo.getTimeBegin());
-                                        if(promo.getTimeEnd() != null)    timeEnd = replaceDate(promo.getTimeEnd());
-
-                                        if(currDate > startDate && currDate < endDate){
-                                            if(timeBegin != 0 && timeEnd != 0){
-                                                Date timeStart = new Date(timeBegin);
-                                                int hourS = timeStart.getHours();
-                                                int minS = timeStart.getMinutes();
-
-                                                Date timeFinis = new Date(timeEnd);
-                                                int hourE = timeFinis.getHours();
-                                                int minE = timeFinis.getMinutes();
-
-                                                Date one = new Date();
-                                                one.setHours(hourS);
-                                                one.setMinutes(minS);
-                                                one.setSeconds(0);
-
-                                                Date two = new Date();
-                                                two.setHours(hourE);
-                                                two.setMinutes(minE);
-                                                two.setSeconds(0);
-
-                                                if(hourE < hourS)
-                                                    two.setDate(two.getDate() + 1);
-
-                                                if(curentDate.after(one) && curentDate.before(two)){
-                                                    priceWithDisc = promo.getPrice();
-                                                }
-                                                else{
-                                                    priceWithDisc = assortmentFind.getPrice();
-                                                }
-                                            }
-                                            else{
-                                                priceWithDisc = promo.getPrice();
-                                            }
-                                        }
-                                        else{
-                                            priceWithDisc = assortmentFind.getPrice();
-                                        }
-                                    }
-                                    else{
-                                        priceWithDisc = assortmentFind.getPrice();
-                                    }
-                                    txtPriceWithoutDiscount.setText(String.format("%.2f",priceWithDisc).replace(",","."));
-                                    tvCheckPriceItem.setText("");
-                                }
-                                else{
-                                    txtName.setText("Item not found!");
-                                    Toast.makeText(MainActivity.this, "Item not found!", Toast.LENGTH_SHORT).show();
-                                }
-                            }break;
-                            default:break;
-                        }
-                    }
-                    return false;
-                }
-            };
-            checkPriceDialog.setOnKeyListener(keylistener );
+            checkItem_Dialog(BaseEnum.Dialog_CheckPrice);
         });
         btnAddClient.setOnClickListener(view -> {
-            View dialogView = inflater.inflate(R.layout.dialog_payment_bill_version0, null);
+            View dialogView = inflater.inflate(R.layout.dialog_add_client, null);
 
-            final AlertDialog checkPriceDialog = new AlertDialog.Builder(MainActivity.this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
-            //checkPriceDialog.setCancelable(false);
-            checkPriceDialog.setView(dialogView);
-            checkPriceDialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+            AlertDialog addClient = new AlertDialog.Builder(MainActivity.this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
+            addClient.setCancelable(false);
+            addClient.setView(dialogView);
+            addClient.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 
-            checkPriceDialog.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
-            checkPriceDialog.show();
-            checkPriceDialog.getWindow().setLayout(470,LinearLayout.LayoutParams.WRAP_CONTENT);
+            addClient.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+            addClient.show();
+            addClient.getWindow().setLayout(300,LinearLayout.LayoutParams.WRAP_CONTENT);
+            addClient.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+            addClient.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
         });
         btnPay.setOnClickListener(v->{
             if(shiftOpenButtonPay){
@@ -734,9 +463,13 @@ public class MainActivity extends AppCompatActivity {
                             shiftEntry.setNeedClose(need_close);
                             shiftEntry.setId(UUID.randomUUID().toString());
 
-                            mRealm.beginTransaction();
-                            mRealm.insert(shiftEntry);
-                            mRealm.commitTransaction();
+                            mRealm.executeTransaction(realm -> realm.insert(shiftEntry));
+
+                            History history = new History();
+                            history.setDate(new Date().getTime());
+                            history.setMsg("Shift: " + shiftEntry.getName());
+                            history.setType(BaseEnum.History_OpenShift);
+                            mRealm.executeTransaction(realm -> realm.insert(history));
 
                             BaseApplication.getInstance().setShift(shiftEntry);
                             startTimer(need_close - new Date().getTime());
@@ -766,232 +499,6 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
-
-//        btn_add_position.setOnClickListener(v -> {
-//            if_addPositionActive = true;
-
-//            DialogInterface.OnKeyListener keylistener = (dialog, keyCode, KEvent) -> {
-//                int keyaction = KEvent.getAction();
-//
-//                if(keyaction == KeyEvent.ACTION_DOWN)
-//                {
-//                    int keycode = KEvent.getKeyCode();
-//                    int keyunicode = KEvent.getUnicodeChar(KEvent.getMetaState() );
-//                    char character = (char) keyunicode;
-//
-//                    switch (keycode) {
-//                        case KeyEvent.KEYCODE_1 : {
-//                            tvCheckPriceItem.append("1");
-//                            tvCheckPriceItem.requestFocus();
-//                        }break;
-//                        case KeyEvent.KEYCODE_2 : {
-//                            tvCheckPriceItem.append("2");
-//                            tvCheckPriceItem.requestFocus();
-//                        }break;
-//                        case KeyEvent.KEYCODE_3 : {
-//                            tvCheckPriceItem.append("3");
-//                            tvCheckPriceItem.requestFocus();
-//                        }break;
-//                        case KeyEvent.KEYCODE_4 : {
-//                            tvCheckPriceItem.append("4");
-//                            tvCheckPriceItem.requestFocus();
-//                        }break;
-//                        case KeyEvent.KEYCODE_5 : {
-//                            tvCheckPriceItem.append("5");
-//                            tvCheckPriceItem.requestFocus();
-//                        }break;
-//                        case KeyEvent.KEYCODE_6 : {
-//                            tvCheckPriceItem.append("6");
-//                            tvCheckPriceItem.requestFocus();
-//                        }break;
-//                        case KeyEvent.KEYCODE_7 : {
-//                            tvCheckPriceItem.append("7");
-//                            tvCheckPriceItem.requestFocus();
-//                        }break;
-//                        case KeyEvent.KEYCODE_8 : {
-//                            tvCheckPriceItem.append("8");
-//                            tvCheckPriceItem.requestFocus();
-//                        }break;
-//                        case KeyEvent.KEYCODE_9 : {
-//                            tvCheckPriceItem.append("9");
-//                            tvCheckPriceItem.requestFocus();
-//                        }break;
-//                        case KeyEvent.KEYCODE_0 : {
-//                            tvCheckPriceItem.append("0");
-//                            tvCheckPriceItem.requestFocus();
-//                        }break;
-//                        case KeyEvent.KEYCODE_ENTER : {
-//
-//                            AssortmentRealm assortmentEntry;
-//                            if(tvCheckPriceItem.getText().toString().length() == 13 || tvCheckPriceItem.getText().toString().length() == 8){
-//                                assortmentEntry = mRealm.where(AssortmentRealm.class).equalTo("barcodes.bar",tvCheckPriceItem.getText().toString()).findFirst();
-//                            }
-//                            else{
-//                                assortmentEntry =  mRealm.where(AssortmentRealm.class).equalTo("barcodes.bar",tvCheckPriceItem.getText().toString()).findFirst();
-//                            }
-//                            if(assortmentEntry != null){
-//                                AssortmentRealm assortmentFind = mRealm.copyFromRealm(assortmentEntry);
-//                                addItemsToOpenedBill(assortmentFind,1,tvCheckPriceItem.getText().toString(),true);
-//                            }
-//                            else{
-//                                Toast.makeText(MainActivity.this, "Nu a fost gasit!", Toast.LENGTH_SHORT).show();
-//                            }
-//                            if_addPositionActive = false;
-//                            addPosition.dismiss();
-//                        }break;
-//                        default:break;
-//                    }
-//                }
-//                return false;
-//            };
-//            addPosition.setOnKeyListener(keylistener );
-//        });
-
-//
-//        checkDiscount.setOnClickListener(v->{
-//            byte[] comman = { (byte) 0xFF, (byte) 0xCA, (byte) 0x00, (byte) 0x0, (byte) 0x0 };
-//
-//            TransmitParams params = new TransmitParams();
-//            params.slotNum = 0;
-//            params.controlCode = 3500;
-//            params.command = comman;
-//
-//            new TransmitTask().execute(params);
-//        });
-//        initQuickButtons();
-//
-//        // NFC settings
-//        readFromIntent(getIntent());
-//
-//        pendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
-//        IntentFilter tagDetected = new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED);
-//        tagDetected.addCategory(Intent.CATEGORY_DEFAULT);
-//        writeTagFilters = new IntentFilter[] { tagDetected };
-    }
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) {
-            hideSystemUI();
-        }
-    }
-
-    private void hideSystemUI() {
-        // Enables regular immersive mode.
-        // For "lean back" mode, remove SYSTEM_UI_FLAG_IMMERSIVE.
-        // Or for "sticky immersive," replace it with SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-
-        View decorView = getWindow().getDecorView();
-        decorView.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                        // Set the content to appear under the system bars so that the
-                        // content doesn't resize when the system bars hide and show.
-
-                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-
-                        // Hide the nav bar and status bar
-                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_FULLSCREEN);
-
-    }
-    private void showSystemUI() {
-        View decorView = getWindow().getDecorView();
-        decorView.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-    }
-    public static void draweOpen(Bill bill){
-        drawer.openDrawer(GravityCompat.END);
-
-        TextView clientBill = drawerConstraint.findViewById(R.id.txt_client);
-        TextView totalItemsBill = drawerConstraint.findViewById(R.id.txttotal_items);
-        TextView totalBill = drawerConstraint.findViewById(R.id.txt_total);
-        TextView numberBill = drawerConstraint.findViewById(R.id.bill_number_nav);
-        TextView discount = drawerConstraint.findViewById(R.id.txt_discount);
-
-        ImageButton btnPayBill = drawerConstraint.findViewById(R.id.btnPay);
-        ImageButton btnEditBill = drawerConstraint.findViewById(R.id.btnEdit);
-        ImageButton btnDeleteBill = drawerConstraint.findViewById(R.id.btnDelete);
-        ImageButton closeDrawer = drawerConstraint.findViewById(R.id.btnClose_drawer);
-
-        btnDeleteBill.setOnClickListener(view -> {
-            new MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
-                    .setTitle("Attention deleting bill!")
-                    .setMessage("Do you want delete it bill?")
-                    .setCancelable(false)
-                    .setPositiveButton("Yes", (dialogInterface, i) -> {
-                        mRealm.executeTransaction(realm -> {
-                           Bill bils =  realm.where(Bill.class).equalTo("id", bill.getId()).findFirst();
-                           if(bils != null){
-                               bils.setCloseDate(new Date().getTime());
-                               bils.setClosedBy(BaseApplication.getInstance().getUserId());
-                               bils.setState(BaseEnum.BILL_DELETED);
-                           }
-                        });
-                        drawer.closeDrawer(GravityCompat.END);
-
-                        Snackbar.make(view, "Bill " + bill.getShiftReceiptNumSoftware() + " is deleted!", Snackbar.LENGTH_LONG)
-                                .setAction("UNDO", new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View view) {
-                                        mRealm.executeTransaction(realm -> {
-                                            Bill bils =  realm.where(Bill.class).equalTo("id", bill.getId()).findFirst();
-                                            if(bils != null){
-                                                bils.setCloseDate(0);
-                                                bils.setClosedBy("");
-                                                bils.setState(BaseEnum.BILL_OPEN);
-                                            }
-                                        });
-
-                                    }
-                                }).show();
-
-
-                    })
-                    .setNegativeButton("No",((dialogInterface, i) -> {
-                        dialogInterface.dismiss();
-                    }))
-                    .show();
-        });
-        btnEditBill.setOnClickListener(view -> {
-            Shift shif = BaseApplication.getInstance().getShift();
-            boolean shiftOpened = shif.isClosed();
-            long shiftNeedClose = shif.getNeedClose();
-            long currentTime = new Date().getTime();
-
-            if(!shiftOpened && currentTime > shiftNeedClose && shiftNeedClose != 0){
-                Snackbar.make(view, "Shift has expired!", Snackbar.LENGTH_SHORT).show();
-            }
-            else{
-                openedBillId = bill.getId();
-                drawer.closeDrawer(GravityCompat.END);
-                initRecyclerView();
-            }
-
-        });
-        btnPayBill.setOnClickListener(view ->{
-            paymentBill(bill.getSumWithDiscount());
-        });
-        closeDrawer.setOnClickListener(view -> drawer.closeDrawer(GravityCompat.END));
-
-        ListView listContent = drawerConstraint.findViewById(R.id.list_string_item);
-        numberBill.setText(String.valueOf(bill.getShiftReceiptNumSoftware()));
-        final RealmResults<BillString>[] results = new RealmResults[]{null};
-        mRealm.executeTransaction(realm -> {
-            results[0] = realm.where(BillString.class).equalTo("billID",bill.getId()).and().equalTo("isDeleted",false).findAll();
-        });
-
-        if(results[0] != null || !results[0].isEmpty() ){
-            totalItemsBill.setText(String.valueOf(results[0].size()));
-            CustomBillStringRealmListAdapter adapter = new CustomBillStringRealmListAdapter(results[0]);
-            listContent.setAdapter(adapter);
-        }
-        totalBill.setText(String.format("%.2f",bill.getSumWithDiscount()).replace(",","."));
-        clientBill.setText(bill.getDiscountCardNumber());
-        discount.setText(String.format("%.2f", bill.getSum() - bill.getSumWithDiscount()).replace(",","."));
     }
 
     @Override
@@ -1069,8 +576,338 @@ public class MainActivity extends AppCompatActivity {
             shiftOpenButtonPay = true;
         }
 
+        if (workPlaceID == null) {
+            pgH.setMessage("loading...");
+            pgH.setIndeterminate(true);
+            pgH.show();
+
+            String uri = sharedPreferenceSettings.getString("URI",null);
+            String token = sharedPreferenceSettings.getString("Token",null);
+            long validToken = sharedPreferenceSettings.getLong("TokenValidTo",0);
+            long currentTime = new Date().getTime();
+
+            getSyncWorkplace(uri,token);
+
+//            if(currentTime < validToken)
+//
+//            else{
+//                String login = BaseApplication.getInstance().getUser().getUserName();
+//                String pass = BaseApplication.getInstance().getUserPasswordsNotHashed();
+//                authUserToServer( login, pass);
+//            }
+        }
+    }
+    private void getSyncWorkplace(final String uri, String token){
+        CommandServices commandServices = ApiUtils.commandEposService(uri);
+        final Call<GetWorkPlaceService> workplace = commandServices.getWorkplace(token);
+        workplace.enqueue(new Callback<GetWorkPlaceService>() {
+            @Override
+            public void onResponse(Call<GetWorkPlaceService> call, Response<GetWorkPlaceService> response) {
+
+                GetWorkPlaceService workPlaceService = response.body();
+                GetWorkplacesResult result = workPlaceService != null ? workPlaceService.getGetWorkplacesResult() : null;
+
+                int errorecode = 101;
+                if (result != null) {
+                    errorecode = result.getErrorCode();
+                }
+
+                if(errorecode == 0){
+                    if(result.getWorkplaces() != null){
+                        workplaceEntryList = result.getWorkplaces();
+
+                        ListAdapter adapterDialog = new ArrayAdapter<WorkplaceEntry>(context, R.layout.item_workplace_main_dialog, workplaceEntryList) {
+
+                            ViewHolder holder;
+
+                            class ViewHolder {
+                                TextView title;
+                            }
+
+                            public View getView(int position, View convertView, ViewGroup parent) {
+                                if (convertView == null) {
+                                    convertView = inflater.inflate(R.layout.item_workplace_main_dialog, null);
+
+                                    holder = new ViewHolder();
+                                    holder.title = (TextView) convertView.findViewById(R.id.textView122);
+                                    convertView.setTag(holder);
+                                } else {
+                                    // view already defined, retrieve view holder
+                                    holder = (ViewHolder) convertView.getTag();
+                                }
+                                holder.title.setText(workplaceEntryList.get(position).getName());
+
+                                return convertView;
+                            }
+                        };
+
+                        pgH.dismiss();
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                        builder.setTitle("Select workplace item");
+                        builder.setAdapter(adapterDialog, (dialog, position) -> {
+                            sharedPreferenceWorkPlace.edit().putString("WorkPlaceID", workplaceEntryList.get(position).getID()).apply();
+                            sharedPreferenceWorkPlace.edit().putString("WorkPlaceName", workplaceEntryList.get(position).getName()).apply();
+                            Toast.makeText(context, "You selected: " + workplaceEntryList.get(position).getID(),Toast.LENGTH_LONG).show();
+                            dialog.dismiss();
+                        });
+
+                        AlertDialog alert = builder.create();
+                        alert.show();
+
+
+                    }
+                }
+                else if(errorecode == 405){
+                    pgH.dismiss();
+                    // не прав на просмотр рабочих мест
+                        new MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
+                                .setTitle("Attention!")
+                                .setMessage("No rights to view workplace! You want to enter other login?")
+                                .setCancelable(false)
+                                .setPositiveButton("YES", (dialogInterface, i) -> {
+
+                                    View dialogView = inflater.inflate(R.layout.dialog_login_user, null);
+
+                                    final android.app.AlertDialog reLogin = new android.app.AlertDialog.Builder(context,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
+                                    reLogin.setCancelable(false);
+                                    reLogin.setView(dialogView);
+
+                                    EditText LetUserName = dialogView.findViewById(R.id.et_login_user_form);
+                                    EditText LetPassword = dialogView.findViewById(R.id.et_password_login_user);
+                                    MaterialButton btnLogin = dialogView.findViewById(R.id.btn_login_user_form);
+
+                                    btnLogin.setOnClickListener(view -> {
+                                        pgH.setMessage("loading...");
+                                        pgH.setIndeterminate(true);
+                                        pgH.show();
+
+                                        authUserToServer(LetUserName.getText().toString(),LetPassword.getText().toString());
+                                    });
+                                    reLogin.show();
+
+                                    dialogInterface.dismiss();
+                                })
+                                .setNegativeButton("NO",(dialogInterface, i) -> {
+
+                                })
+                                .show();
+                }
+                else if(errorecode == 401){
+                    //необходимо обновить токен
+//                    String login = BaseApplication.getInstance().getUser().getUserName();
+//                    String pass = BaseApplication.getInstance().getUserPasswordsNotHashed();
+
+//                    authUserToServer(login,pass);
+                }
+            }
+            @Override
+            public void onFailure(Call<GetWorkPlaceService> call, Throwable t) {
+
+            }
+        });
+    }
+
+    private void authUserToServer(String login , String pass){
+        String uri = sharedPreferenceSettings.getString("URI",null);
+        String install_id = sharedPreferenceSettings.getString("InstallationID",null);
+
+        CommandServices commandServices = ApiUtils.commandEposService(uri);
+
+        Call<AuthentificateUserResult> call = commandServices.autentificateUser(install_id,login,pass);
+
+        call.enqueue(new Callback<AuthentificateUserResult>() {
+            @Override
+            public void onResponse(Call<AuthentificateUserResult> call, Response<AuthentificateUserResult> response) {
+                AuthentificateUserResult authentificateUserResult = response.body();
+                if(authentificateUserResult != null){
+                    TokenReceivedFromAutenficateUser token = authentificateUserResult.getAuthentificateUserResult();
+                    if(token.getErrorCode() == 0){
+                        sharedPreferenceSettings.edit().putString("Token",token.getToken()).apply();
+                        String date = token.getTokenValidTo();
+                        date = date.replace("/Date(","");
+                        date = date.replace("+0200)/","");
+                        long dateLong = Long.parseLong(date);
+                        sharedPreferenceSettings.edit().putLong("TokenValidTo",dateLong).apply();
+
+                        getSyncWorkplace(uri,token.getToken());
+                    }
+                    else{
+                        android.app.AlertDialog.Builder dialog_user = new android.app.AlertDialog.Builder(context);
+                        dialog_user.setTitle("Atentie!");
+                        dialog_user.setMessage("Eroare!Codul: " + token.getErrorCode());
+                        dialog_user.setPositiveButton("Ok", (dialog, which) -> {
+                            dialog.dismiss();
+                        });
+                        dialog_user.setNeutralButton("Oricum intra",(dialog,which) -> {
+
+                        });
+                        dialog_user.show();
+                    }
+                }
+                else{
+                    android.app.AlertDialog.Builder dialog_user = new android.app.AlertDialog.Builder(context);
+                    dialog_user.setTitle("Atentie!");
+                    dialog_user.setMessage("Nu este raspuns de la serviciu!");
+                    dialog_user.setPositiveButton("Ok", (dialog, which) -> {
+                        dialog.dismiss();
+                    });
+                    dialog_user.setNeutralButton("Oricum intra",(dialog,which) -> {
+
+                    });
+                    dialog_user.show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<AuthentificateUserResult> call, Throwable t) {
+                String err = t.getMessage();
+            }
+        });
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            hideSystemUI();
+        }
+    }
+
+    private void hideSystemUI() {
+        // Enables regular immersive mode.
+        // For "lean back" mode, remove SYSTEM_UI_FLAG_IMMERSIVE.
+        // Or for "sticky immersive," replace it with SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+
+        View decorView = getWindow().getDecorView();
+        decorView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        // Set the content to appear under the system bars so that the
+                        // content doesn't resize when the system bars hide and show.
+
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+
+                        // Hide the nav bar and status bar
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN);
 
     }
+    private void showSystemUI() {
+        View decorView = getWindow().getDecorView();
+        decorView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+    }
+
+    public static void draweOpen(Bill bill){
+        drawer.openDrawer(GravityCompat.END);
+
+        TextView clientBill = drawerConstraint.findViewById(R.id.txt_client);
+        TextView totalItemsBill = drawerConstraint.findViewById(R.id.txttotal_items);
+        TextView totalBill = drawerConstraint.findViewById(R.id.txt_total);
+        TextView numberBill = drawerConstraint.findViewById(R.id.bill_number_nav);
+        TextView discount = drawerConstraint.findViewById(R.id.txt_discount);
+
+        ImageButton btnPayBill = drawerConstraint.findViewById(R.id.btnPay);
+        ImageButton btnEditBill = drawerConstraint.findViewById(R.id.btnEdit);
+        ImageButton btnDeleteBill = drawerConstraint.findViewById(R.id.btnDelete);
+        ImageButton closeDrawer = drawerConstraint.findViewById(R.id.btnClose_drawer);
+
+        btnDeleteBill.setOnClickListener(view -> {
+            new MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
+                    .setTitle("Attention deleting bill!")
+                    .setMessage("Do you want delete it bill?")
+                    .setCancelable(false)
+                    .setPositiveButton("Yes", (dialogInterface, i) -> {
+                        mRealm.executeTransaction(realm -> {
+                           Bill bils =  realm.where(Bill.class).equalTo("id", bill.getId()).findFirst();
+                           if(bils != null){
+                               bils.setCloseDate(new Date().getTime());
+                               bils.setClosedBy(BaseApplication.getInstance().getUserId());
+                               bils.setState(BaseEnum.BILL_DELETED);
+
+                               History history = new History();
+                               history.setDate(new Date().getTime());
+                               history.setMsg("Bill deleted: " + bill.getShiftReceiptNumSoftware());
+                               history.setType(BaseEnum.History_DeletedBill);
+                               realm.insert(history);
+                           }
+
+                        });
+                        drawer.closeDrawer(GravityCompat.END);
+
+                        Snackbar.make(view, "Bill " + bill.getShiftReceiptNumSoftware() + " is deleted!", Snackbar.LENGTH_LONG)
+                                .setAction("UNDO", new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        mRealm.executeTransaction(realm -> {
+                                            Bill bils =  realm.where(Bill.class).equalTo("id", bill.getId()).findFirst();
+                                            if(bils != null){
+                                                bils.setCloseDate(0);
+                                                bils.setClosedBy("");
+                                                bils.setState(BaseEnum.BILL_OPEN);
+
+                                                History history = new History();
+                                                history.setDate(new Date().getTime());
+                                                history.setMsg("Bill returned state open: " + bill.getShiftReceiptNumSoftware());
+                                                history.setType(BaseEnum.History_RecreatBill);
+                                                realm.insert(history);
+                                            }
+                                        });
+
+                                    }
+                                }).show();
+
+
+                    })
+                    .setNegativeButton("No",((dialogInterface, i) -> {
+                        dialogInterface.dismiss();
+                    }))
+                    .show();
+        });
+        btnEditBill.setOnClickListener(view -> {
+            Shift shif = BaseApplication.getInstance().getShift();
+            boolean shiftOpened = shif.isClosed();
+            long shiftNeedClose = shif.getNeedClose();
+            long currentTime = new Date().getTime();
+
+            if(!shiftOpened && currentTime > shiftNeedClose && shiftNeedClose != 0){
+                Snackbar.make(view, "Shift has expired!", Snackbar.LENGTH_SHORT).show();
+            }
+            else{
+                openedBillId = bill.getId();
+                drawer.closeDrawer(GravityCompat.END);
+                initRecyclerView();
+            }
+
+        });
+        btnPayBill.setOnClickListener(view ->{
+            openedBillId = bill.getId();
+            paymentBill(bill.getSumWithDiscount());
+        });
+        closeDrawer.setOnClickListener(view -> drawer.closeDrawer(GravityCompat.END));
+
+        ListView listContent = drawerConstraint.findViewById(R.id.list_string_item);
+        numberBill.setText(String.valueOf(bill.getShiftReceiptNumSoftware()));
+        final RealmResults<BillString>[] results = new RealmResults[]{null};
+        mRealm.executeTransaction(realm -> {
+            results[0] = realm.where(BillString.class).equalTo("billID",bill.getId()).and().equalTo("isDeleted",false).findAll();
+        });
+
+        if(results[0] != null || !results[0].isEmpty() ){
+            totalItemsBill.setText(String.valueOf(results[0].size()));
+            CustomBillStringRealmListAdapter adapter = new CustomBillStringRealmListAdapter(results[0]);
+            listContent.setAdapter(adapter);
+        }
+        totalBill.setText(String.format("%.2f",bill.getSumWithDiscount()).replace(",","."));
+        clientBill.setText(bill.getDiscountCardNumber());
+        discount.setText(String.format("%.2f", bill.getSum() - bill.getSumWithDiscount()).replace(",","."));
+    }
+
+
 
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater menuInflater = getMenuInflater();
@@ -1103,7 +940,7 @@ public class MainActivity extends AppCompatActivity {
 
         tvInputSumBillForPayment = dialogView.findViewById(R.id.tv_pay_input_data_sum);
         TextView tvTotalBill = dialogView.findViewById(R.id.txt_total_payment);
-        TextView tvToPay = dialogView.findViewById(R.id.txt_topay_payment);
+        tvToPay = dialogView.findViewById(R.id.txt_topay_payment);
         TextView tvChange = dialogView.findViewById(R.id.txt_rest_payment);
         ImageButton btn_Cancel = dialogView.findViewById(R.id.btnClose_payment);
         MaterialButton clear = dialogView.findViewById(R.id.btn_pay_ce);
@@ -1115,8 +952,6 @@ public class MainActivity extends AppCompatActivity {
         //caut daca contul a fost achitat partial, si adaug text mai jos cu ce tip de plata si ce suma
         //plus la asta daca este vreo achitare deja facuta, verific daca este necesar de imprimat bonul fiscal si daca da, filtrez tipruile de plata dupa criteriu - printFiscalReceip
         RealmResults<BillPaymentType> billPaymentTypes = mRealm.where(BillPaymentType.class).equalTo("billID",openedBillId).findAll();
-        boolean printCheck = false;    // daca trebuie bon fiscal sau nu
-        boolean isPaymentOnlyOne = false;   // daca exista vreo achitare
 
         if(!billPaymentTypes.isEmpty()){
             for (int i = 0; i < billPaymentTypes.size(); i++){
@@ -1150,8 +985,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         tvInputSumBillForPayment.setText(String.format("%.2f",sumBillToPay - billPaymentedSum).replace(",","."));
-        tvTotalBill.setText(btnPay.getText().toString().replace("MDL ",""));
-        tvToPay.setText(btnPay.getText().toString().replace("MDL ",""));
+        tvTotalBill.setText(String.format("%.2f",sumBillToPay).replace(",","."));
+        tvToPay.setText(String.format("%.2f",sumBillToPay - billPaymentedSum).replace(",","."));
 
         MaterialButton number_1 = dialogView.findViewById(R.id.btn_pay_1);
         MaterialButton number_2 = dialogView.findViewById(R.id.btn_pay_2);
@@ -1193,7 +1028,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if(tvInputSumBillForPayment.getText().toString().equals("")){
-                    tvToPay.setText(String.format("%.2f", sumBillToPay - billPaymentedSum).replace(",","."));
                     tvChange.setText("0.00");
                 }
                 else{
@@ -1204,14 +1038,10 @@ public class MainActivity extends AppCompatActivity {
                         incasat = Double.valueOf(tvInputSumBillForPayment.getText().toString().replace(",","."));
                     }
 
-                    tvToPay.setText(String.format("%.2f", incasat + billPaymentedSum).replace(",","."));
-                    double rest = 0.0;
-
                     if( (incasat + billPaymentedSum) <= sumBillToPay){
                         tvChange.setText("0.00");
                     }else{
-                        rest = (incasat + billPaymentedSum) - sumBillToPay;
-                        tvChange.setText( String.format("%.2f", rest).replace(",","."));
+                        tvChange.setText( String.format("%.2f", (incasat + billPaymentedSum) - sumBillToPay).replace(",","."));
                     }
                 }
 
@@ -1244,8 +1074,16 @@ public class MainActivity extends AppCompatActivity {
         clear.setOnClickListener(v119 -> tvInputSumBillForPayment.setText(""));
         btn_Cancel.setOnClickListener(v120 -> { paymentDialog.dismiss(); billPaymentedSum = 0; });
 
+        paymentDialog.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
         paymentDialog.show();
         paymentDialog.getWindow().setLayout(470,LinearLayout.LayoutParams.WRAP_CONTENT);
+        paymentDialog.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        paymentDialog.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
     }
 
     static View.OnClickListener clickListenerDynamicPayButton = new View.OnClickListener() {
@@ -1330,6 +1168,8 @@ public class MainActivity extends AppCompatActivity {
                                 billPaymentedSum = 0;
                                 paymentDialog.dismiss();
 
+                                if(drawer.isDrawerOpen(GravityCompat.END))
+                                    drawer.closeDrawer(GravityCompat.END);
                                 openedBillId = null;
                             }
                         }
@@ -1416,8 +1256,10 @@ public class MainActivity extends AppCompatActivity {
                         bill.getBillPaymentTypes().add(billPaymentType);
                     }
                 });
-                //TODO after payment partial
-                billPaymentedSum = 0;
+
+                billPaymentedSum = inputSum;
+                tvToPay.setText(String.format("%.2f", sumBillToPay - billPaymentedSum).replace(",","."));
+                tvInputSumBillForPayment.setText(String.format("%.2f",sumBillToPay - billPaymentedSum).replace(",","."));
             }
         }
     };
@@ -1436,6 +1278,11 @@ public class MainActivity extends AppCompatActivity {
 
                 btnPay.setText("MDL " + String.format("%.2f", billEntryRealmResults.getSumWithDiscount()).replace(",","."));
             }
+            History history = new History();
+            history.setDate(new Date().getTime());
+            history.setMsg("Deleted from bill item" + billString.getAssortmentFullName() + " - " + billString.getSumWithDiscount());
+            history.setType(BaseEnum.History_DeletedFromBill);
+            realm.insert(history);
         });
     }
 
@@ -1444,6 +1291,12 @@ public class MainActivity extends AppCompatActivity {
             billString.setQuantity(quantity);
             billString.setSum(sum);
             billString.setSumWithDiscount(sumWithDiscount);
+
+            History history = new History();
+            history.setDate(new Date().getTime());
+            history.setMsg("Change count for item: " + billString.getAssortmentFullName() + " + " + quantity );
+            history.setType(BaseEnum.History_ChangeItemCount);
+            realm.insert(history);
 
             double sumTotal = 0;
             double sumWithDisc = 0;
@@ -1458,6 +1311,8 @@ public class MainActivity extends AppCompatActivity {
                     sumTotal += string.getSum();
                     sumWithDisc += string.getSumWithDiscount();
                 }
+
+
             }
 
             Bill billEntryRealmResults = realm.where(Bill.class).equalTo("id", openedBillId).findFirst();
@@ -1518,6 +1373,13 @@ public class MainActivity extends AppCompatActivity {
                 if(shift1 != null)
                     shift1.setBillCounter(shift.getBillCounter());
                 realm.insert(bill);
+
+                History createdBill = new History();
+                createdBill.setDate(bill.getCreateDate());
+                createdBill.setMsg("Bill created No:" + bill.getShiftReceiptNumSoftware());
+                createdBill.setType(BaseEnum.History_CreateBill);
+                realm.insert(createdBill);
+
                 onSucces[0] = true;
             });
         }
@@ -1601,7 +1463,6 @@ public class MainActivity extends AppCompatActivity {
 
                 double finalPriceWithDisc = priceWithDisc;
                 mRealm.executeTransaction(realm -> {
-//                    realm.insert(billString);
 
                 Bill billEntryRealmResults = realm.where(Bill.class).equalTo("id", openedBillId).findFirst();
                 if (billEntryRealmResults != null) {
@@ -1611,6 +1472,13 @@ public class MainActivity extends AppCompatActivity {
                 }
                     createBillString[0] = true;
                 });
+                if(createBillString[0]){
+                    History history = new History();
+                    history.setDate(new Date().getTime());
+                    history.setMsg("Added to bil item: " + billString.getAssortmentFullName() + " + " + count  + " = " + billString.getSumWithDiscount());
+                    history.setType(BaseEnum.History_AddedToBill);
+                    mRealm.executeTransaction(realm -> realm.insert(history));
+                }
             }
 
             if(updateInterface)
@@ -1891,7 +1759,23 @@ public class MainActivity extends AppCompatActivity {
                 shifts.setBoolean("closed", true);
                 shifts.setBoolean("isSended",false);
             });
+            History history = new History();
+            history.setDate(new Date().getTime());
+            history.setMsg("Shift: " + shift.getName());
+            history.setType(BaseEnum.History_ClosedShift);
+            mRealm.executeTransaction(realm -> realm.insert(history));
 
+            int workFisc = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork",0);
+
+            if(workFisc == BaseEnum.FISCAL_DEVICE) {
+                if (datecsFiscalDevice != null && datecsFiscalDevice.isConnectedDeviceV2())
+                    printZReport();
+            }
+            if(workFisc == BaseEnum.FISCAL_SERVICE){
+                String ip = getSharedPreferences(SharedPrefFiscalService, MODE_PRIVATE).getString("IpAdressFiscalService",null);
+                String port = getSharedPreferences(SharedPrefFiscalService, MODE_PRIVATE).getString("PortFiscalService",null);
+                printZReportFiscalService(ip,port);
+            }
             shiftClosedButtonPay = false;
             shiftOpenButtonPay = true;
             btnPay.setText("Open shift");
@@ -2050,6 +1934,361 @@ public class MainActivity extends AppCompatActivity {
             return null;
         }
 
+    }
+
+    public static void printZReport(){
+        progressDialogPrintReport = new ProgressDialog(context,R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog);
+        progressDialogPrintReport.setCancelable(false);
+        progressDialogPrintReport.setTitle("Z report is in processing !!!");
+        progressDialogPrintReport.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressDialogPrintReport.setCancelable(false);
+        progressDialogPrintReport.show();
+        final int[] reportNumber = {0};
+        final cmdReport.ReportSummary reportSummary = new cmdReport.ReportSummary();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                // do the thing that takes a long time
+                try {
+                    cmdReport cmd = new cmdReport();
+                    reportNumber[0] = cmd.PrintZreport(reportSummary);
+
+                    History history = new History();
+                    history.setDate(new Date().getTime());
+                    history.setMsg("Z report: " + reportNumber[0]);
+                    history.setType(BaseEnum.History_Printed_Z);
+                    mRealm.executeTransaction(realm -> realm.insert(history));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    progressDialogPrintReport.dismiss();
+                }
+               activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        DialogZXReportsSummary dialogSummary = new DialogZXReportsSummary(activity, reportSummary);
+                        dialogSummary.show();
+                        DisplayMetrics metrics = new DisplayMetrics(); //get metrics of screen
+                        activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
+                        int width = (int) (metrics.widthPixels * 0.5); //set width to 50% of display
+                        int height = (int) (metrics.heightPixels * 0.9); //set height to 90% of display
+                        dialogSummary.getWindow().setLayout(width, height); //set layout
+                        progressDialogPrintReport.dismiss();
+                    }
+                });
+            }
+        }).start();
+    }
+    public static void printZReportFiscalService(String ip, String port){
+        progressDialogPrintReport = new ProgressDialog(activity);
+        progressDialogPrintReport.setCancelable(true);
+        progressDialogPrintReport.setTitle("Z report is working !!!");
+        progressDialogPrintReport.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressDialogPrintReport.setCancelable(false);
+        progressDialogPrintReport.show();
+
+        if(ip != null && port != null) {
+            String uri = ip + ":" + port;
+
+            CommandServices commandServices = ApiUtils.commandFPService(uri);
+            Call<ZResponse> responseCall = commandServices.printZReport();
+
+            responseCall.enqueue(new Callback<ZResponse>() {
+                @Override
+                public void onResponse(Call<ZResponse> call, Response<ZResponse> response) {
+                    ZResponse zResponse = response.body();
+                    if(zResponse != null){
+                        PrintReportZResult reportZResult = zResponse.getPrintReportZResult();
+                        int errorCode = reportZResult.getErrorCode();
+                        if(errorCode == 0){
+                            progressDialogPrintReport.dismiss();
+                            History history = new History();
+                            history.setDate(new Date().getTime());
+                            history.setMsg("Z report printed to fiscal service ");
+                            history.setType(BaseEnum.History_Printed_Z);
+                            mRealm.executeTransaction(realm -> realm.insert(history));
+                        }
+
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ZResponse> call, Throwable t) {
+                    progressDialogPrintReport.dismiss();
+                    Toast.makeText(activity, t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+    }
+
+    //DIALOG  ZXReportsSummary
+    public static class DialogZXReportsSummary extends Dialog implements View.OnClickListener {
+        private final cmdReport.ReportSummary summary;
+
+        private DialogZXReportsSummary(Activity a, cmdReport.ReportSummary summary) {
+            super(a);
+            this.summary = summary;
+        }
+
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            requestWindowFeature(Window.FEATURE_NO_TITLE);
+            setContentView(R.layout.dialog_xz_summary);
+
+            TextView tvTaxA = findViewById(R.id.tvTaxA);
+            TextView tvTaxB = findViewById(R.id.tvTaxB);
+            TextView tvTaxC = findViewById(R.id.tvTaxC);
+            TextView tvTaxD = findViewById(R.id.tvTaxD);
+            TextView tvTaxE = findViewById(R.id.tvTaxE);
+            TextView tvTaxF = findViewById(R.id.tvTaxF);
+            TextView tvTaxG = findViewById(R.id.tvTaxG);
+            TextView tvTaxH = findViewById(R.id.tvTaxH);
+            Button btnOk = findViewById(R.id.btn_dialogOk);
+            btnOk.setOnClickListener(this);
+
+            tvTaxA.setText(String.valueOf(summary.totalA));
+            tvTaxB.setText(String.valueOf(summary.totalB));
+            tvTaxC.setText(String.valueOf(summary.totalC));
+            tvTaxD.setText(String.valueOf(summary.totalD));
+            tvTaxE.setText(String.valueOf(summary.totalE));
+            tvTaxF.setText(String.valueOf(summary.totalF));
+            tvTaxG.setText(String.valueOf(summary.totalG));
+            tvTaxH.setText(String.valueOf(summary.totalH));
+
+        }
+        //DIALOG ON CLICK OK
+        @Override
+        public void onClick(View v) {
+            dismiss();
+
+        }
+    }
+
+    private void checkItem_Dialog(int dialog){
+        View dialogView = inflater.inflate(R.layout.dialog_check_assortment_item, null);
+
+        final AlertDialog dialogCheckItem = new AlertDialog.Builder(MainActivity.this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
+        dialogCheckItem.setCancelable(false);
+        dialogCheckItem.setView(dialogView);
+        dialogCheckItem.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+
+        TextView tvInputBarcode = dialogView.findViewById(R.id.et_input_data);
+        TextView tvBarcodeOrCodeText = dialogView.findViewById(R.id.text_code_barcode);
+        TextView tvNameItem = dialogView.findViewById(R.id.tvName_finded_item);
+        TextView tvPriceItem = dialogView.findViewById(R.id.txt_price_dialog);
+        TextView tvDialogName = dialogView.findViewById(R.id.txt_dialog_name);
+        TextView tvDiscountItem = dialogView.findViewById(R.id.txt_discount_price_dialog);
+        ImageButton btn_Cancel = dialogView.findViewById(R.id.btnClose_dialog);
+        ImageButton btn_search = dialogView.findViewById(R.id.btn_search_barcode_dialog);
+        ImageButton btn_add = dialogView.findViewById(R.id.btn_add_item_to_bill);
+        MaterialButton btn_clear = dialogView.findViewById(R.id.btn_clear);
+        MaterialButton btn_delete = dialogView.findViewById(R.id.btn_delete);
+
+        MaterialButton number_1 = dialogView.findViewById(R.id.btn_1);
+        MaterialButton number_2 = dialogView.findViewById(R.id.btn_2);
+        MaterialButton number_3 = dialogView.findViewById(R.id.btn_3);
+        MaterialButton number_4 = dialogView.findViewById(R.id.btn_4);
+        MaterialButton number_5 = dialogView.findViewById(R.id.btn_5);
+        MaterialButton number_6 = dialogView.findViewById(R.id.btn_6);
+        MaterialButton number_7 = dialogView.findViewById(R.id.btn_7);
+        MaterialButton number_8 = dialogView.findViewById(R.id.btn_8);
+        MaterialButton number_9 = dialogView.findViewById(R.id.btn_9);
+        MaterialButton number_0 = dialogView.findViewById(R.id.btn_0);
+
+        number_1.setOnClickListener(v121 -> tvInputBarcode.append("1"));
+        number_2.setOnClickListener(v122 -> tvInputBarcode.append("2"));
+        number_3.setOnClickListener(v123 -> tvInputBarcode.append("3"));
+        number_4.setOnClickListener(v124 -> tvInputBarcode.append("4"));
+        number_5.setOnClickListener(v125 -> tvInputBarcode.append("5"));
+        number_6.setOnClickListener(v126 -> tvInputBarcode.append("6"));
+        number_7.setOnClickListener(v127 -> tvInputBarcode.append("7"));
+        number_8.setOnClickListener(v128 -> tvInputBarcode.append("8"));
+        number_9.setOnClickListener(v129 -> tvInputBarcode.append("9"));
+        number_0.setOnClickListener(v130 -> tvInputBarcode.append("0"));
+
+        if(dialog == BaseEnum.Dialog_CheckPrice)
+            tvDialogName.setText("Check price for item");
+        else if (dialog == BaseEnum.Dialog_AddItem)
+            tvDialogName.setText("Add item to bill");
+
+        btn_delete.setOnClickListener(v131 -> {
+            if (!tvInputBarcode.getText().toString().equals("")) {
+                tvInputBarcode.setText(tvInputBarcode.getText().toString().substring(0, tvInputBarcode.getText().toString().length() - 1));
+                btn_search.setVisibility(View.VISIBLE);
+                btn_add.setVisibility(View.GONE);
+            }
+        });
+
+        btn_clear.setOnClickListener(v132 -> {
+            tvInputBarcode.setText("");
+            btn_add.setVisibility(View.GONE);
+            btn_search.setVisibility(View.GONE);
+            tvBarcodeOrCodeText.setVisibility(View.VISIBLE);
+        });
+
+        tvInputBarcode.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                if(!charSequence.equals("")){
+                    btn_search.setVisibility(View.VISIBLE);
+                    tvBarcodeOrCodeText.setVisibility(View.GONE);
+                    btn_add.setVisibility(View.GONE);
+                    tvNameItem.setText("");
+                    tvPriceItem.setText("MDL 0.00");
+                    tvDiscountItem.setText("MDL 0.00");
+                }
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
+
+        btn_search.setOnClickListener(v133 -> {
+            AssortmentRealm assortmentEntry;
+            if(tvInputBarcode.getText().toString().length() == 13 || tvInputBarcode.getText().toString().length() == 8){
+                assortmentEntry = mRealm.where(AssortmentRealm.class).equalTo("barcodes.bar",tvInputBarcode.getText().toString()).or().equalTo("code",tvInputBarcode.getText().toString()).findFirst();
+            }
+            else{
+                assortmentEntry =  mRealm.where(AssortmentRealm.class).equalTo("barcodes.bar",tvInputBarcode.getText().toString()).findFirst();
+            }
+            if(assortmentEntry != null){
+                tvInputBarcode.setText("");
+
+                AssortmentRealm assortmentFind = mRealm.copyFromRealm(assortmentEntry);
+                tvNameItem.setText(assortmentFind.getName());
+
+                CheckedAssortmentItemToPromo promo = checkedAssortmentItemToPromo(assortmentFind);
+                if (promo != null)
+                    tvDiscountItem.setText("MDL " + String.format("%.2f", promo.getPromoPrice()).replace(",","."));
+                tvPriceItem.setText("MDL " + String.format("%.2f", assortmentFind.getPrice()).replace(",","."));
+
+                btn_add.setVisibility(View.VISIBLE);
+                btn_search.setVisibility(View.GONE);
+                tvBarcodeOrCodeText.setVisibility(View.GONE);
+
+                btn_add.setOnClickListener(view -> {
+                    dialogCheckItem.dismiss();
+                    addItemsToOpenedBill(assortmentFind,1,tvInputBarcode.getText().toString(),true);
+                });
+            }
+            else{
+                tvNameItem.setText("");
+                tvPriceItem.setText("MDL 0.00");
+                tvDiscountItem.setText("MDL 0.00");
+
+                Toast.makeText(MainActivity.this, "Item not found!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        btn_Cancel.setOnClickListener(v134 -> {
+            dialogCheckItem.dismiss();
+        });
+
+        // Set the dialog to not focusable.
+//        dialogCheckItem.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+        dialogCheckItem.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+        dialogCheckItem.show();
+        dialogCheckItem.getWindow().setLayout(410,LinearLayout.LayoutParams.WRAP_CONTENT);
+        dialogCheckItem.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        dialogCheckItem.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+
+        DialogInterface.OnKeyListener keylistener = new DialogInterface.OnKeyListener() {
+            @Override
+            public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent KEvent) {
+                int keyaction = KEvent.getAction();
+
+                if(keyaction == KeyEvent.ACTION_DOWN)
+                {
+                    int keycode = KEvent.getKeyCode();
+
+                    switch (keycode) {
+                        case KeyEvent.KEYCODE_1 : {
+                            tvInputBarcode.append("1");
+                        }break;
+                        case KeyEvent.KEYCODE_2 : {
+                            tvInputBarcode.append("2");
+                        }break;
+                        case KeyEvent.KEYCODE_3 : {
+                            tvInputBarcode.append("3");
+                        }break;
+                        case KeyEvent.KEYCODE_4 : {
+                            tvInputBarcode.append("4");
+                        }break;
+                        case KeyEvent.KEYCODE_5 : {
+                            tvInputBarcode.append("5");
+                        }break;
+                        case KeyEvent.KEYCODE_6 : {
+                            tvInputBarcode.append("6");
+                        }break;
+                        case KeyEvent.KEYCODE_7 : {
+                            tvInputBarcode.append("7");
+                        }break;
+                        case KeyEvent.KEYCODE_8 : {
+                            tvInputBarcode.append("8");
+                        }break;
+                        case KeyEvent.KEYCODE_9 : {
+                            tvInputBarcode.append("9");
+                        }break;
+                        case KeyEvent.KEYCODE_0 : {
+                            tvInputBarcode.append("0");
+                        }break;
+                        case KeyEvent.KEYCODE_ENTER : {
+                            AssortmentRealm assortmentEntry;
+                            if(tvInputBarcode.getText().toString().length() == 13 || tvInputBarcode.getText().toString().length() == 8){
+                                assortmentEntry = mRealm.where(AssortmentRealm.class).equalTo("barcodes.bar",tvInputBarcode.getText().toString()).or().equalTo("code",tvInputBarcode.getText().toString()).findFirst();
+                            }
+                            else{
+                                assortmentEntry =  mRealm.where(AssortmentRealm.class).equalTo("barcodes.bar",tvInputBarcode.getText().toString()).findFirst();
+                            }
+                            if(assortmentEntry != null) {
+                                tvInputBarcode.setText("");
+
+                                AssortmentRealm assortmentFind = mRealm.copyFromRealm(assortmentEntry);
+                                tvNameItem.setText(assortmentFind.getName());
+
+                                CheckedAssortmentItemToPromo promo = checkedAssortmentItemToPromo(assortmentFind);
+                                if (promo != null)
+                                    tvDiscountItem.setText("MDL " + String.format("%.2f", promo.getPromoPrice()).replace(",", "."));
+                                tvPriceItem.setText("MDL " + String.format("%.2f", assortmentFind.getPrice()).replace(",", "."));
+
+                                btn_add.setVisibility(View.VISIBLE);
+                                btn_search.setVisibility(View.GONE);
+                                tvBarcodeOrCodeText.setVisibility(View.GONE);
+
+                                btn_add.setOnClickListener(view -> {
+                                    dialogCheckItem.dismiss();
+                                    addItemsToOpenedBill(assortmentFind, 1, tvInputBarcode.getText().toString(), true);
+                                });
+                            }
+                            else{
+                                tvNameItem.setText("");
+                                tvPriceItem.setText("MDL 0.00");
+                                tvDiscountItem.setText("MDL 0.00");
+
+                                Toast.makeText(MainActivity.this, "Item not found!", Toast.LENGTH_SHORT).show();
+                            }
+                        }break;
+                        default:break;
+                    }
+                }
+                return false;
+            }
+        };
+        dialogCheckItem.setOnKeyListener(keylistener );
     }
 
     private static CheckedAssortmentItemToPromo checkedAssortmentItemToPromo(AssortmentRealm assortmentRealm){

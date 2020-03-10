@@ -3,17 +3,22 @@ package edi.md.androidcash;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Application;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbManager;
+import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -21,16 +26,21 @@ import androidx.annotation.NonNull;
 import com.crashlytics.android.Crashlytics;
 import com.datecs.fiscalprinter.SDK.model.DatecsFiscalDevice;
 import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReceipt;
+import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReport;
 
 import edi.md.androidcash.NetworkUtils.AssortmentServiceEntry;
 import edi.md.androidcash.NetworkUtils.EposResult.AssortmentListService;
 import edi.md.androidcash.NetworkUtils.EposResult.GetAssortmentListResult;
+import edi.md.androidcash.NetworkUtils.FiscalServiceResult.PrintReportZResult;
+import edi.md.androidcash.NetworkUtils.FiscalServiceResult.ZResponse;
 import edi.md.androidcash.NetworkUtils.Promotion;
 import edi.md.androidcash.NetworkUtils.QuickGroup;
 import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
 import edi.md.androidcash.RealmHelper.AssortmentRealm;
 import edi.md.androidcash.RealmHelper.Barcodes;
+import edi.md.androidcash.RealmHelper.History;
 import edi.md.androidcash.RealmHelper.QuickGroupRealm;
+import edi.md.androidcash.SettingUtils.ShiftManage;
 import io.fabric.sdk.android.Fabric;
 
 import java.text.SimpleDateFormat;
@@ -90,7 +100,6 @@ public class BaseApplication extends Application {
     public static final String SharedPrefWorkPlaceSettings = "WorkPlace";
 
     //SharedPreference variable
-    public static final String ModeFiscalWork = "ModeFiscalWork";
     public static final String deviceId = "DeviceId";
 
     @Override
@@ -101,7 +110,7 @@ public class BaseApplication extends Application {
 
         instance = this;
 
-        final RealmConfiguration configuration = new RealmConfiguration.Builder().name("cash.realm").schemaVersion(2).migration(new RealmMigrations()).build();
+        final RealmConfiguration configuration = new RealmConfiguration.Builder().name("cash.realm").schemaVersion(3).migration(new RealmMigrations()).build();
         Realm.setDefaultConfiguration(configuration);
         Realm.getInstance(configuration);
         mRealm  = Realm.getDefaultInstance();
@@ -115,7 +124,7 @@ public class BaseApplication extends Application {
         sheduleSendBillSHiftToServer();
         sync.schedule(timerTaskSync, 10000, 60000);
 
-        autoUpdateAssortment ();
+//        autoUpdateAssortment ();
     }
 
     public static BaseApplication getInstance(){
@@ -265,7 +274,7 @@ public class BaseApplication extends Application {
             e.printStackTrace();
             if(e.getMessage().contains("-112001"))
                 postToast("Fiscal printer error: Fiscal printer command invalid syntax");
-            if(e.getMessage().equals("-112024"))
+            if(e.getMessage().equals("-111024"))
                 postToast("Registration mode error: End of 24 hour blocking");
             else if(e.getMessage().contains("-111003"))
                 postToast("Registration mode error: Cannot do operation");
@@ -358,6 +367,10 @@ public class BaseApplication extends Application {
                 }
             });
         }
+    }
+
+    public void logNewHistory(History history){
+        mRealm.executeTransaction(realm -> realm.insert(history));
     }
 
     //fiscal device operation
@@ -696,146 +709,146 @@ public class BaseApplication extends Application {
     }
 
     //sync in background assortment
-    private void sheduleUpdateAuto(){
-        timerTaskSyncBackground = new TimerTask() {
-            @Override
-            public void run() {
-                boolean enableAutoSync = getSharedPreferences(SharedPrefSyncSettings,MODE_PRIVATE).getBoolean("AutoSync",false);
-                if(enableAutoSync){
-                    int timeUpdate = getSharedPreferences(SharedPrefSyncSettings,MODE_PRIVATE).getInt("intervalForAutoUpdate",0);
+//    private void sheduleUpdateAuto(){
+//        timerTaskSyncBackground = new TimerTask() {
+//            @Override
+//            public void run() {
+//                boolean enableAutoSync = getSharedPreferences(SharedPrefSyncSettings,MODE_PRIVATE).getBoolean("AutoSync",false);
+//                if(enableAutoSync){
+//                    int timeUpdate = getSharedPreferences(SharedPrefSyncSettings,MODE_PRIVATE).getInt("intervalForAutoUpdate",0);
+//
+//                    if(timeUpdate != 0) {
+//                        String uri = getSharedPreferences("Settings",MODE_PRIVATE).getString("URI",null);
+//                        String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("Token",null);
+//                        String workplaceId = getSharedPreferences(SharedPrefWorkPlaceSettings,MODE_PRIVATE).getString("WorkPlaceID",null);
+//                        if(token != null && workplaceId != null) {
+//                            CommandServices commandServices = ApiUtils.commandEposService(uri);
+//                            Call<AssortmentListService> call = commandServices.getAssortiment(token, workplaceId);
+//
+//                            call.enqueue(new Callback<AssortmentListService>() {
+//                                @Override
+//                                public void onResponse(Call<AssortmentListService> call, Response<AssortmentListService> response) {
+//                                    AssortmentListService assortmentListService = response.body();
+//                                    if (assortmentListService != null) {
+//                                        GetAssortmentListResult getAssortmentListResult = assortmentListService.getGetAssortmentListResult();
+//                                        int errorCode = getAssortmentListResult.getErrorCode();
+//                                        if (errorCode == 0) {  //успешно получили ответ
+//                                            List<AssortmentServiceEntry> list = getAssortmentListResult.getAssortments();
+//
+//                                            insertNewAssortment(list,getAssortmentListResult.getQuickGroups());
+//                                        } else if (errorCode == 401) {   // нужен новый токен
+//
+//                                        } else if (errorCode == 405) {   //нет прав/полномочий
+//
+//                                        } else if (errorCode == 500) {   // внутреняя ошибка сервера
+//
+//                                        }
+//                                    }
+//                                }
+//
+//                                @Override
+//                                public void onFailure(Call<AssortmentListService> call, Throwable t) {
+//                                    String test = t.getMessage();
+//                                    String msg = "fsadgzxvzxvzx";
+//                                }
+//                            });
+//                        }
+//                    }
+//                }
+//            }
+//        };
+//
+//    }
+//    public void autoUpdateAssortment (){
+//        boolean enableAutoSync = getSharedPreferences(SharedPrefSyncSettings,MODE_PRIVATE).getBoolean("AutoSync",false);
+//
+//        if(enableAutoSync){
+//            int timeUpdate = getSharedPreferences(SharedPrefSyncSettings,MODE_PRIVATE).getInt("intervalForAutoUpdate",0);
+//
+//            if(timeUpdate != 0) {
+//                syncBackground = new Timer();
+//                sheduleUpdateAuto();
+//                syncBackground.schedule(timerTaskSyncBackground, timeUpdate, timeUpdate);
+//            }
+//        }
+//    }
+//    public void insertNewAssortment (List<AssortmentServiceEntry> list, List<QuickGroup>  listGroup){
+//
+////        pDialog = new ProgressDialog(this);
+////        pDialog.setIndeterminate(true);
+////        pDialog.setMessage("sincronizare");
+////        pDialog.show();
+//        mRealm = Realm.getDefaultInstance();
+//        mRealm.executeTransaction((realm -> {
+//            realm.delete(AssortmentRealm.class);
+//            realm.delete(Barcodes.class);
+//            realm.delete(Promotion.class);
+//            realm.delete(QuickGroupRealm.class);
+//
+//            for(AssortmentServiceEntry assortmentServiceEntry: list){
+//                AssortmentRealm ass = new AssortmentRealm();
+//
+//                RealmList<Barcodes> listBarcode = new RealmList<>();
+//                RealmList<Promotion> listPromotion = new RealmList<>();
+//
+//                if(assortmentServiceEntry.getBarcodes() != null)
+//                for(String barcodes : assortmentServiceEntry.getBarcodes()){
+//                    Barcodes barcodes1 = new Barcodes();
+//                    barcodes1.setBar(barcodes);
+//                    listBarcode.add(barcodes1);
+//                }
+//
+//                if(assortmentServiceEntry.getPromotions()!= null){
+//                    listPromotion.addAll(assortmentServiceEntry.getPromotions());
+//                }
+//                ass.setId(assortmentServiceEntry.getID());
+//                ass.setName(assortmentServiceEntry.getName());
+//                ass.setBarcodes(listBarcode);
+//                ass.setFolder(assortmentServiceEntry.getIsFolder());
+//                ass.setPromotions(listPromotion);
+//                ass.setAllowDiscounts(assortmentServiceEntry.getAllowDiscounts());
+//                ass.setAllowNonInteger(assortmentServiceEntry.getAllowNonInteger());
+//                ass.setCode(assortmentServiceEntry.getCode());
+//                ass.setEnableSaleTimeRange(assortmentServiceEntry.getEnableSaleTimeRange());
+//                ass.setMarking(assortmentServiceEntry.getMarking());
+//                ass.setParentID(assortmentServiceEntry.getParentID());
+//                ass.setPrice(assortmentServiceEntry.getPrice());
+//                ass.setPriceLineId(assortmentServiceEntry.getPriceLineId());
+//                ass.setShortName(assortmentServiceEntry.getShortName());
+//                ass.setVat(assortmentServiceEntry.getVAT());
+//                ass.setUnit(assortmentServiceEntry.getUnit());
+//                ass.setQuickButtonNumber(assortmentServiceEntry.getQuickButtonNumber());
+//                ass.setQuickGroupName(assortmentServiceEntry.getQuickGroupName());
+//                ass.setStockBalance(assortmentServiceEntry.getStockBalance());
+//                ass.setStockBalanceDate(assortmentServiceEntry.getStockBalanceDate());
+////                ass.setSaleStartTime(MainActivity.replaceDate(assortmentServiceEntry.getSaleStartTime()));
+////                ass.setSaleEndTime(MainActivity.replaceDate(assortmentServiceEntry.getSaleEndTime()));
+////                ass.setPriceLineStartDate(MainActivity.replaceDate(assortmentServiceEntry.getPriceLineStartDate()));
+////                ass.setPriceLineEndDate(MainActivity.replaceDate(assortmentServiceEntry.getPriceLineEndDate()));
+//
+//                realm.insert(ass);
+//            }
+//
+//            if(listGroup != null){
+//                for(QuickGroup quickGroup : listGroup){
+//                    QuickGroupRealm quickGroupRealm = new QuickGroupRealm();
+//
+//                    String nameGroup = quickGroup.getName();
+//                    RealmList<String> assortment = new RealmList<>();
+//                    assortment.addAll(quickGroup.getAssortmentID());
+//
+//                    quickGroupRealm.setGroupName(nameGroup);
+//                    quickGroupRealm.setAssortmentId(assortment);
+//
+//                    realm.insert(quickGroupRealm);
+//                }
+//            }
+//        }));
+//
+////        pDialog.dismiss();
+//    }
 
-                    if(timeUpdate != 0) {
-                        String uri = getSharedPreferences("Settings",MODE_PRIVATE).getString("URI",null);
-                        String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("Token",null);
-                        String workplaceId = getSharedPreferences(SharedPrefWorkPlaceSettings,MODE_PRIVATE).getString("WorkPlaceID",null);
-                        if(token != null && workplaceId != null) {
-                            CommandServices commandServices = ApiUtils.commandEposService(uri);
-                            Call<AssortmentListService> call = commandServices.getAssortiment(token, workplaceId);
-
-                            call.enqueue(new Callback<AssortmentListService>() {
-                                @Override
-                                public void onResponse(Call<AssortmentListService> call, Response<AssortmentListService> response) {
-                                    AssortmentListService assortmentListService = response.body();
-                                    if (assortmentListService != null) {
-                                        GetAssortmentListResult getAssortmentListResult = assortmentListService.getGetAssortmentListResult();
-                                        int errorCode = getAssortmentListResult.getErrorCode();
-                                        if (errorCode == 0) {  //успешно получили ответ
-                                            List<AssortmentServiceEntry> list = getAssortmentListResult.getAssortments();
-
-                                            insertNewAssortment(list,getAssortmentListResult.getQuickGroups());
-                                        } else if (errorCode == 401) {   // нужен новый токен
-
-                                        } else if (errorCode == 405) {   //нет прав/полномочий
-
-                                        } else if (errorCode == 500) {   // внутреняя ошибка сервера
-
-                                        }
-                                    }
-                                }
-
-                                @Override
-                                public void onFailure(Call<AssortmentListService> call, Throwable t) {
-                                    String test = t.getMessage();
-                                    String msg = "fsadgzxvzxvzx";
-                                }
-                            });
-                        }
-                    }
-                }
-            }
-        };
-
-    }
-    public void autoUpdateAssortment (){
-        boolean enableAutoSync = getSharedPreferences(SharedPrefSyncSettings,MODE_PRIVATE).getBoolean("AutoSync",false);
-
-        if(enableAutoSync){
-            int timeUpdate = getSharedPreferences(SharedPrefSyncSettings,MODE_PRIVATE).getInt("intervalForAutoUpdate",0);
-
-            if(timeUpdate != 0) {
-                syncBackground = new Timer();
-                sheduleUpdateAuto();
-                syncBackground.schedule(timerTaskSyncBackground, timeUpdate, timeUpdate);
-            }
-        }
-    }
-    public void insertNewAssortment (List<AssortmentServiceEntry> list, List<QuickGroup>  listGroup){
-
-//        pDialog = new ProgressDialog(this);
-//        pDialog.setIndeterminate(true);
-//        pDialog.setMessage("sincronizare");
-//        pDialog.show();
-        mRealm = Realm.getDefaultInstance();
-        mRealm.executeTransaction((realm -> {
-            realm.delete(AssortmentRealm.class);
-            realm.delete(Barcodes.class);
-            realm.delete(Promotion.class);
-            realm.delete(QuickGroupRealm.class);
-
-            for(AssortmentServiceEntry assortmentServiceEntry: list){
-                AssortmentRealm ass = new AssortmentRealm();
-
-                RealmList<Barcodes> listBarcode = new RealmList<>();
-                RealmList<Promotion> listPromotion = new RealmList<>();
-
-                if(assortmentServiceEntry.getBarcodes() != null)
-                for(String barcodes : assortmentServiceEntry.getBarcodes()){
-                    Barcodes barcodes1 = new Barcodes();
-                    barcodes1.setBar(barcodes);
-                    listBarcode.add(barcodes1);
-                }
-
-                if(assortmentServiceEntry.getPromotions()!= null){
-                    listPromotion.addAll(assortmentServiceEntry.getPromotions());
-                }
-                ass.setId(assortmentServiceEntry.getID());
-                ass.setName(assortmentServiceEntry.getName());
-                ass.setBarcodes(listBarcode);
-                ass.setFolder(assortmentServiceEntry.getIsFolder());
-                ass.setPromotions(listPromotion);
-                ass.setAllowDiscounts(assortmentServiceEntry.getAllowDiscounts());
-                ass.setAllowNonInteger(assortmentServiceEntry.getAllowNonInteger());
-                ass.setCode(assortmentServiceEntry.getCode());
-                ass.setEnableSaleTimeRange(assortmentServiceEntry.getEnableSaleTimeRange());
-                ass.setMarking(assortmentServiceEntry.getMarking());
-                ass.setParentID(assortmentServiceEntry.getParentID());
-                ass.setPrice(assortmentServiceEntry.getPrice());
-                ass.setPriceLineId(assortmentServiceEntry.getPriceLineId());
-                ass.setShortName(assortmentServiceEntry.getShortName());
-                ass.setVat(assortmentServiceEntry.getVAT());
-                ass.setUnit(assortmentServiceEntry.getUnit());
-                ass.setQuickButtonNumber(assortmentServiceEntry.getQuickButtonNumber());
-                ass.setQuickGroupName(assortmentServiceEntry.getQuickGroupName());
-                ass.setStockBalance(assortmentServiceEntry.getStockBalance());
-                ass.setStockBalanceDate(assortmentServiceEntry.getStockBalanceDate());
-//                ass.setSaleStartTime(MainActivity.replaceDate(assortmentServiceEntry.getSaleStartTime()));
-//                ass.setSaleEndTime(MainActivity.replaceDate(assortmentServiceEntry.getSaleEndTime()));
-//                ass.setPriceLineStartDate(MainActivity.replaceDate(assortmentServiceEntry.getPriceLineStartDate()));
-//                ass.setPriceLineEndDate(MainActivity.replaceDate(assortmentServiceEntry.getPriceLineEndDate()));
-
-                realm.insert(ass);
-            }
-
-            if(listGroup != null){
-                for(QuickGroup quickGroup : listGroup){
-                    QuickGroupRealm quickGroupRealm = new QuickGroupRealm();
-
-                    String nameGroup = quickGroup.getName();
-                    RealmList<String> assortment = new RealmList<>();
-                    assortment.addAll(quickGroup.getAssortmentID());
-
-                    quickGroupRealm.setGroupName(nameGroup);
-                    quickGroupRealm.setAssortmentId(assortment);
-
-                    realm.insert(quickGroupRealm);
-                }
-            }
-        }));
-
-//        pDialog.dismiss();
-    }
-
-    private void postToast(final String message) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    private static void postToast(final String message) {
+        Toast.makeText(getInstance(), message, Toast.LENGTH_LONG).show();
     }
 }

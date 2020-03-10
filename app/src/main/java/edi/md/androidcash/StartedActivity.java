@@ -16,19 +16,15 @@ import android.nfc.tech.MifareClassic;
 import android.nfc.tech.MifareUltralight;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.StrictMode;
 import android.provider.Settings;
 import android.util.Base64;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,9 +38,6 @@ import androidx.core.content.ContextCompat;
 import com.acs.smartcard.Reader;
 import com.acs.smartcard.ReaderException;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -60,6 +53,7 @@ import java.util.TimeZone;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import edi.md.androidcash.DatcesNewFile.PrinterManager;
 import edi.md.androidcash.NetworkUtils.BrokerResultBody.Body.BodyRegisterApp;
 import edi.md.androidcash.NetworkUtils.BrokerResultBody.GetURIResult;
 import edi.md.androidcash.NetworkUtils.BrokerResultBody.RegisterApplicationResult;
@@ -466,16 +460,19 @@ public class StartedActivity extends AppCompatActivity {
         btnLogin.setOnClickListener(v1 ->{
             Lpgbar.setVisibility(View.VISIBLE);
 
+            String userName = LetUserName.getText().toString();
+            String userPass = LetPassword.getText().toString();
+
             //save user password only app is runing
-            BaseApplication.getInstance().setUserPasswordsNotHashed(LetPassword.getText().toString());
+            BaseApplication.getInstance().setUserPasswordsNotHashed(userPass);
 
             //hash SHA1 password
-            String passGenerate = GetSHA1HashUserPassword("This is the code for UserPass",LetPassword.getText().toString()).replace("\n","");
+            String passGenerate = GetSHA1HashUserPassword("This is the code for UserPass",userPass).replace("\n","");
 
             //search in local data base user with such data
             Realm realm = Realm.getDefaultInstance();
             User result = realm.where(User.class)
-                    .equalTo("userName",LetUserName.getText().toString())
+                    .equalTo("userName",userName)
                     .and()
                     .equalTo("password",passGenerate)
                     .findFirst();
@@ -483,69 +480,37 @@ public class StartedActivity extends AppCompatActivity {
                 //such user found,save this user while app is running
                 BaseApplication.getInstance().setUser(realm.copyFromRealm(result));
 
+                String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("Token",null);
+                long tokenValidDate = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getLong("TokenValidTo",0);
+                Date dateToken = new Date(tokenValidDate);
+                Date currDate = new Date();
+
+                if(token == null && tokenValidDate == 0){
+                    authenticateUser(userName,userPass,false);
+                }
+                if(currDate.before(dateToken))
+                    authenticateUser(userName,userPass,false);
+
                 Intent main = new Intent(StartedActivity.this,MainActivity.class);
                 startActivity(main);
-
                 finish();
             }
             else{
-                //user not found in local data bases then we connect to accounting system for receive token and verify user
-                String uri = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("URI",null);
-                String install_id = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("InstallationID",null);
+                String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("Token",null);
+                long tokenValidDate = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getLong("TokenValidTo",0);
+                Date dateToken = new Date(tokenValidDate);
+                Date currDate = new Date();
 
-                CommandServices commandServices = ApiUtils.commandEposService(uri);
-                Call<AuthentificateUserResult> call = commandServices.autentificateUser(install_id,LetUserName.getText().toString(),LetPassword.getText().toString());
-                call.enqueue(new Callback<AuthentificateUserResult>() {
-                    @Override
-                    public void onResponse(Call<AuthentificateUserResult> call, Response<AuthentificateUserResult> response) {
-                        AuthentificateUserResult authentificateUserResult = response.body();
-                        if(authentificateUserResult != null){
-
-                            //get information for token
-                            TokenReceivedFromAutenficateUser token = authentificateUserResult.getAuthentificateUserResult();
-                            if(token.getErrorCode() == 0){
-                                //save token in shared preferense
-                                String date = token.getTokenValidTo();
-                                date = date.replace("/Date(","");
-                                date = date.replace("+0200)/","");
-                                long dateLong = Long.parseLong(date);
-
-                                getSharedPreferences(SharedPrefSettings,MODE_PRIVATE)
-                                        .edit()
-                                        .putString("Token",token.getToken())
-                                        .putLong("TokenValidTo",dateLong)
-                                        .apply();
-
-                                Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                                BaseApplication.getInstance().setUser(new User());
-                                startActivity(main);
-                                Lpgbar.setVisibility(View.INVISIBLE);
-                                finish();
-                            }
-                            else{
-                                Toast.makeText(StartedActivity.this, "Error to authentificate user!"+ token.getErrorCode(), Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<AuthentificateUserResult> call, Throwable t) {
-                        Lpgbar.setVisibility(View.INVISIBLE);
-                        AlertDialog.Builder dialog_user = new AlertDialog.Builder(StartedActivity.this);
-                        dialog_user.setTitle("Atentie!");
-                        dialog_user.setMessage("Eroare!");
-                        dialog_user.setPositiveButton("Ok", (dialog, which) -> {
-                            dialog.dismiss();
-                        });
-                        dialog_user.setNeutralButton("Oricum intra",(dialog,which) -> {
-                            Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                            BaseApplication.getInstance().setUser(new User());
-                            startActivity(main);
-                            finish();
-                        });
-                        dialog_user.show();
-                    }
-                });
+                if(token == null && tokenValidDate == 0){
+                    authenticateUser(userName,userPass,true);
+                }
+                else if(currDate.before(dateToken))
+                    authenticateUser(userName,userPass,true);
+                else {
+                    Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                    startActivity(main);
+                    finish();
+                }
             }
 
         });
@@ -563,6 +528,54 @@ public class StartedActivity extends AppCompatActivity {
 
         //Device load
         initUSBDevice();
+    }
+
+    private void authenticateUser(String userName, String passUser,boolean initialStart){
+        //user not found in local data bases then we connect to accounting system for receive token and verify user
+        String uri = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("URI",null);
+        String install_id = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("InstallationID",null);
+
+        CommandServices commandServices = ApiUtils.commandEposService(uri);
+        Call<AuthentificateUserResult> call = commandServices.autentificateUser(install_id,userName,passUser);
+        call.enqueue(new Callback<AuthentificateUserResult>() {
+            @Override
+            public void onResponse(Call<AuthentificateUserResult> call, Response<AuthentificateUserResult> response) {
+                AuthentificateUserResult authentificateUserResult = response.body();
+                if(authentificateUserResult != null){
+
+                    //get information for token
+                    TokenReceivedFromAutenficateUser token = authentificateUserResult.getAuthentificateUserResult();
+                    if(token.getErrorCode() == 0){
+                        //save token in shared preferense
+                        String date = token.getTokenValidTo();
+                        date = date.replace("/Date(","");
+                        date = date.replace("+0200)/","");
+                        date = date.replace("+0300)/","");
+                        long dateLong = Long.parseLong(date);
+
+                        getSharedPreferences(SharedPrefSettings,MODE_PRIVATE)
+                                .edit()
+                                .putString("Token",token.getToken())
+                                .putLong("TokenValidTo",dateLong)
+                                .apply();
+                        if(initialStart){
+                            Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                            startActivity(main);
+                            finish();
+                        }
+                    }
+                    else{
+                        Toast.makeText(StartedActivity.this, "Error to authenticate user to server! "+ token.getErrorCode(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<AuthentificateUserResult> call, Throwable t) {
+                Lpgbar.setVisibility(View.INVISIBLE);
+                Toast.makeText(StartedActivity.this, "Error to authenticate user to server! "+ t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void doRegisterAppToBrokerServer(BodyRegisterApp bodyRegisterApp){

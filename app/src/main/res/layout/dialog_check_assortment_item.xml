@@ -7,7 +7,7 @@
 
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_add_position_1"
+        android:id="@+id/btn_1"
         style="@style/Widget.MaterialComponents.CustomButton"
         android:layout_width="0dp"
         android:layout_height="80dp"
@@ -21,14 +21,14 @@
         android:text="1"
         android:textColor="#202020"
         android:textSize="35sp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_delete"
-        app:layout_constraintEnd_toStartOf="@+id/btn_add_position_2"
+        app:layout_constraintBottom_toTopOf="@+id/btn_delete"
+        app:layout_constraintEnd_toStartOf="@+id/btn_2"
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_4" />
+        app:layout_constraintTop_toBottomOf="@+id/btn_4" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_add_position_delete"
+        android:id="@+id/btn_delete"
         style="@style/Widget.MaterialComponents.CustomButton"
         android:layout_width="0dp"
         android:layout_height="80dp"
@@ -43,13 +43,13 @@
         android:textColor="#202020"
         android:textSize="30sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/btn_add_position_0"
+        app:layout_constraintEnd_toStartOf="@+id/btn_0"
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_1" />
+        app:layout_constraintTop_toBottomOf="@+id/btn_1" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_add_position_0"
+        android:id="@+id/btn_0"
         style="@style/Widget.MaterialComponents.CustomButton"
         android:layout_width="0dp"
         android:layout_height="80dp"
@@ -64,12 +64,12 @@
         android:textColor="#202020"
         android:textSize="35sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/btn_add_position_clear"
-        app:layout_constraintStart_toEndOf="@+id/btn_add_position_delete"
-        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_2" />
+        app:layout_constraintEnd_toStartOf="@+id/btn_clear"
+        app:layout_constraintStart_toEndOf="@+id/btn_delete"
+        app:layout_constraintTop_toBottomOf="@+id/btn_2" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_add_position_clear"
+        android:id="@+id/btn_clear"
         style="@style/Widget.MaterialComponents.CustomButton"
         android:layout_width="0dp"
         android:layout_height="80dp"
@@ -85,11 +85,11 @@
         android:textSize="35sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/btn_add_position_0"
-        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_3" />
+        app:layout_constraintStart_toEndOf="@+id/btn_0"
+        app:layout_constraintTop_toBottomOf="@+id/btn_3" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_add_position_4"
+        android:id="@+id/btn_4"
         style="@style/Widget.MaterialComponents.CustomButton"
         android:layout_width="0dp"
         android:layout_height="80dp"
@@ -103,14 +103,14 @@
         android:text="4"
         android:textColor="#202020"
         android:textSize="35sp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_1"
-        app:layout_constraintEnd_toStartOf="@+id/btn_add_position_5"
+        app:layout_constraintBottom_toTopOf="@+id/btn_1"
+        app:layout_constraintEnd_toStartOf="@+id/btn_5"
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_7" />
+        app:layout_constraintTop_toBottomOf="@+id/btn_7" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_add_position_7"
+        android:id="@+id/btn_7"
         style="@style/Widget.MaterialComponents.CustomButton"
         android:layout_width="0dp"
         android:layout_height="80dp"
@@ -124,14 +124,14 @@
         android:text="7"
         android:textColor="#202020"
         android:textSize="35sp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_4"
-        app:layout_constraintEnd_toStartOf="@+id/btn_add_position_8"
+        app:layout_constraintBottom_toTopOf="@+id/btn_4"
+        app:layout_constraintEnd_toStartOf="@+id/btn_8"
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/csl_input_data" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_add_position_2"
+        android:id="@+id/btn_2"
         style="@style/Widget.MaterialComponents.CustomButton"
         android:layout_width="0dp"
         android:layout_height="80dp"
@@ -145,13 +145,13 @@
         android:text="2"
         android:textColor="#202020"
         android:textSize="35sp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_0"
-        app:layout_constraintEnd_toStartOf="@+id/btn_add_position_3"
-        app:layout_constraintStart_toEndOf="@+id/btn_add_position_1"
-        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_5" />
+        app:layout_constraintBottom_toTopOf="@+id/btn_0"
+        app:layout_constraintEnd_toStartOf="@+id/btn_3"
+        app:layout_constraintStart_toEndOf="@+id/btn_1"
+        app:layout_constraintTop_toBottomOf="@+id/btn_5" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_add_position_5"
+        android:id="@+id/btn_5"
         style="@style/Widget.MaterialComponents.CustomButton"
         android:layout_width="0dp"
         android:layout_height="80dp"
@@ -165,13 +165,13 @@
         android:text="5"
         android:textColor="#202020"
         android:textSize="35sp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_2"
-        app:layout_constraintEnd_toStartOf="@+id/btn_add_position_6"
-        app:layout_constraintStart_toEndOf="@+id/btn_add_position_4"
-        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_8" />
+        app:layout_constraintBottom_toTopOf="@+id/btn_2"
+        app:layout_constraintEnd_toStartOf="@+id/btn_6"
+        app:layout_constraintStart_toEndOf="@+id/btn_4"
+        app:layout_constraintTop_toBottomOf="@+id/btn_8" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_add_position_8"
+        android:id="@+id/btn_8"
         style="@style/Widget.MaterialComponents.CustomButton"
         android:layout_width="0dp"
         android:layout_height="80dp"
@@ -185,13 +185,13 @@
         android:text="8"
         android:textColor="#202020"
         android:textSize="35sp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_5"
-        app:layout_constraintEnd_toStartOf="@+id/btn_add_position_9"
-        app:layout_constraintStart_toEndOf="@+id/btn_add_position_7"
+        app:layout_constraintBottom_toTopOf="@+id/btn_5"
+        app:layout_constraintEnd_toStartOf="@+id/btn_9"
+        app:layout_constraintStart_toEndOf="@+id/btn_7"
         app:layout_constraintTop_toBottomOf="@id/csl_input_data" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_add_position_3"
+        android:id="@+id/btn_3"
         style="@style/Widget.MaterialComponents.CustomButton"
         android:layout_width="0dp"
         android:layout_height="80dp"
@@ -205,13 +205,13 @@
         android:text="3"
         android:textColor="#202020"
         android:textSize="35sp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_clear"
+        app:layout_constraintBottom_toTopOf="@+id/btn_clear"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/btn_add_position_2"
-        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_6" />
+        app:layout_constraintStart_toEndOf="@+id/btn_2"
+        app:layout_constraintTop_toBottomOf="@+id/btn_6" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_add_position_6"
+        android:id="@+id/btn_6"
         style="@style/Widget.MaterialComponents.CustomButton"
         android:layout_width="0dp"
         android:layout_height="80dp"
@@ -225,13 +225,13 @@
         android:text="6"
         android:textColor="#202020"
         android:textSize="35sp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_3"
+        app:layout_constraintBottom_toTopOf="@+id/btn_3"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/btn_add_position_5"
-        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_9" />
+        app:layout_constraintStart_toEndOf="@+id/btn_5"
+        app:layout_constraintTop_toBottomOf="@+id/btn_9" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_add_position_9"
+        android:id="@+id/btn_9"
         style="@style/Widget.MaterialComponents.CustomButton"
         android:layout_width="0dp"
         android:layout_height="80dp"
@@ -245,9 +245,9 @@
         android:text="9"
         android:textColor="#202020"
         android:textSize="35sp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_6"
+        app:layout_constraintBottom_toTopOf="@+id/btn_6"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/btn_add_position_8"
+        app:layout_constraintStart_toEndOf="@+id/btn_8"
         app:layout_constraintTop_toBottomOf="@id/csl_input_data" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -260,7 +260,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageButton
-            android:id="@+id/btnClose_add_item"
+            android:id="@+id/btnClose_dialog"
             style="@android:style/Widget.Holo.ImageButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -272,32 +272,23 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
-            android:id="@+id/textView104"
+            android:id="@+id/txt_dialog_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="21dp"
             android:layout_marginTop="16dp"
-            android:text="Category"
+            android:text="Add item to bill"
             android:textColor="@color/design_default_color_on_primary"
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
-            android:id="@+id/tvCategory_name_item"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="21dp"
-            android:textColor="@color/design_default_color_on_primary"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textView104" />
-
-        <TextView
             android:id="@+id/tvName_finded_item"
             android:layout_width="0dp"
             android:layout_height="65dp"
             android:layout_marginStart="24dp"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="32dp"
             android:layout_marginEnd="24dp"
             android:maxLines="2"
             android:textAlignment="center"
@@ -305,7 +296,7 @@
             android:textSize="24sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tvCategory_name_item" />
+            app:layout_constraintTop_toBottomOf="@+id/txt_dialog_name" />
 
         <View
             android:id="@+id/divider11"
@@ -343,7 +334,7 @@
                 android:textSize="18sp" />
 
             <TextView
-                android:id="@+id/txt_price_add_item"
+                android:id="@+id/txt_price_dialog"
                 android:layout_width="120dp"
                 android:layout_height="match_parent"
                 android:layout_weight="0.2"
@@ -377,7 +368,7 @@
                 android:textSize="18sp" />
 
             <TextView
-                android:id="@+id/txt_discount_price_add_item"
+                android:id="@+id/txt_discount_price_dialog"
                 android:layout_width="120dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="0.2"
@@ -441,7 +432,7 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <ImageButton
-            android:id="@+id/btn_search_barcode_add_item"
+            android:id="@+id/btn_search_barcode_dialog"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_marginStart="8dp"

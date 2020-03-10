@@ -15,6 +15,9 @@ public class RealmMigrations implements RealmMigration {
             schema.get("Bill").addField("expanded",boolean.class);
             oldVersion++;
         }
+        if (oldVersion == 2){
+            schema.create("History").addField("type",int.class).addField("msg",String.class).addField("date", long.class);
+        }
 
     }
 }

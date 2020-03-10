@@ -1,4 +1,4 @@
-package edi.md.androidcash;
+package edi.md.androidcash.DatcesNewFile;
 
 /**
  * @author Datecs Ltd. Software Department

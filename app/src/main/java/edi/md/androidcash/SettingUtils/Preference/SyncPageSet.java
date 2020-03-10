@@ -130,45 +130,45 @@ public class SyncPageSet extends Fragment {
                 getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putBoolean("SyncToStart",false).apply();
         });
 
-        autoSyncSwitch.setOnCheckedChangeListener(((compoundButton, checked) -> {
-            if(checked){
-                getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putBoolean("AutoSync",true).apply();
-                timeAutoUpdateSpinner.setEnabled(true);
-            }
-            else{
-                getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putBoolean("AutoSync",false).apply();
-                timeAutoUpdateSpinner.setEnabled(false);
-            }
-        }));
-
-        timeAutoUpdateSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putInt("positionFromAutoUpdate",i).apply();
-                switch (i){
-                    case 0:{
-                        getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putInt("intervalForAutoUpdate",0).apply();
-                    }break;
-                    case 1:{
-                        getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putInt("intervalForAutoUpdate",60000).apply();
-                        BaseApplication.getInstance().autoUpdateAssortment();
-                    }break;
-                    case 2:{
-                        getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putInt("intervalForAutoUpdate",180000).apply();
-                        BaseApplication.getInstance().autoUpdateAssortment();
-                    }break;
-                    case 3:{
-                        getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putInt("intervalForAutoUpdate",240000).apply();
-                        BaseApplication.getInstance().autoUpdateAssortment();
-                    }break;
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-
-            }
-        });
+//        autoSyncSwitch.setOnCheckedChangeListener(((compoundButton, checked) -> {
+//            if(checked){
+//                getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putBoolean("AutoSync",true).apply();
+//                timeAutoUpdateSpinner.setEnabled(true);
+//            }
+//            else{
+//                getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putBoolean("AutoSync",false).apply();
+//                timeAutoUpdateSpinner.setEnabled(false);
+//            }
+//        }));
+//
+//        timeAutoUpdateSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+//            @Override
+//            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+//                getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putInt("positionFromAutoUpdate",i).apply();
+//                switch (i){
+//                    case 0:{
+//                        getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putInt("intervalForAutoUpdate",0).apply();
+//                    }break;
+//                    case 1:{
+//                        getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putInt("intervalForAutoUpdate",60000).apply();
+//                        BaseApplication.getInstance().autoUpdateAssortment();
+//                    }break;
+//                    case 2:{
+//                        getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putInt("intervalForAutoUpdate",180000).apply();
+//                        BaseApplication.getInstance().autoUpdateAssortment();
+//                    }break;
+//                    case 3:{
+//                        getActivity().getSharedPreferences(SharedPrefSyncSettings, MODE_PRIVATE).edit().putInt("intervalForAutoUpdate",240000).apply();
+//                        BaseApplication.getInstance().autoUpdateAssortment();
+//                    }break;
+//                }
+//            }
+//
+//            @Override
+//            public void onNothingSelected(AdapterView<?> adapterView) {
+//
+//            }
+//        });
 
 
 

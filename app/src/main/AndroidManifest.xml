@@ -25,7 +25,15 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
-
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/title_activity_settings"></activity>
+        <activity android:name=".ReportsActivity" />
+        <activity android:name=".FinancialRepActivity" />
+        <activity
+            android:name=".HistoryActivity"
+            android:label=""
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".StartedActivity"
             android:label="@string/app_name"
@@ -59,16 +67,6 @@
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name=".Settings" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".AssortmentActivity"
-            android:label=""
-            android:theme="@style/AppTheme.NoActionBar">
-            <intent-filter>
-                <action android:name=".Assortiment" />
 
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
