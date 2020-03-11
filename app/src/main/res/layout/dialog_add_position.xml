@@ -2,245 +2,475 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="wrap_content"
+    android:layout_width="400dp"
     android:layout_height="wrap_content">
 
-    <Button
-        android:id="@+id/btn_cancel"
-        style="@android:style/Widget.DeviceDefault.Button.Toggle"
-        android:layout_width="0dp"
-        android:layout_height="70dp"
-        android:layout_marginStart="4dp"
-        android:layout_marginTop="32dp"
-        android:layout_marginBottom="8dp"
-        android:layout_weight="1"
-        android:background="@drawable/background_button_payment"
-        android:text="Cancel"
-        android:textSize="40sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="@+id/btn_add_position_clear"
-        app:layout_constraintStart_toEndOf="@+id/btn_ok"
-        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_0" />
 
-    <Button
-        android:id="@+id/btn_ok"
-        style="@android:style/Widget.DeviceDefault.Light.Button.Toggle"
-        android:layout_width="0dp"
-        android:layout_height="70dp"
-        android:layout_marginEnd="4dp"
-        android:layout_marginBottom="8dp"
-        android:layout_weight="1"
-        android:background="@drawable/background_button_payment"
-        android:text="OK"
-        android:textSize="40sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/btn_cancel"
-        app:layout_constraintStart_toStartOf="@+id/btn_add_position_delete"
-        app:layout_constraintTop_toBottomOf="@+id/btn_add_position_delete" />
-
-    <TextView
-        android:id="@+id/textView2"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="8dp"
-        android:text="Adauga pozitie"
-        android:textColor="@android:color/background_dark"
-        android:textSize="24sp"
-        app:layout_constraintBottom_toTopOf="@+id/et_input_data"
-        app:layout_constraintEnd_toEndOf="@+id/et_input_data"
-        app:layout_constraintStart_toStartOf="@+id/et_input_data"
-        app:layout_constraintTop_toTopOf="parent" />
-
-
-    <TextView
-        android:id="@+id/et_input_data"
-        android:layout_width="0dp"
-        android:layout_height="70dp"
-        android:layout_below="@+id/textView2"
-        android:layout_centerInParent="true"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        android:focusable="true"
-        android:focusedByDefault="true"
-        android:background="@drawable/edit_text_rame"
-        android:gravity="center"
-        android:textColor="@android:color/background_dark"
-        android:textSize="36sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/btn_add_position_7"
-        app:layout_constraintEnd_toEndOf="@+id/btn_add_position_9"
-        app:layout_constraintStart_toStartOf="@+id/btn_add_position_7"
-        app:layout_constraintTop_toBottomOf="@+id/textView2" />
-
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_1"
-        android:layout_width="140dp"
+        style="@style/Widget.MaterialComponents.CustomButton"
+        android:layout_width="0dp"
         android:layout_height="80dp"
-        android:layout_marginEnd="4dp"
-        android:layout_marginBottom="4dp"
-        android:background="@drawable/background_button_payment"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="1dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="@font/roboto"
+        android:gravity="center"
+        android:insetTop="1dp"
+        android:insetBottom="1dp"
         android:text="1"
-        android:textSize="40sp"
+        android:textColor="#202020"
+        android:textSize="35sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_delete"
         app:layout_constraintEnd_toStartOf="@+id/btn_add_position_2"
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_4" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_delete"
-        android:layout_width="140dp"
+        style="@style/Widget.MaterialComponents.CustomButton"
+        android:layout_width="0dp"
         android:layout_height="80dp"
-        android:layout_marginBottom="32dp"
-        android:drawableStart="@drawable/arrow_down_white_36dp"
-        android:background="@drawable/background_button_payment"
-        app:layout_constraintBottom_toTopOf="@+id/btn_ok"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="1dp"
+        android:layout_marginBottom="2dp"
+        android:fontFamily="@font/roboto"
+        android:gravity="center"
+        android:insetTop="1dp"
+        android:insetBottom="1dp"
+        android:text="del"
+        android:textColor="#202020"
+        android:textSize="30sp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/btn_add_position_0"
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_1" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_0"
-        android:layout_width="140dp"
+        style="@style/Widget.MaterialComponents.CustomButton"
+        android:layout_width="0dp"
         android:layout_height="80dp"
-        android:layout_marginStart="4dp"
-        android:layout_marginBottom="32dp"
-        android:background="@drawable/background_button_payment"
+        android:layout_marginStart="1dp"
+        android:layout_marginEnd="1dp"
+        android:layout_marginBottom="2dp"
+        android:fontFamily="@font/roboto"
+        android:gravity="center"
+        android:insetTop="1dp"
+        android:insetBottom="1dp"
         android:text="0"
-        android:textSize="40sp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_ok"
+        android:textColor="#202020"
+        android:textSize="35sp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/btn_add_position_clear"
         app:layout_constraintStart_toEndOf="@+id/btn_add_position_delete"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_2" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_clear"
-        android:layout_width="140dp"
+        style="@style/Widget.MaterialComponents.CustomButton"
+        android:layout_width="0dp"
         android:layout_height="80dp"
-        android:layout_marginStart="4dp"
-        android:layout_marginBottom="32dp"
-        android:background="@drawable/background_button_payment"
-        android:text="C"
-        android:textSize="40sp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_cancel"
+        android:layout_marginStart="1dp"
+        android:layout_marginEnd="2dp"
+        android:layout_marginBottom="2dp"
+        android:fontFamily="@font/roboto"
+        android:gravity="center"
+        android:insetTop="1dp"
+        android:insetBottom="1dp"
+        android:text="CE"
+        android:textColor="#202020"
+        android:textSize="35sp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/btn_add_position_0"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_3" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_4"
-        android:layout_width="140dp"
+        style="@style/Widget.MaterialComponents.CustomButton"
+        android:layout_width="0dp"
         android:layout_height="80dp"
-        android:layout_marginEnd="4dp"
-        android:layout_marginBottom="4dp"
-        android:background="@drawable/background_button_payment"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="1dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="@font/roboto"
+        android:gravity="center"
+        android:insetTop="1dp"
+        android:insetBottom="1dp"
         android:text="4"
-        android:textSize="40sp"
+        android:textColor="#202020"
+        android:textSize="35sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_1"
         app:layout_constraintEnd_toStartOf="@+id/btn_add_position_5"
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_7" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_7"
-        android:layout_width="140dp"
+        style="@style/Widget.MaterialComponents.CustomButton"
+        android:layout_width="0dp"
         android:layout_height="80dp"
-        android:layout_marginEnd="4dp"
-        android:layout_marginBottom="4dp"
-        android:background="@drawable/background_button_payment"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="1dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="@font/roboto"
+        android:gravity="center"
+        android:insetTop="1dp"
+        android:insetBottom="1dp"
         android:text="7"
-        android:textSize="40sp"
+        android:textColor="#202020"
+        android:textSize="35sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_4"
         app:layout_constraintEnd_toStartOf="@+id/btn_add_position_8"
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/et_input_data" />
+        app:layout_constraintTop_toBottomOf="@id/csl_input_data" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_2"
-        android:layout_width="140dp"
+        style="@style/Widget.MaterialComponents.CustomButton"
+        android:layout_width="0dp"
         android:layout_height="80dp"
-        android:layout_marginEnd="4dp"
-        android:layout_marginBottom="4dp"
-        android:background="@drawable/background_button_payment"
+        android:layout_marginStart="1dp"
+        android:layout_marginEnd="1dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="@font/roboto"
+        android:gravity="center"
+        android:insetTop="1dp"
+        android:insetBottom="1dp"
         android:text="2"
-        android:textSize="40sp"
+        android:textColor="#202020"
+        android:textSize="35sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_0"
         app:layout_constraintEnd_toStartOf="@+id/btn_add_position_3"
         app:layout_constraintStart_toEndOf="@+id/btn_add_position_1"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_5" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_5"
-        android:layout_width="140dp"
+        style="@style/Widget.MaterialComponents.CustomButton"
+        android:layout_width="0dp"
         android:layout_height="80dp"
-        android:layout_marginEnd="4dp"
-        android:layout_marginBottom="4dp"
-        android:background="@drawable/background_button_payment"
+        android:layout_marginStart="1dp"
+        android:layout_marginEnd="1dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="@font/roboto"
+        android:gravity="center"
+        android:insetTop="1dp"
+        android:insetBottom="1dp"
         android:text="5"
-        android:textSize="40sp"
+        android:textColor="#202020"
+        android:textSize="35sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_2"
         app:layout_constraintEnd_toStartOf="@+id/btn_add_position_6"
         app:layout_constraintStart_toEndOf="@+id/btn_add_position_4"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_8" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_8"
-        android:layout_width="140dp"
+        style="@style/Widget.MaterialComponents.CustomButton"
+        android:layout_width="0dp"
         android:layout_height="80dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="4dp"
-        android:layout_marginBottom="4dp"
-        android:background="@drawable/background_button_payment"
+        android:layout_marginStart="1dp"
+        android:layout_marginEnd="1dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="@font/roboto"
+        android:gravity="center"
+        android:insetTop="1dp"
+        android:insetBottom="1dp"
         android:text="8"
-        android:textSize="40sp"
+        android:textColor="#202020"
+        android:textSize="35sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_5"
         app:layout_constraintEnd_toStartOf="@+id/btn_add_position_9"
         app:layout_constraintStart_toEndOf="@+id/btn_add_position_7"
-        app:layout_constraintTop_toBottomOf="@+id/et_input_data" />
+        app:layout_constraintTop_toBottomOf="@id/csl_input_data" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_3"
-        android:layout_width="140dp"
+        style="@style/Widget.MaterialComponents.CustomButton"
+        android:layout_width="0dp"
         android:layout_height="80dp"
-        android:layout_marginBottom="4dp"
-        android:background="@drawable/background_button_payment"
+        android:layout_marginStart="1dp"
+        android:layout_marginEnd="2dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="@font/roboto"
+        android:gravity="center"
+        android:insetTop="1dp"
+        android:insetBottom="1dp"
         android:text="3"
-        android:textSize="40sp"
+        android:textColor="#202020"
+        android:textSize="35sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_clear"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/btn_add_position_2"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_6" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_6"
-        android:layout_width="140dp"
+        style="@style/Widget.MaterialComponents.CustomButton"
+        android:layout_width="0dp"
         android:layout_height="80dp"
-        android:layout_marginBottom="4dp"
-        android:background="@drawable/background_button_payment"
+        android:layout_marginStart="1dp"
+        android:layout_marginEnd="2dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="@font/roboto"
+        android:gravity="center"
+        android:insetTop="1dp"
+        android:insetBottom="1dp"
         android:text="6"
-        android:textSize="40sp"
+        android:textColor="#202020"
+        android:textSize="35sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_3"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/btn_add_position_5"
         app:layout_constraintTop_toBottomOf="@+id/btn_add_position_9" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_position_9"
-        android:layout_width="140dp"
+        style="@style/Widget.MaterialComponents.CustomButton"
+        android:layout_width="0dp"
         android:layout_height="80dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="4dp"
-        android:background="@drawable/background_button_payment"
+        android:layout_marginStart="1dp"
+        android:layout_marginEnd="2dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="@font/roboto"
+        android:gravity="center"
+        android:insetTop="1dp"
+        android:insetBottom="1dp"
         android:text="9"
-        android:textSize="40sp"
+        android:textColor="#202020"
+        android:textSize="35sp"
         app:layout_constraintBottom_toTopOf="@+id/btn_add_position_6"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/btn_add_position_8"
-        app:layout_constraintTop_toBottomOf="@+id/et_input_data" />
+        app:layout_constraintTop_toBottomOf="@id/csl_input_data" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/header_items"
+        android:layout_width="0dp"
+        android:layout_height="240dp"
+        android:background="@drawable/shape_green_gradient"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/btnClose_add_item"
+            style="@android:style/Widget.Holo.ImageButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="4dp"
+            android:background="@android:color/transparent"
+            android:src="@drawable/baseline_clear_white_36dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/textView104"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="21dp"
+            android:layout_marginTop="16dp"
+            android:text="Category"
+            android:textColor="@color/design_default_color_on_primary"
+            android:textSize="16sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tvCategory_name_item"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="21dp"
+            android:textColor="@color/design_default_color_on_primary"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textView104" />
+
+        <TextView
+            android:id="@+id/tvName_finded_item"
+            android:layout_width="0dp"
+            android:layout_height="65dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="24dp"
+            android:maxLines="2"
+            android:textAlignment="center"
+            android:textColor="@android:color/white"
+            android:textSize="24sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvCategory_name_item" />
+
+        <View
+            android:id="@+id/divider11"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginEnd="8dp"
+            android:background="@android:color/white"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvName_finded_item" />
+
+        <LinearLayout
+            android:id="@+id/ll_regular_price"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="1dp"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toTopOf="@+id/ll_disc_price"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/divider11">
+
+            <TextView
+                android:id="@+id/textView107"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="REGULAR PRICE"
+                android:textColor="@android:color/white"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/txt_price_add_item"
+                android:layout_width="120dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0.2"
+                android:text="MDL 0.00"
+                android:textAlignment="viewEnd"
+                android:textColor="@android:color/white"
+                android:textSize="18sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/ll_disc_price"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="16dp"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ll_regular_price">
+
+            <TextView
+                android:id="@+id/textView109"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="DISCOUNT PRICE"
+                android:textColor="@android:color/white"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/txt_discount_price_add_item"
+                android:layout_width="120dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.2"
+                android:text="MDL 0.00"
+                android:textAlignment="viewEnd"
+                android:textColor="@android:color/white"
+                android:textSize="18sp" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/csl_input_data"
+        android:layout_width="398dp"
+        android:layout_height="70dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginEnd="1dp"
+        android:background="@android:color/white"
+        android:elevation="4dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/header_items">
+
+        <TextView
+            android:id="@+id/et_input_data"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="8dp"
+            android:gravity="center_vertical"
+            android:paddingStart="5dp"
+            android:textColor="@android:color/black"
+            android:textSize="30sp"
+            android:maxLength="13"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/divider14"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <View
+            android:id="@+id/divider14"
+            android:layout_width="1dp"
+            android:layout_height="0dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="96dp"
+            android:layout_marginBottom="8dp"
+            android:background="@android:color/darker_gray"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/text_code_barcode"
+            android:layout_width="70dp"
+            android:layout_height="wrap_content"
+            android:text="Code or Barcode"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/divider14"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageButton
+            android:id="@+id/btn_search_barcode_add_item"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@android:color/transparent"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/divider14"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/baseline_search_black_48dp" />
+
+        <ImageButton
+            android:id="@+id/btn_add_item_to_bill"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@android:color/transparent"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/divider14"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/home_black_36dp" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,64 +2,60 @@ package edi.md.androidcash.adapters;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ListAdapter;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import java.text.SimpleDateFormat;
-import java.util.TimeZone;
+import androidx.recyclerview.widget.RecyclerView;
 
 import edi.md.androidcash.R;
+import edi.md.androidcash.RealmHelper.Bill;
 import edi.md.androidcash.RealmHelper.BillString;
 import io.realm.OrderedRealmCollection;
-import io.realm.RealmBaseAdapter;
+import io.realm.RealmRecyclerViewAdapter;
 
 /**
  * Created by Igor on 24.12.2019
  */
 
-public class CustomBillStringRealmAdapter extends RealmBaseAdapter<BillString> implements ListAdapter {
+public class CustomBillStringRealmAdapter extends RealmRecyclerViewAdapter<BillString, CustomBillStringRealmAdapter.BSViewHolder> {
 
-    SimpleDateFormat sdfChisinau;
-    TimeZone tzInChisinau;
-
-    private static class ViewHolder {
-        TextView nameString,countString,priceString,priceAfterDiscString;
+    public CustomBillStringRealmAdapter(@Nullable OrderedRealmCollection<BillString> data, boolean autoUpdate) {
+        super(data, autoUpdate);
     }
 
-    public CustomBillStringRealmAdapter(@Nullable OrderedRealmCollection<BillString> data) {
-        super(data);
-
+    @NonNull
+    @Override
+    public BSViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view =  LayoutInflater.from(parent.getContext()).inflate(R.layout.item_listview_list_bill_string, parent, false);
+        return new BSViewHolder(view);
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        ViewHolder viewHolder;
-        if(convertView == null){
-            viewHolder = new ViewHolder();
-            LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+    public void onBindViewHolder(@NonNull BSViewHolder holder, int position) {
 
-            convertView = inflater.inflate(R.layout.item_listview_list_bill_string,parent,false);
+        BillString bill = getItem(position);
 
-            viewHolder.nameString = convertView.findViewById(R.id.txtNameASL_in_bill);
-            viewHolder.countString = convertView.findViewById(R.id.txtCountASL_in_bill);
-            viewHolder.priceString = convertView.findViewById(R.id.txtPriceASL_in_bill);
-            viewHolder.priceAfterDiscString = convertView.findViewById(R.id.txtSumAfterDiscASL_in_bill);
-
-            convertView.setTag(viewHolder);
-        }else {
-            viewHolder = (ViewHolder) convertView.getTag();
-        }
-
-        if (adapterData != null) {
-            final BillString item = adapterData.get(position);
-
-            viewHolder.nameString.setText(item.getAssortmentFullName());
-            viewHolder.countString.setText(String.format("%.2f", item.getQuantity()).replace(",","."));
-            viewHolder.priceString.setText(String.format("%.2f", item.getPrice()).replace(",","."));
-            viewHolder.priceAfterDiscString.setText(String.format("%.2f", item.getPriceWithDiscount()).replace(",","."));
-        }
-        return convertView;
+        holder.bind(bill);
     }
+
+    public class BSViewHolder  extends RecyclerView.ViewHolder{
+        TextView nameString,countString,priceString,priceAfterDiscString;
+        public BSViewHolder(@NonNull View view) {
+            super(view);
+            nameString = view.findViewById(R.id.txtNameASL_in_bill);
+            countString = view.findViewById(R.id.txtCountASL_in_bill);
+            priceString = view.findViewById(R.id.txtPriceASL_in_bill);
+            priceAfterDiscString = view.findViewById(R.id.txtSumAfterDiscASL_in_bill);
+        }
+
+        private void bind(BillString item) {
+            nameString.setText(item.getAssortmentFullName());
+            countString.setText(String.format("%.2f", item.getQuantity()).replace(",","."));
+            priceString.setText(String.format("%.2f", item.getPrice()).replace(",","."));
+            priceAfterDiscString.setText(String.format("%.2f", item.getPriceWithDiscount()).replace(",","."));
+        }
+    }
+
+
 }

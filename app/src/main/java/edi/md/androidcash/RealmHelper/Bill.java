@@ -27,7 +27,8 @@ public class Bill extends RealmObject {
     private String closedBy;
     private String lastEditAuthor;
     private long lastEditDate;
-    private int inProcessOfSync; //0 - este finisat cu succes , 1- e in proces , 2 - nu este in proces
+    private int inProcessOfSync;    //0 - este finisat cu succes , 1- e in proces , 2 - nu este in proces
+    private boolean expanded;
 
     public String getId() {
         return id;
@@ -189,11 +190,19 @@ public class Bill extends RealmObject {
         this.lastEditDate = lastEditDate;
     }
 
-    public int isInProcessOfSync() {
+    public int getInProcessOfSync() {
         return inProcessOfSync;
     }
 
     public void setInProcessOfSync(int inProcessOfSync) {
         this.inProcessOfSync = inProcessOfSync;
+    }
+
+    public boolean isExpanded() {
+        return expanded;
+    }
+
+    public void setExpanded(boolean expanded) {
+        this.expanded = expanded;
     }
 }

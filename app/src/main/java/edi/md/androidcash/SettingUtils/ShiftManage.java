@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -14,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.contentcapture.ContentCaptureCondition;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -27,6 +29,7 @@ import androidx.fragment.app.Fragment;
 import com.datecs.fiscalprinter.SDK.model.DatecsFiscalDevice;
 import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReceipt;
 import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReport;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -42,6 +45,7 @@ import edi.md.androidcash.NetworkUtils.User;
 import edi.md.androidcash.R;
 import edi.md.androidcash.RealmHelper.Bill;
 import edi.md.androidcash.RealmHelper.Shift;
+import edi.md.androidcash.Utils.BaseEnum;
 import io.realm.Realm;
 import io.realm.RealmResults;
 import retrofit2.Call;
@@ -63,18 +67,21 @@ public class ShiftManage extends Fragment {
     private EditText edSetCioSum;
 
     SimpleDateFormat sdfChisinauSchedule;
-    SimpleDateFormat sdfChisinau;
+    SimpleDateFormat simpleDateFormatMD;
     TimeZone tzInChisinau;
 
     //Declare timer
     CountDownTimer cTimer = null;
 
-    private ProgressDialog progress;
+    private static ProgressDialog progress;
 
     DatecsFiscalDevice myFiscalDevice;
 
     private Realm mRealm;
     Shift shiftEntry;
+
+    private static Context context;
+    private static Activity activity;
 
     @Nullable
     @Override
@@ -90,10 +97,10 @@ public class ShiftManage extends Fragment {
         tv_closed_shift = rootViewAdmin.findViewById(R.id.txt_date_close_shift);
         tv_schedule_close_shift = rootViewAdmin.findViewById(R.id.txt_schedule_close_shift);
 
-        sdfChisinau = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
+        simpleDateFormatMD = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
         sdfChisinauSchedule = new SimpleDateFormat("HH:mm:ss");
         tzInChisinau = TimeZone.getTimeZone("Europe/Chisinau");
-        sdfChisinau.setTimeZone(tzInChisinau);
+        simpleDateFormatMD.setTimeZone(tzInChisinau);
 
         User user = ((BaseApplication)getActivity().getApplication()).getUser();
         myFiscalDevice = ((BaseApplication)getActivity().getApplication()).getMyFiscalDevice();
@@ -105,6 +112,8 @@ public class ShiftManage extends Fragment {
 
         Shift result = mRealm.where(Shift.class).equalTo("closed",false).findFirst();
 
+        context = getContext();
+        activity = getActivity();
         if(result != null){
             shiftEntry = mRealm.copyFromRealm(result);
 
@@ -114,8 +123,8 @@ public class ShiftManage extends Fragment {
                 tv_opened_shift.setText("Открыта: " );
             }
             else{
-                tv_opened_shift.setText("Открыта: " + sdfChisinau.format(opened));
-                tv_closed_shift.setText("Закрыть в: " + sdfChisinau.format(shiftEntry.getNeedClose()));
+                tv_opened_shift.setText("Открыта: " + simpleDateFormatMD.format(opened));
+                tv_closed_shift.setText("Закрыть в: " + simpleDateFormatMD.format(shiftEntry.getNeedClose()));
                 if(new Date().getTime() < shiftEntry.getNeedClose()){
                     startTimer(shiftEntry.getNeedClose() - new Date().getTime());
                 }
@@ -127,56 +136,42 @@ public class ShiftManage extends Fragment {
 
         open_shift.setOnClickListener(v -> {
             if(shiftEntry == null){
-                LayoutInflater inflater1 = getActivity().getLayoutInflater();
-                final View dialogView = inflater1.inflate(R.layout.dialog_open_shift, null);
+                new MaterialAlertDialogBuilder(getActivity(), R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
+                        .setTitle("Attention!")
+                        .setMessage("Do you want open shift?")
+                        .setCancelable(false)
+                        .setPositiveButton("Yes", (dialogInterface, i) -> {
+                            SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy");
+                            TimeZone tzIn = TimeZone.getTimeZone("Europe/Chisinau");
+                            sdf.setTimeZone(tzIn);
 
-                final AlertDialog exitApp = new AlertDialog.Builder(getContext(),R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
-                exitApp.setCancelable(false);
-                exitApp.setView(dialogView);
+                            long opened_new_shift = new Date().getTime();
+                            long need_close = opened_new_shift +  28800000;
 
-                Button btn_Cancel = dialogView.findViewById(R.id.btn_no_open_shift);
-                Button btn_ok = dialogView.findViewById(R.id.btn_yes_open_shift);
+                            shiftEntry = new Shift();
+                            shiftEntry.setName("SHF " + sdf.format(opened_new_shift));
+                            shiftEntry.setWorkPlaceId(workplaceId);
+                            shiftEntry.setAuthor(user.getId());
+                            shiftEntry.setStartDate(new Date().getTime());
+                            shiftEntry.setClosed(false);
+                            shiftEntry.setNeedClose(need_close);
+                            shiftEntry.setId(UUID.randomUUID().toString());
 
-                btn_Cancel.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        exitApp.dismiss();
-                    }
-                });
+                            mRealm.beginTransaction();
+                            mRealm.insert(shiftEntry);
+                            mRealm.commitTransaction();
 
-                btn_ok.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy");
-                        TimeZone tzIn = TimeZone.getTimeZone("Europe/Chisinau");
-                        sdf.setTimeZone(tzIn);
-
-                        long opened_new_shift = new Date().getTime();
-                        long need_close = opened_new_shift +  28800000;
-
-                        shiftEntry = new Shift();
-                        shiftEntry.setName("SHF " + sdf.format(opened_new_shift));
-                        shiftEntry.setWorkPlaceId(workplaceId);
-                        shiftEntry.setAuthor(user.getId());
-                        shiftEntry.setStartDate(new Date().getTime());
-                        shiftEntry.setClosed(false);
-                        shiftEntry.setNeedClose(need_close);
-                        shiftEntry.setId(UUID.randomUUID().toString());
-
-                        mRealm.beginTransaction();
-                        mRealm.insert(shiftEntry);
-                        mRealm.commitTransaction();
-
-                        tv_closed_shift.setText("Закрыть в: " + sdfChisinau.format(need_close));
-                        tv_opened_shift.setText("Открыта: " + sdfChisinau.format(opened_new_shift));
-                        startTimer(need_close - new Date().getTime());
-                        exitApp.dismiss();
-                    }
-                });
-                exitApp.show();
+                            tv_closed_shift.setText("Close in: " + simpleDateFormatMD.format(need_close));
+                            tv_opened_shift.setText("Open: " + simpleDateFormatMD.format(opened_new_shift));
+                            startTimer(need_close - new Date().getTime());
+                        })
+                        .setNegativeButton("No",((dialogInterface, i) -> {
+                            dialogInterface.dismiss();
+                        }))
+                        .show();
             }
             else{
-                postMessage("Смена уже открыта!");
+                postMessage("Shift is already open!");
             }
 
 
@@ -191,82 +186,59 @@ public class ShiftManage extends Fragment {
                             .equalTo("state",0)
                             .findAll();
                     if(!billEntryResult.isEmpty()){
-                        LayoutInflater inflater = getActivity().getLayoutInflater();
-                        final View dialogView = inflater.inflate(R.layout.dialog_exist_opened_bills, null);
-
-                        final AlertDialog exitApp = new AlertDialog.Builder(getContext(),R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
-                        exitApp.setCancelable(false);
-                        exitApp.setView(dialogView);
-
-                        Button btn_ok = dialogView.findViewById(R.id.btn_understand);
-                        TextView text_msg = dialogView.findViewById(R.id.text_message);
-
-                        text_msg.setText("Нельзя закрыть смену пока есть открытые счета!\nУ вас осталось " + billEntryResult.size() + " открытых счетов.");
-
-                        btn_ok.setOnClickListener(v128 -> exitApp.dismiss());
-
-                        exitApp.show();
+                        new MaterialAlertDialogBuilder(getActivity(), R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
+                                .setTitle("Attention!")
+                                .setMessage("You cannot close a shift while there are open bills!\nYou have left " + billEntryResult.size() + " open bills.")
+                                .setCancelable(false)
+                                .setPositiveButton("Yes", (dialogInterface, i) -> {
+                                    dialogInterface.dismiss();
+                                })
+                                .show();
                     }
                     else{
                         long open = shiftEntry.getStartDate();
                         if(open != 0){
-                            LayoutInflater inflater = getActivity().getLayoutInflater();
-                            final View dialogView = inflater.inflate(R.layout.dialog_close_shift, null);
+                            new MaterialAlertDialogBuilder(getActivity(), R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
+                                    .setTitle("Attention!")
+                                    .setMessage("Close shift?")
+                                    .setCancelable(false)
+                                    .setPositiveButton("Yes", (dialogInterface, i) -> {
+                                        long close = new Date().getTime();
+                                        shiftEntry.setClosedBy(user.getId());
+                                        shiftEntry.setEndDate(close);
+                                        shiftEntry.setClosed(true);
 
-                            final AlertDialog exitApp = new AlertDialog.Builder(getContext(),R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
-                            exitApp.setCancelable(false);
-                            exitApp.setView(dialogView);
+                                        mRealm.executeTransaction(realm -> {
+                                            RealmResults<Shift> shift = realm.where(Shift.class).equalTo("id", shiftEntry.getId()).findAll();
+                                            shift.setString("closedBy", user.getId());
+                                            shift.setLong("endDate", close);
+                                            shift.setBoolean("closed", true);
+                                            shift.setBoolean("isSended",false);
+                                        });
 
-                            Button btn_Cancel = dialogView.findViewById(R.id.btn_no_close_shift);
-                            Button btn_ok = dialogView.findViewById(R.id.btn_yes_close_shift);
+                                        tv_closed_shift.setText("Закрыта: " + simpleDateFormatMD.format(close));
+                                        tv_opened_shift.setText("Открыта: ");
+                                        tv_schedule_close_shift.setText("До закрытия осталось: ");
+                                        cancelTimer();
+                                        shiftEntry = null;
 
-                            btn_Cancel.setOnClickListener(new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    exitApp.dismiss();
-                                }
-                            });
+                                        int workFisc = getActivity().getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork",0);
 
-                            btn_ok.setOnClickListener(new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    long close = new Date().getTime();
-                                    shiftEntry.setClosedBy(user.getId());
-                                    shiftEntry.setEndDate(close);
-                                    shiftEntry.setClosed(true);
-
-                                    mRealm.executeTransaction(realm -> {
-                                        RealmResults<Shift> shift = realm.where(Shift.class).equalTo("id", shiftEntry.getId()).findAll();
-                                        shift.setString("closedBy", user.getId());
-                                        shift.setLong("endDate", close);
-                                        shift.setBoolean("closed", true);
-                                        shift.setBoolean("isSended",false);
-                                    });
-
-                                    tv_closed_shift.setText("Закрыта: " + sdfChisinau.format(close));
-                                    tv_opened_shift.setText("Открыта: ");
-                                    tv_schedule_close_shift.setText("До закрытия осталось: ");
-                                    cancelTimer();
-                                    shiftEntry = null;
-                                    exitApp.dismiss();
-
-                                    int workFisc = getActivity().getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork",0);
-
-                                    if(workFisc == 1) {
-                                        if (myFiscalDevice != null && myFiscalDevice.isConnectedDeviceV2())
-                                            printZReport();
-                                    }
-                                    if(workFisc == 2)
-                                        printZReportFiscalService();
-                                }
-                            });
-                            exitApp.show();
+                                        if(workFisc == BaseEnum.FISCAL_DEVICE) {
+                                            if (myFiscalDevice != null && myFiscalDevice.isConnectedDeviceV2())
+                                                printZReport();
+                                        }
+                                        if(workFisc == BaseEnum.FISCAL_SERVICE)
+                                            printZReportFiscalService();
+                                    })
+                                    .setNegativeButton("No", (dialogInterface, i) -> dialogInterface.dismiss())
+                                    .show();
                         }
 
                     }
                 }
                 else{
-                    postMessage("Сперва откройте смену!");
+                    postMessage("Close the shift first!");
                 }
             }
         });
@@ -514,8 +486,8 @@ public class ShiftManage extends Fragment {
         }
     }
 
-    private void printZReport(){
-        progress = new ProgressDialog(getContext());
+    public static void printZReport(){
+        progress = new ProgressDialog(context);
         progress.setCancelable(true);
         progress.setTitle("Z report is working !!!");
         progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
@@ -536,13 +508,13 @@ public class ShiftManage extends Fragment {
                 } finally {
                     progress.dismiss();
                 }
-                getActivity().runOnUiThread(new Runnable() {
+                activity.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        DialogZXReportsSummary dialogSummary = new DialogZXReportsSummary(getActivity(), reportSummary);
+                        DialogZXReportsSummary dialogSummary = new DialogZXReportsSummary(activity, reportSummary);
                         dialogSummary.show();
                         DisplayMetrics metrics = new DisplayMetrics(); //get metrics of screen
-                        getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
+                        activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
                         int width = (int) (metrics.widthPixels * 0.5); //set width to 50% of display
                         int height = (int) (metrics.heightPixels * 0.9); //set height to 90% of display
                         dialogSummary.getWindow().setLayout(width, height); //set layout
@@ -555,7 +527,7 @@ public class ShiftManage extends Fragment {
     }
 
     //DIALOG  ZXReportsSummary
-    public class DialogZXReportsSummary extends Dialog implements View.OnClickListener {
+    public static class DialogZXReportsSummary extends Dialog implements View.OnClickListener {
         private final cmdReport.ReportSummary summary;
 
         private DialogZXReportsSummary(Activity a, cmdReport.ReportSummary summary) {

@@ -3,15 +3,13 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.WebSettings;
 import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
 
 import java.util.List;
 
@@ -31,8 +29,8 @@ public class GridQuickButtonAssortmentAdapter extends ArrayAdapter<AssortmentRea
     }
 
     private static class ViewHolder {
-       LinearLayout ll;
-       TextView txt;
+       ConstraintLayout ll;
+       TextView txtName;
     }
 
     @NonNull
@@ -47,7 +45,7 @@ public class GridQuickButtonAssortmentAdapter extends ArrayAdapter<AssortmentRea
             convertView = inflater.inflate(R.layout.item_grid_quick_buttons,parent,false);
 
             viewHolder.ll = convertView.findViewById(R.id.ll_item_grid_view);
-            viewHolder.txt = convertView.findViewById(R.id.btn_assortment);
+            viewHolder.txtName = convertView.findViewById(R.id.btn_assortment);
 
             viewHolder.ll.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, heightView));
 
@@ -58,13 +56,17 @@ public class GridQuickButtonAssortmentAdapter extends ArrayAdapter<AssortmentRea
 
         AssortmentRealm item = getItem(position);
         if (item != null) {
-            if(item.getId() != null)
-                viewHolder.txt.setText(item.getName());
-            else
-                viewHolder.txt.setText("");
+            if(item.getId() != null){
+                viewHolder.txtName.setText(item.getName());
+            }
+            else{
+                viewHolder.txtName.setText("");
+            }
         }
-        else
-            viewHolder.txt.setText("");
+        else{
+            viewHolder.txtName.setText("");
+        }
+
 
         return convertView;
     }

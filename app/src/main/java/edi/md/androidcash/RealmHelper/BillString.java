@@ -32,6 +32,7 @@ public class BillString extends RealmObject {
     private boolean isDeleted;
     private long deletionDate;
     private String deleteBy;
+    private boolean expanded;
 
     public String getBillID() {
         return billID;
@@ -183,5 +184,13 @@ public class BillString extends RealmObject {
 
     public void setDeleteBy(String deleteBy) {
         this.deleteBy = deleteBy;
+    }
+
+    public boolean isExpanded() {
+        return expanded;
+    }
+
+    public void setExpanded(boolean expanded) {
+        this.expanded = expanded;
     }
 }

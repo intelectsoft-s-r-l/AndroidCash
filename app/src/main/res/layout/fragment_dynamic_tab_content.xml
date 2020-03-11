@@ -3,19 +3,18 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/blue_color">
+    android:background="@android:color/transparent">
 
     <GridView
         android:id="@+id/gv"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
+        android:layout_marginStart="5dp"
+        android:layout_marginEnd="5dp"
+        android:background="@android:color/transparent"
         android:gravity="center"
         android:horizontalSpacing="5dp"
-        android:numColumns="3"
-        android:paddingTop="5dp"
-        android:paddingBottom="5dp"
+        android:numColumns="4"
         android:stretchMode="columnWidth"
         android:verticalSpacing="5dp" />
 
