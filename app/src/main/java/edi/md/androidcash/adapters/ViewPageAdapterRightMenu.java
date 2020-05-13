@@ -5,14 +5,11 @@ import android.content.Context;
 
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentPagerAdapter;
 import androidx.fragment.app.FragmentStatePagerAdapter;
 
 import edi.md.androidcash.Fragments.FragmentAssortmentList;
 import edi.md.androidcash.Fragments.FragmentBills;
 import edi.md.androidcash.Fragments.FragmentQuickButtons;
-import edi.md.androidcash.SettingUtils.Preference.GeneralPageSet;
-import edi.md.androidcash.SettingUtils.Preference.SyncPageSet;
 
 public class ViewPageAdapterRightMenu extends FragmentStatePagerAdapter {
     Context context;

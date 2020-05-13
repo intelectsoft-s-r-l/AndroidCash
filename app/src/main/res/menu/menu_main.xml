@@ -4,8 +4,14 @@
 
     <item
         android:id="@+id/action_search"
-        android:icon="@android:drawable/ic_menu_search"
+        android:icon="@drawable/baseline_search_white_48dp"
         app:showAsAction="always"
         app:actionViewClass="android.widget.SearchView"
+        android:title="Search"/>
+
+    <item
+        android:id="@+id/action_notification"
+        android:icon="@drawable/baseline_notifications_white_48dp"
+        app:showAsAction="always"
         android:title="Search"/>
 </menu>

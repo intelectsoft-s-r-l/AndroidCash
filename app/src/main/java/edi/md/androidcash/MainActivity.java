@@ -1,5 +1,6 @@
 package edi.md.androidcash;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.PendingIntent;
@@ -24,6 +25,7 @@ import android.os.CountDownTimer;
 import android.os.StrictMode;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
@@ -49,6 +51,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -67,8 +70,12 @@ import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReceipt;
 import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReport;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.dialog.MaterialDialogs;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -83,26 +90,43 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
 import edi.md.androidcash.DatcesNewFile.PrinterManager;
 import edi.md.androidcash.Fragments.FragmentBills;
+import edi.md.androidcash.NetworkUtils.AssortmentServiceEntry;
+import edi.md.androidcash.NetworkUtils.EposResult.AssortmentListService;
 import edi.md.androidcash.NetworkUtils.EposResult.AuthentificateUserResult;
+import edi.md.androidcash.NetworkUtils.EposResult.GetAssortmentListResult;
+import edi.md.androidcash.NetworkUtils.EposResult.GetUsersListResult;
 import edi.md.androidcash.NetworkUtils.EposResult.GetWorkPlaceService;
+import edi.md.androidcash.NetworkUtils.EposResult.GetWorkplaceSettingsResult;
 import edi.md.androidcash.NetworkUtils.EposResult.GetWorkplacesResult;
 import edi.md.androidcash.NetworkUtils.EposResult.TokenReceivedFromAutenficateUser;
+import edi.md.androidcash.NetworkUtils.EposResult.UserListServiceResult;
+import edi.md.androidcash.NetworkUtils.EposResult.WorkPlaceSettings;
+import edi.md.androidcash.NetworkUtils.FiscalDevice;
 import edi.md.androidcash.NetworkUtils.FiscalServiceResult.PrintReportZResult;
 import edi.md.androidcash.NetworkUtils.FiscalServiceResult.ZResponse;
 import edi.md.androidcash.NetworkUtils.PaymentType;
 import edi.md.androidcash.NetworkUtils.Promotion;
+import edi.md.androidcash.NetworkUtils.QuickGroup;
 import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
 import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
+import edi.md.androidcash.NetworkUtils.User;
 import edi.md.androidcash.NetworkUtils.WorkplaceEntry;
 import edi.md.androidcash.RealmHelper.AssortmentRealm;
+import edi.md.androidcash.RealmHelper.Barcodes;
 import edi.md.androidcash.RealmHelper.Bill;
 import edi.md.androidcash.RealmHelper.BillPaymentType;
 import edi.md.androidcash.RealmHelper.BillString;
 import edi.md.androidcash.RealmHelper.History;
+import edi.md.androidcash.RealmHelper.QuickGroupRealm;
 import edi.md.androidcash.RealmHelper.Shift;
 import edi.md.androidcash.Utils.BaseEnum;
+import edi.md.androidcash.Utils.Rfc2898DerivesBytes;
+import edi.md.androidcash.Utils.UpdateHelper;
 import edi.md.androidcash.adapters.CustomBillStringRealmListAdapter;
 import edi.md.androidcash.adapters.CustomRCBillStringRealmAdapter;
 import edi.md.androidcash.adapters.ViewPageAdapterRightMenu;
@@ -119,14 +143,17 @@ import static edi.md.androidcash.BaseApplication.SharedPrefFiscalService;
 import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
 import static edi.md.androidcash.BaseApplication.SharedPrefWorkPlaceSettings;
 import static edi.md.androidcash.BaseApplication.deviceId;
+import static edi.md.androidcash.Utils.BaseEnum.FTDI_USB_VID;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity{
     private static Context context;
     private static Activity activity;
     private static ProgressDialog progressDialogPrintReport;
     private static TextView tvDiscountBill, tvSubTotalBill;
     private TextView tvScanBarcode;
+    TextView tvUserNameNav;
+    TextView tvUserEmailNav;
     private static MaterialButton btnPay;
     MaterialButton btnNewBill, btnAddItem, btnCheckPrice, btnAddClient;
     private static RecyclerView recyclerView;
@@ -143,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
     TimeZone timeZoneMD;
 
     //Reader ACR
-    private Reader mReader;
+    private static Reader mReader;
 
     //NFC variables
     private NfcAdapter nfcAdapter;
@@ -152,16 +179,16 @@ public class MainActivity extends AppCompatActivity {
 
     //USB variables
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
-    private PendingIntent mPermissionIntent;
-    private UsbManager mUSBManager;
+    private static PendingIntent mPermissionIntent;
+    private static UsbManager mUSBManager;
 
     //datecs variables
-    public DatecsFiscalDevice datecsFiscalDevice = null;
+    public static DatecsFiscalDevice datecsFiscalDevice = null;
 
     static AlertDialog paymentDialog;
     private static cmdReceipt.FiscalReceipt fiscalReceipt;
 
-    private static String openedBillId, workPlaceID;
+    private static String openedBillId, workPlaceID, tokenId;
 
     private boolean shiftOpenButtonPay = false;
     private boolean shiftClosedButtonPay = false;
@@ -180,11 +207,13 @@ public class MainActivity extends AppCompatActivity {
 
     private ConstraintLayout csl_sales;
     private ConstraintLayout csl_shifts;
-    private ConstraintLayout csl_tickets;
     private ConstraintLayout csl_reports;
     private ConstraintLayout csl_finReport;
     private ConstraintLayout csl_history;
     private ConstraintLayout csl_settings;
+    private ConstraintLayout csl_finOper;
+
+    static DisplayMetrics displayMetrics;
 
     private ProgressDialog pgH;
     private List<WorkplaceEntry> workplaceEntryList = new ArrayList<>();
@@ -197,7 +226,7 @@ public class MainActivity extends AppCompatActivity {
             if (ACTION_USB_PERMISSION.equals(action)) {
                 synchronized (this) {
                     UsbDevice device = (UsbDevice) intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                    if(getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork", BaseEnum.NONE_SELECTED_FISCAL_MODE) == BaseEnum.FISCAL_DEVICE){
+//                    if(getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork", BaseEnum.NONE_SELECTED_FISCAL_MODE) == BaseEnum.FISCAL_DEVICE){
                         if (device.getManufacturerName().equals("Datecs")) {
                             if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                                 AbstractConnector connector = new UsbDeviceConnector(MainActivity.this, mUSBManager, device);
@@ -216,7 +245,7 @@ public class MainActivity extends AppCompatActivity {
                                 deviceConnect(connector);
                             }
                         }
-                    }
+//                    }
 
                     if (device.getManufacturerName().equals("ACS")) {
                         if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
@@ -230,7 +259,7 @@ public class MainActivity extends AppCompatActivity {
                             while (deviceIterator.hasNext()) {
                                 UsbDevice devices = deviceIterator.next();
 
-                                if ((devices.getVendorId() == BaseEnum.DATECS_USB_VID) || (devices.getVendorId() == BaseEnum.FTDI_USB_VID) && (devices.getManufacturerName().equals("Datecs"))) {
+                                if ((devices.getVendorId() == BaseEnum.DATECS_USB_VID) || (devices.getVendorId() == FTDI_USB_VID) && (devices.getManufacturerName().equals("Datecs"))) {
                                     if (!mUSBManager.hasPermission(devices)) {
                                         mUSBManager.requestPermission(devices, mPermissionIntent);
                                     }
@@ -258,11 +287,11 @@ public class MainActivity extends AppCompatActivity {
             }
             else if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
                 for (UsbDevice device : mUSBManager.getDeviceList().values()) {
-                     if(getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork", BaseEnum.NONE_SELECTED_FISCAL_MODE) == BaseEnum.FISCAL_DEVICE){
+//                     if(getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork", BaseEnum.NONE_SELECTED_FISCAL_MODE) == BaseEnum.FISCAL_DEVICE){
                          if (device.getManufacturerName().equals("Datecs")) {
                              mUSBManager.requestPermission(device, mPermissionIntent);
                          }
-                     }
+//                     }
                     if (device.getManufacturerName().equals("ACS")) {
                         mUSBManager.requestPermission(device, mPermissionIntent);
                     }
@@ -271,10 +300,10 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         // Get USB manager
         mUSBManager = (UsbManager) getSystemService(Context.USB_SERVICE);
         // Register receiver for USB permission
@@ -287,6 +316,8 @@ public class MainActivity extends AppCompatActivity {
         registerReceiver(mReceiver, filter);
 
         setContentView(R.layout.drawer_layout_bill);
+
+
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -312,18 +343,37 @@ public class MainActivity extends AppCompatActivity {
         inflater = MainActivity.this.getLayoutInflater();
 
         csl_sales = findViewById(R.id.csl_sales);
-        csl_settings = findViewById(R.id.csl_setting_nav);
-        csl_history = findViewById(R.id.csl_history);
-        csl_finReport = findViewById(R.id.csl_fin_reports);
+        csl_shifts = findViewById(R.id.csl_shift);
         csl_reports = findViewById(R.id.csl_reports);
+        csl_finReport = findViewById(R.id.csl_fin_reports);
+        csl_history = findViewById(R.id.csl_history);
+        csl_settings = findViewById(R.id.csl_setting_nav);
+        tvUserNameNav = findViewById(R.id.tv_user_name_nav);
+        tvUserEmailNav = findViewById(R.id.tv_email_auth_user);
 
-        pgH = new ProgressDialog(this);
+
+        pgH = new ProgressDialog(this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme);
         sharedPreferenceSettings = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE);
         sharedPreferenceWorkPlace = getSharedPreferences(SharedPrefWorkPlaceSettings, MODE_PRIVATE);
+
+        displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
 
         ((SimpleItemAnimator) recyclerView.getItemAnimator()).setSupportsChangeAnimations(false);
         initRecyclerView();
         findOpenedShift();
+
+        workPlaceID = getSharedPreferences(SharedPrefWorkPlaceSettings,MODE_PRIVATE).getString("WorkPlaceID",null);
+        if (workPlaceID != null) {
+            viewPager.setAdapter(null);
+            adapterRightMenu = new ViewPageAdapterRightMenu(this, getSupportFragmentManager());
+            viewPager.setAdapter(adapterRightMenu);
+            viewPager.setOffscreenPageLimit(4);
+
+            tabLayout.setupWithViewPager(viewPager);
+            tabLayout.setTabMode(TabLayout.MODE_FIXED);
+            tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
+        }
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
@@ -334,8 +384,6 @@ public class MainActivity extends AppCompatActivity {
         if (nfcAdapter == null)
             Toast.makeText(this, "This device doesn't support NFC.", Toast.LENGTH_LONG).show();
 
-        workPlaceID = getSharedPreferences(SharedPrefWorkPlaceSettings,MODE_PRIVATE).getString("WorkPlaceID",null);
-
         simpleDateFormatMD = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy");
         timeZoneMD = TimeZone.getTimeZone("Europe/Chisinau");
         simpleDateFormatMD.setTimeZone(timeZoneMD);
@@ -343,13 +391,6 @@ public class MainActivity extends AppCompatActivity {
         datecsFiscalDevice = ((BaseApplication)getApplication()).getMyFiscalDevice();
         // Initialize reader ACR
         mReader = new Reader(mUSBManager);
-        viewPager.setAdapter(null);
-        adapterRightMenu = new ViewPageAdapterRightMenu(this, getSupportFragmentManager());
-        viewPager.setAdapter(adapterRightMenu);
-        viewPager.setOffscreenPageLimit(4);
-        tabLayout.setupWithViewPager(viewPager);
-        tabLayout.setTabMode(TabLayout.MODE_FIXED);
-        tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
 
         mReader.setOnStateChangeListener((slotNum, prevState, currState) -> {
 
@@ -360,7 +401,6 @@ public class MainActivity extends AppCompatActivity {
                 currState = Reader.CARD_UNKNOWN;
             }
             if (currState == Reader.CARD_PRESENT) {
-
 
             }
         });
@@ -395,21 +435,27 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
-
-        csl_settings.setOnClickListener(v ->{
-            startActivityForResult(new Intent(this, SettingsActivity.class),BaseEnum.Activity_Settings);
+        csl_sales.setOnClickListener(view -> {
             drawer.closeDrawer(GravityCompat.START);
         });
-        csl_history.setOnClickListener(view -> {
-            startActivityForResult(new Intent(this, HistoryActivity.class),BaseEnum.Activity_History);
+        csl_shifts.setOnClickListener(view -> {
+            startActivityForResult(new Intent(this, ShiftsActivity.class), BaseEnum.Activity_Shifts);
+            drawer.closeDrawer(GravityCompat.START);
+        });
+        csl_reports.setOnClickListener(view -> {
+            startActivityForResult(new Intent(this, ReportsActivity.class), BaseEnum.Activity_Reports);
             drawer.closeDrawer(GravityCompat.START);
         });
         csl_finReport.setOnClickListener(view -> {
             startActivityForResult(new Intent(this, FinancialRepActivity.class),BaseEnum.Activity_FinRep);
             drawer.closeDrawer(GravityCompat.START);
         });
-        csl_reports.setOnClickListener(view -> {
-            startActivityForResult(new Intent(this, ReportsActivity.class), BaseEnum.Activity_Reports);
+        csl_history.setOnClickListener(view -> {
+            startActivityForResult(new Intent(this, HistoryActivity.class),BaseEnum.Activity_History);
+            drawer.closeDrawer(GravityCompat.START);
+        });
+        csl_settings.setOnClickListener(v ->{
+            startActivityForResult(new Intent(this, SettingsActivity.class),BaseEnum.Activity_Settings);
             drawer.closeDrawer(GravityCompat.START);
         });
 
@@ -429,13 +475,28 @@ public class MainActivity extends AppCompatActivity {
             View dialogView = inflater.inflate(R.layout.dialog_add_client, null);
 
             AlertDialog addClient = new AlertDialog.Builder(MainActivity.this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
-            addClient.setCancelable(false);
             addClient.setView(dialogView);
             addClient.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 
+            MaterialButton btnCancel = dialogView.findViewById(R.id.btn_cancel_add_client);
+
+            btnCancel.setOnClickListener(view1 -> {
+                addClient.dismiss();
+            });
+
             addClient.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
             addClient.show();
-            addClient.getWindow().setLayout(300,LinearLayout.LayoutParams.WRAP_CONTENT);
+
+            DisplayMetrics displayMetrics = new DisplayMetrics();
+            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+            int displayWidth = displayMetrics.widthPixels;
+            WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
+            layoutParams.copyFrom(addClient.getWindow().getAttributes());
+            int dialogWindowWidth = (int) (displayWidth * 0.4f);
+            layoutParams.width = dialogWindowWidth;
+            layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+            addClient.getWindow().setAttributes(layoutParams);
+
             addClient.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
                     | View.SYSTEM_UI_FLAG_FULLSCREEN
                     | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
@@ -457,7 +518,9 @@ public class MainActivity extends AppCompatActivity {
                             Shift shiftEntry = new Shift();
                             shiftEntry.setName("SHF " + simpleDateFormatMD.format(opened_new_shift));
                             shiftEntry.setWorkPlaceId(getSharedPreferences(SharedPrefWorkPlaceSettings, MODE_PRIVATE).getString("WorkPlaceID", "null"));
+                            shiftEntry.setWorkPlaceName(getSharedPreferences(SharedPrefWorkPlaceSettings, MODE_PRIVATE).getString("WorkPlaceName", "null"));
                             shiftEntry.setAuthor(BaseApplication.getInstance().getUserId());
+                            shiftEntry.setAuthorName(BaseApplication.getInstance().getUser().getFullName());
                             shiftEntry.setStartDate(new Date().getTime());
                             shiftEntry.setClosed(false);
                             shiftEntry.setNeedClose(need_close);
@@ -502,6 +565,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == BaseEnum.Activity_Shifts){
+            Shift shift = BaseApplication.getInstance().getShift();
+            checkShift(shift);
+            FragmentBills.showBillList();
+        }
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         hideSystemUI();
@@ -528,19 +601,36 @@ public class MainActivity extends AppCompatActivity {
 //        }
 
         Shift shift = BaseApplication.getInstance().getShift();
-        if(shift != null){
-            shiftOpenButtonPay = false;
+        checkShift(shift);
 
+        workPlaceID = getSharedPreferences(SharedPrefWorkPlaceSettings,MODE_PRIVATE).getString("WorkPlaceID",null);
+        if (workPlaceID == null) {
+            pgH.setMessage("loading workplace...");
+            pgH.setIndeterminate(true);
+            pgH.show();
+
+            String uri = sharedPreferenceSettings.getString("URI",null);
+            tokenId = sharedPreferenceSettings.getString("Token",null);
+            getSyncWorkplace(uri,tokenId);
+        }
+        else{
+            tvUserNameNav.setText(BaseApplication.getInstance().getUser().getFirstName() + " " +  BaseApplication.getInstance().getUser().getLastName());
+            tvUserEmailNav.setText(BaseApplication.getInstance().getUser().getEmail());
+        }
+    }
+
+    private void checkShift( Shift shift){
+
+        if(shift != null){
             boolean shiftOpened = shift.isClosed();
             long shiftNeedClose = shift.getNeedClose();
             long currentTime = new Date().getTime();
 
             if(!shiftOpened && currentTime < shiftNeedClose){
                 //if shift is opened and time to close is smaller current time, when shift is valid
-                //start timer as long as it remained
-                startTimer(shiftNeedClose - currentTime);
-
-                //TODO other function set when shift is valid
+                shiftOpenButtonPay = false;
+//                FragmentBills.showBillList();
+                btnPay.setText("MDL 0.00");
 
             }
             else if(!shiftOpened && currentTime > shiftNeedClose && shiftNeedClose != 0){
@@ -575,28 +665,8 @@ public class MainActivity extends AppCompatActivity {
             btnPay.setText("Open shift");
             shiftOpenButtonPay = true;
         }
-
-        if (workPlaceID == null) {
-            pgH.setMessage("loading...");
-            pgH.setIndeterminate(true);
-            pgH.show();
-
-            String uri = sharedPreferenceSettings.getString("URI",null);
-            String token = sharedPreferenceSettings.getString("Token",null);
-            long validToken = sharedPreferenceSettings.getLong("TokenValidTo",0);
-            long currentTime = new Date().getTime();
-
-            getSyncWorkplace(uri,token);
-
-//            if(currentTime < validToken)
-//
-//            else{
-//                String login = BaseApplication.getInstance().getUser().getUserName();
-//                String pass = BaseApplication.getInstance().getUserPasswordsNotHashed();
-//                authUserToServer( login, pass);
-//            }
-        }
     }
+
     private void getSyncWorkplace(final String uri, String token){
         CommandServices commandServices = ApiUtils.commandEposService(uri);
         final Call<GetWorkPlaceService> workplace = commandServices.getWorkplace(token);
@@ -640,7 +710,6 @@ public class MainActivity extends AppCompatActivity {
                                 return convertView;
                             }
                         };
-
                         pgH.dismiss();
 
                         AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -648,8 +717,10 @@ public class MainActivity extends AppCompatActivity {
                         builder.setAdapter(adapterDialog, (dialog, position) -> {
                             sharedPreferenceWorkPlace.edit().putString("WorkPlaceID", workplaceEntryList.get(position).getID()).apply();
                             sharedPreferenceWorkPlace.edit().putString("WorkPlaceName", workplaceEntryList.get(position).getName()).apply();
-                            Toast.makeText(context, "You selected: " + workplaceEntryList.get(position).getID(),Toast.LENGTH_LONG).show();
+                            workPlaceID =  workplaceEntryList.get(position).getID();
                             dialog.dismiss();
+                            new AssortmentTask().execute();
+
                         });
 
                         AlertDialog alert = builder.create();
@@ -666,7 +737,6 @@ public class MainActivity extends AppCompatActivity {
                                 .setMessage("No rights to view workplace! You want to enter other login?")
                                 .setCancelable(false)
                                 .setPositiveButton("YES", (dialogInterface, i) -> {
-
                                     View dialogView = inflater.inflate(R.layout.dialog_login_user, null);
 
                                     final android.app.AlertDialog reLogin = new android.app.AlertDialog.Builder(context,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
@@ -696,14 +766,21 @@ public class MainActivity extends AppCompatActivity {
                 else if(errorecode == 401){
                     //необходимо обновить токен
 //                    String login = BaseApplication.getInstance().getUser().getUserName();
-//                    String pass = BaseApplication.getInstance().getUserPasswordsNotHashed();
+                    String login = "Admin";
+                    String pass = BaseApplication.getInstance().getUserPasswordsNotHashed();
 
-//                    authUserToServer(login,pass);
+                    authUserToServer(login,pass);
+                }
+                else{
+                    pgH.dismiss();
+                    Toast.makeText(MainActivity.this, "Errore" + errorecode, Toast.LENGTH_SHORT).show();
                 }
             }
             @Override
             public void onFailure(Call<GetWorkPlaceService> call, Throwable t) {
-
+                //on failure
+                pgH.dismiss();
+                Toast.makeText(MainActivity.this, t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -723,17 +800,18 @@ public class MainActivity extends AppCompatActivity {
                 if(authentificateUserResult != null){
                     TokenReceivedFromAutenficateUser token = authentificateUserResult.getAuthentificateUserResult();
                     if(token.getErrorCode() == 0){
-                        sharedPreferenceSettings.edit().putString("Token",token.getToken()).apply();
+                        tokenId = token.getToken();
+                        sharedPreferenceSettings.edit().putString("Token", tokenId).apply();
                         String date = token.getTokenValidTo();
                         date = date.replace("/Date(","");
                         date = date.replace("+0200)/","");
                         long dateLong = Long.parseLong(date);
-                        sharedPreferenceSettings.edit().putLong("TokenValidTo",dateLong).apply();
+                        sharedPreferenceSettings.edit().putLong("TokenValidTo", dateLong).apply();
 
                         getSyncWorkplace(uri,token.getToken());
                     }
                     else{
-                        android.app.AlertDialog.Builder dialog_user = new android.app.AlertDialog.Builder(context);
+                        AlertDialog.Builder dialog_user = new AlertDialog.Builder(context);
                         dialog_user.setTitle("Atentie!");
                         dialog_user.setMessage("Eroare!Codul: " + token.getErrorCode());
                         dialog_user.setPositiveButton("Ok", (dialog, which) -> {
@@ -746,7 +824,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 else{
-                    android.app.AlertDialog.Builder dialog_user = new android.app.AlertDialog.Builder(context);
+                    AlertDialog.Builder dialog_user = new AlertDialog.Builder(context);
                     dialog_user.setTitle("Atentie!");
                     dialog_user.setMessage("Nu este raspuns de la serviciu!");
                     dialog_user.setPositiveButton("Ok", (dialog, which) -> {
@@ -926,164 +1004,6 @@ public class MainActivity extends AppCompatActivity {
 //            searchView.setSearchableInfo(searchManager.getSearchableInfo(MainActivity.this.getComponentName()));
 //        }
         return super.onCreateOptionsMenu(menu);
-    }
-
-    private static void paymentBill(double summBill){
-//        sumBillToPay = Double.valueOf(btnPay.getText().toString().replace("MDL ",""));
-        sumBillToPay = summBill;
-        View dialogView = inflater.inflate(R.layout.dialog_payment_bill_version0, null);
-
-        paymentDialog = new AlertDialog.Builder(context,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
-        paymentDialog.setCancelable(false);
-        paymentDialog.setView(dialogView);
-        paymentDialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-
-        tvInputSumBillForPayment = dialogView.findViewById(R.id.tv_pay_input_data_sum);
-        TextView tvTotalBill = dialogView.findViewById(R.id.txt_total_payment);
-        tvToPay = dialogView.findViewById(R.id.txt_topay_payment);
-        TextView tvChange = dialogView.findViewById(R.id.txt_rest_payment);
-        ImageButton btn_Cancel = dialogView.findViewById(R.id.btnClose_payment);
-        MaterialButton clear = dialogView.findViewById(R.id.btn_pay_ce);
-        ImageButton delete = dialogView.findViewById(R.id.btn_pay_delete_number);
-        MaterialButton btnCreditCard = dialogView.findViewById(R.id.btn_card_payment);
-        MaterialButton btnCashPay = dialogView.findViewById(R.id.btn_cash_payment);
-        MaterialButton btnOtherPay = dialogView.findViewById(R.id.btn_other_payment);
-
-        //caut daca contul a fost achitat partial, si adaug text mai jos cu ce tip de plata si ce suma
-        //plus la asta daca este vreo achitare deja facuta, verific daca este necesar de imprimat bonul fiscal si daca da, filtrez tipruile de plata dupa criteriu - printFiscalReceip
-        RealmResults<BillPaymentType> billPaymentTypes = mRealm.where(BillPaymentType.class).equalTo("billID",openedBillId).findAll();
-
-        if(!billPaymentTypes.isEmpty()){
-            for (int i = 0; i < billPaymentTypes.size(); i++){
-                BillPaymentType paymentType = billPaymentTypes.get(i);
-                if (paymentType != null) {
-                    billPaymentedSum += paymentType.getSum();
-                }
-            }
-        }
-
-        //caut tipurile de plata care sunt in baza si le adaug butoane
-        RealmResults<PaymentType> paymentTypesResult = mRealm.where(PaymentType.class).findAll();
-        if(!paymentTypesResult.isEmpty()){
-            for(int o = 0; o <paymentTypesResult.size(); o++){
-                PaymentType paymentType = new PaymentType();
-                paymentType.setCode(paymentTypesResult.get(o).getCode());
-                paymentType.setPredefinedIndex(paymentTypesResult.get(o).getPredefinedIndex());
-                paymentType.setPrintFiscalCheck(paymentTypesResult.get(o).getPrintFiscalCheck());
-                paymentType.setExternalId(paymentTypesResult.get(o).getExternalId());
-                paymentType.setName(paymentTypesResult.get(o).getName());
-
-                if(paymentTypesResult.get(o).getPredefinedIndex() == BaseEnum.Pay_Cash) {
-                    btnCashPay.setTag(paymentType);
-                    btnCashPay.setOnClickListener(clickListenerDynamicPayButton);
-                }
-                else if(paymentTypesResult.get(o).getPredefinedIndex() == BaseEnum.Pay_CreditCard){
-                    btnCreditCard.setTag(paymentType);
-                    btnCreditCard.setOnClickListener(clickListenerDynamicPayButton);
-                }
-            }
-        }
-
-        tvInputSumBillForPayment.setText(String.format("%.2f",sumBillToPay - billPaymentedSum).replace(",","."));
-        tvTotalBill.setText(String.format("%.2f",sumBillToPay).replace(",","."));
-        tvToPay.setText(String.format("%.2f",sumBillToPay - billPaymentedSum).replace(",","."));
-
-        MaterialButton number_1 = dialogView.findViewById(R.id.btn_pay_1);
-        MaterialButton number_2 = dialogView.findViewById(R.id.btn_pay_2);
-        MaterialButton number_3 = dialogView.findViewById(R.id.btn_pay_3);
-        MaterialButton number_4 = dialogView.findViewById(R.id.btn_pay_4);
-        MaterialButton number_5 = dialogView.findViewById(R.id.btn_pay_5);
-        MaterialButton number_6 = dialogView.findViewById(R.id.btn_pay_6);
-        MaterialButton number_7 = dialogView.findViewById(R.id.btn_pay_7);
-        MaterialButton number_8 = dialogView.findViewById(R.id.btn_pay_8);
-        MaterialButton number_9 = dialogView.findViewById(R.id.btn_pay_9);
-        MaterialButton number_0 = dialogView.findViewById(R.id.btn_pay_0);
-        MaterialButton number_50 = dialogView.findViewById(R.id.btn_pay_50);
-        MaterialButton number_100 = dialogView.findViewById(R.id.btn_pay_100);
-        MaterialButton number_200 = dialogView.findViewById(R.id.btn_pay_200);
-        MaterialButton number_500 = dialogView.findViewById(R.id.btn_pay_500);
-        MaterialButton point = dialogView.findViewById(R.id.btn_pay_point);
-
-        number_1.setOnClickListener(v1 -> tvInputSumBillForPayment.append("1"));
-        number_2.setOnClickListener(v12 -> tvInputSumBillForPayment.append("2"));
-        number_3.setOnClickListener(v13 -> tvInputSumBillForPayment.append("3"));
-        number_4.setOnClickListener(v14 -> tvInputSumBillForPayment.append("4"));
-        number_5.setOnClickListener(v15 -> tvInputSumBillForPayment.append("5"));
-        number_6.setOnClickListener(v16 -> tvInputSumBillForPayment.append("6"));
-        number_7.setOnClickListener(v17 -> tvInputSumBillForPayment.append("7"));
-        number_8.setOnClickListener(v18 -> tvInputSumBillForPayment.append("8"));
-        number_9.setOnClickListener(v19 -> tvInputSumBillForPayment.append("9"));
-        number_0.setOnClickListener(v110 -> tvInputSumBillForPayment.append("0"));
-        number_50.setOnClickListener(v112 -> tvInputSumBillForPayment.setText("50"));
-        number_100.setOnClickListener(v113 -> tvInputSumBillForPayment.setText("100"));
-        number_200.setOnClickListener(v114 -> tvInputSumBillForPayment.setText("200"));
-        number_500.setOnClickListener(v115 -> tvInputSumBillForPayment.setText("500"));
-
-        tvInputSumBillForPayment.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if(tvInputSumBillForPayment.getText().toString().equals("")){
-                    tvChange.setText("0.00");
-                }
-                else{
-                    double incasat = 0.0;
-                    try{
-                        incasat = Double.valueOf(tvInputSumBillForPayment.getText().toString());
-                    }catch (Exception e){
-                        incasat = Double.valueOf(tvInputSumBillForPayment.getText().toString().replace(",","."));
-                    }
-
-                    if( (incasat + billPaymentedSum) <= sumBillToPay){
-                        tvChange.setText("0.00");
-                    }else{
-                        tvChange.setText( String.format("%.2f", (incasat + billPaymentedSum) - sumBillToPay).replace(",","."));
-                    }
-                }
-
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
-
-        point.setOnClickListener(v117 -> {
-            String test = tvInputSumBillForPayment.getText().toString();
-            boolean contains = false;
-            for (int i = 0; i < test.length(); i++) {
-                String chars = String.valueOf(test.charAt(i));
-                if (chars.equals(".")) {
-                    contains = true;
-                }
-            }
-            if (!contains) {
-                if(tvInputSumBillForPayment.getText().toString().equals(""))
-                    tvInputSumBillForPayment.append("0.");
-                else
-                    tvInputSumBillForPayment.append(".");
-            }
-        });
-
-        delete.setOnClickListener(v118 -> { if (!tvInputSumBillForPayment.getText().toString().equals("")) tvInputSumBillForPayment.setText(tvInputSumBillForPayment.getText().toString().substring(0, tvInputSumBillForPayment.getText().toString().length() - 1)); });
-        clear.setOnClickListener(v119 -> tvInputSumBillForPayment.setText(""));
-        btn_Cancel.setOnClickListener(v120 -> { paymentDialog.dismiss(); billPaymentedSum = 0; });
-
-        paymentDialog.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
-        paymentDialog.show();
-        paymentDialog.getWindow().setLayout(470,LinearLayout.LayoutParams.WRAP_CONTENT);
-        paymentDialog.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
-                | View.SYSTEM_UI_FLAG_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
-        paymentDialog.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
     }
 
     static View.OnClickListener clickListenerDynamicPayButton = new View.OnClickListener() {
@@ -1755,6 +1675,7 @@ public class MainActivity extends AppCompatActivity {
             mRealm.executeTransaction(realm -> {
                 RealmResults<Shift> shifts = realm.where(Shift.class).equalTo("id", shift.getId()).findAll();
                 shifts.setString("closedBy",BaseApplication.getInstance().getUserId());
+                shifts.setString("closedByName",BaseApplication.getInstance().getUser().getFullName());
                 shifts.setLong("endDate", close);
                 shifts.setBoolean("closed", true);
                 shifts.setBoolean("isSended",false);
@@ -1772,9 +1693,8 @@ public class MainActivity extends AppCompatActivity {
                     printZReport();
             }
             if(workFisc == BaseEnum.FISCAL_SERVICE){
-                String ip = getSharedPreferences(SharedPrefFiscalService, MODE_PRIVATE).getString("IpAdressFiscalService",null);
-                String port = getSharedPreferences(SharedPrefFiscalService, MODE_PRIVATE).getString("PortFiscalService",null);
-                printZReportFiscalService(ip,port);
+                String uri = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getString("FiscalServiceAddress","0.0.0.0:1111");
+                printZReportFiscalService(uri);
             }
             shiftClosedButtonPay = false;
             shiftOpenButtonPay = true;
@@ -1822,7 +1742,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void deviceConnect(final AbstractConnector item) {
+    private static void deviceConnect(final AbstractConnector item) {
         item.getConnectorType();
         final Thread thread = new Thread(new Runnable() {
             @Override
@@ -1847,13 +1767,11 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
                 } finally {
-                    ((BaseApplication)getApplication()).setMyFiscalDevice(PrinterManager.instance.getFiscalDevice());
+                    BaseApplication.getInstance().setMyFiscalDevice(PrinterManager.instance.getFiscalDevice());
                     datecsFiscalDevice = PrinterManager.instance.getFiscalDevice();
 
                     if(datecsFiscalDevice != null && datecsFiscalDevice.isConnectedDeviceV2()){
-                        runOnUiThread(() -> {
-//                                fiscal_printer.setImageDrawable(getResources().getDrawable(R.drawable.fiscal_on));
-                        });
+
                     }
 
 
@@ -1862,7 +1780,24 @@ public class MainActivity extends AppCompatActivity {
         });
         thread.start();
     }
+    public static String GetSHA1HashUserPassword(String keyHint, String message) {
+        byte[] hintBytes = ("This is strong key").getBytes();
+        String form = "";
+        try {
 
+            Rfc2898DerivesBytes test = new Rfc2898DerivesBytes(keyHint,hintBytes,1000);
+            byte[] secretKey = test.GetBytes(18);
+
+            SecretKeySpec signingKey = new SecretKeySpec(secretKey, "HmacSHA1");
+            Mac mac = Mac.getInstance("HmacSHA1");
+            mac.init(signingKey);
+            byte[] bytes = mac.doFinal(message.getBytes());
+            form = Base64.encodeToString(bytes, Base64.DEFAULT);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return form;
+    }
     public static String getMD5HashCardCode(String message) {
         MessageDigest m = null;
         try {
@@ -1883,8 +1818,8 @@ public class MainActivity extends AppCompatActivity {
         return hashtext;
     }
 
-    private void postToastMessage (final String message) {
-        this.runOnUiThread(() -> Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show());
+    private static void postToastMessage(final String message) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
     }
 
     public static long replaceDate(String date){
@@ -1903,7 +1838,9 @@ public class MainActivity extends AppCompatActivity {
         return context;
     }
 
-    private class OpenTask extends AsyncTask<UsbDevice, Void, Exception> {
+
+
+    private static class OpenTask extends AsyncTask<UsbDevice, Void, Exception> {
         @Override
         protected Exception doInBackground(UsbDevice... params) {
 
@@ -1938,7 +1875,6 @@ public class MainActivity extends AppCompatActivity {
 
     public static void printZReport(){
         progressDialogPrintReport = new ProgressDialog(context,R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog);
-        progressDialogPrintReport.setCancelable(false);
         progressDialogPrintReport.setTitle("Z report is in processing !!!");
         progressDialogPrintReport.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         progressDialogPrintReport.setCancelable(false);
@@ -1980,7 +1916,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }).start();
     }
-    public static void printZReportFiscalService(String ip, String port){
+    public static void printZReportFiscalService(String uri){
         progressDialogPrintReport = new ProgressDialog(activity);
         progressDialogPrintReport.setCancelable(true);
         progressDialogPrintReport.setTitle("Z report is working !!!");
@@ -1988,38 +1924,35 @@ public class MainActivity extends AppCompatActivity {
         progressDialogPrintReport.setCancelable(false);
         progressDialogPrintReport.show();
 
-        if(ip != null && port != null) {
-            String uri = ip + ":" + port;
+        CommandServices commandServices = ApiUtils.commandFPService(uri);
+        Call<ZResponse> responseCall = commandServices.printZReport();
 
-            CommandServices commandServices = ApiUtils.commandFPService(uri);
-            Call<ZResponse> responseCall = commandServices.printZReport();
-
-            responseCall.enqueue(new Callback<ZResponse>() {
-                @Override
-                public void onResponse(Call<ZResponse> call, Response<ZResponse> response) {
-                    ZResponse zResponse = response.body();
-                    if(zResponse != null){
-                        PrintReportZResult reportZResult = zResponse.getPrintReportZResult();
-                        int errorCode = reportZResult.getErrorCode();
-                        if(errorCode == 0){
-                            progressDialogPrintReport.dismiss();
-                            History history = new History();
-                            history.setDate(new Date().getTime());
-                            history.setMsg("Z report printed to fiscal service ");
-                            history.setType(BaseEnum.History_Printed_Z);
-                            mRealm.executeTransaction(realm -> realm.insert(history));
-                        }
-
+        responseCall.enqueue(new Callback<ZResponse>() {
+            @Override
+            public void onResponse(Call<ZResponse> call, Response<ZResponse> response) {
+                ZResponse zResponse = response.body();
+                if(zResponse != null){
+                    PrintReportZResult reportZResult = zResponse.getPrintReportZResult();
+                    int errorCode = reportZResult.getErrorCode();
+                    if(errorCode == 0){
+                        progressDialogPrintReport.dismiss();
+                        History history = new History();
+                        history.setDate(new Date().getTime());
+                        history.setMsg("Z report printed to fiscal service ");
+                        history.setType(BaseEnum.History_Printed_Z);
+                        mRealm.executeTransaction(realm -> realm.insert(history));
                     }
-                }
 
-                @Override
-                public void onFailure(Call<ZResponse> call, Throwable t) {
-                    progressDialogPrintReport.dismiss();
-                    Toast.makeText(activity, t.getMessage(), Toast.LENGTH_SHORT).show();
                 }
-            });
-        }
+            }
+
+            @Override
+            public void onFailure(Call<ZResponse> call, Throwable t) {
+                progressDialogPrintReport.dismiss();
+                Toast.makeText(activity, t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+
     }
 
     //DIALOG  ZXReportsSummary
@@ -2066,7 +1999,414 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private static void paymentBill(double summBill){
+//        sumBillToPay = Double.valueOf(btnPay.getText().toString().replace("MDL ",""));
+        sumBillToPay = summBill;
+        View dialogView = inflater.inflate(R.layout.dialog_payment_bill_version0, null);
+
+        paymentDialog = new AlertDialog.Builder(context,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
+        paymentDialog.setCancelable(false);
+        paymentDialog.setView(dialogView);
+        paymentDialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+
+        tvInputSumBillForPayment = dialogView.findViewById(R.id.tv_pay_input_data_sum);
+        TextView tvTotalBill = dialogView.findViewById(R.id.txt_total_payment);
+        tvToPay = dialogView.findViewById(R.id.txt_topay_payment);
+        TextView tvChange = dialogView.findViewById(R.id.txt_rest_payment);
+        ImageButton btn_Cancel = dialogView.findViewById(R.id.btnClose_payment);
+        MaterialButton clear = dialogView.findViewById(R.id.btn_pay_ce);
+        ImageButton delete = dialogView.findViewById(R.id.btn_pay_delete_number);
+        MaterialButton btnCreditCard = dialogView.findViewById(R.id.btn_card_payment);
+        MaterialButton btnCashPay = dialogView.findViewById(R.id.btn_cash_payment);
+        MaterialButton btnOtherPay = dialogView.findViewById(R.id.btn_other_payment);
+
+        //caut daca contul a fost achitat partial, si adaug text mai jos cu ce tip de plata si ce suma
+        //plus la asta daca este vreo achitare deja facuta, verific daca este necesar de imprimat bonul fiscal si daca da, filtrez tipruile de plata dupa criteriu - printFiscalReceip
+        RealmResults<BillPaymentType> billPaymentTypes = mRealm.where(BillPaymentType.class).equalTo("billID",openedBillId).findAll();
+
+        if(!billPaymentTypes.isEmpty()){
+            for (int i = 0; i < billPaymentTypes.size(); i++){
+                BillPaymentType paymentType = billPaymentTypes.get(i);
+                if (paymentType != null) {
+                    billPaymentedSum += paymentType.getSum();
+                }
+            }
+        }
+
+        //caut tipurile de plata care sunt in baza si le adaug butoane
+        RealmResults<PaymentType> paymentTypesResult = mRealm.where(PaymentType.class).findAll();
+        if(!paymentTypesResult.isEmpty()){
+            for(int o = 0; o <paymentTypesResult.size(); o++){
+                PaymentType paymentType = new PaymentType();
+                paymentType.setCode(paymentTypesResult.get(o).getCode());
+                paymentType.setPredefinedIndex(paymentTypesResult.get(o).getPredefinedIndex());
+                paymentType.setPrintFiscalCheck(paymentTypesResult.get(o).getPrintFiscalCheck());
+                paymentType.setExternalId(paymentTypesResult.get(o).getExternalId());
+                paymentType.setName(paymentTypesResult.get(o).getName());
+
+                if(paymentTypesResult.get(o).getPredefinedIndex() == BaseEnum.Pay_Cash) {
+                    btnCashPay.setTag(paymentType);
+                    btnCashPay.setOnClickListener(clickListenerDynamicPayButton);
+                }
+                else if(paymentTypesResult.get(o).getPredefinedIndex() == BaseEnum.Pay_CreditCard){
+                    btnCreditCard.setTag(paymentType);
+                    btnCreditCard.setOnClickListener(clickListenerDynamicPayButton);
+                }
+            }
+        }
+
+        tvInputSumBillForPayment.setText(String.format("%.2f",sumBillToPay - billPaymentedSum).replace(",","."));
+        tvTotalBill.setText(String.format("%.2f",sumBillToPay).replace(",","."));
+        tvToPay.setText(String.format("%.2f",sumBillToPay - billPaymentedSum).replace(",","."));
+
+        MaterialButton number_1 = dialogView.findViewById(R.id.btn_pay_1);
+        MaterialButton number_2 = dialogView.findViewById(R.id.btn_pay_2);
+        MaterialButton number_3 = dialogView.findViewById(R.id.btn_pay_3);
+        MaterialButton number_4 = dialogView.findViewById(R.id.btn_pay_4);
+        MaterialButton number_5 = dialogView.findViewById(R.id.btn_pay_5);
+        MaterialButton number_6 = dialogView.findViewById(R.id.btn_pay_6);
+        MaterialButton number_7 = dialogView.findViewById(R.id.btn_pay_7);
+        MaterialButton number_8 = dialogView.findViewById(R.id.btn_pay_8);
+        MaterialButton number_9 = dialogView.findViewById(R.id.btn_pay_9);
+        MaterialButton number_0 = dialogView.findViewById(R.id.btn_pay_0);
+        MaterialButton number_50 = dialogView.findViewById(R.id.btn_pay_50);
+        MaterialButton number_100 = dialogView.findViewById(R.id.btn_pay_100);
+        MaterialButton number_200 = dialogView.findViewById(R.id.btn_pay_200);
+        MaterialButton number_500 = dialogView.findViewById(R.id.btn_pay_500);
+        MaterialButton point = dialogView.findViewById(R.id.btn_pay_point);
+
+        number_1.setOnClickListener(v1 -> tvInputSumBillForPayment.append("1"));
+        number_2.setOnClickListener(v12 -> tvInputSumBillForPayment.append("2"));
+        number_3.setOnClickListener(v13 -> tvInputSumBillForPayment.append("3"));
+        number_4.setOnClickListener(v14 -> tvInputSumBillForPayment.append("4"));
+        number_5.setOnClickListener(v15 -> tvInputSumBillForPayment.append("5"));
+        number_6.setOnClickListener(v16 -> tvInputSumBillForPayment.append("6"));
+        number_7.setOnClickListener(v17 -> tvInputSumBillForPayment.append("7"));
+        number_8.setOnClickListener(v18 -> tvInputSumBillForPayment.append("8"));
+        number_9.setOnClickListener(v19 -> tvInputSumBillForPayment.append("9"));
+        number_0.setOnClickListener(v110 -> tvInputSumBillForPayment.append("0"));
+        number_50.setOnClickListener(v112 -> tvInputSumBillForPayment.setText("50"));
+        number_100.setOnClickListener(v113 -> tvInputSumBillForPayment.setText("100"));
+        number_200.setOnClickListener(v114 -> tvInputSumBillForPayment.setText("200"));
+        number_500.setOnClickListener(v115 -> tvInputSumBillForPayment.setText("500"));
+
+        tvInputSumBillForPayment.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if(tvInputSumBillForPayment.getText().toString().equals("")){
+                    tvChange.setText("0.00");
+                }
+                else{
+                    double incasat = 0.0;
+                    try{
+                        incasat = Double.valueOf(tvInputSumBillForPayment.getText().toString());
+                    }catch (Exception e){
+                        incasat = Double.valueOf(tvInputSumBillForPayment.getText().toString().replace(",","."));
+                    }
+
+                    if( (incasat + billPaymentedSum) <= sumBillToPay){
+                        tvChange.setText("0.00");
+                    }else{
+                        tvChange.setText( String.format("%.2f", (incasat + billPaymentedSum) - sumBillToPay).replace(",","."));
+                    }
+                }
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
+
+        point.setOnClickListener(v117 -> {
+            String test = tvInputSumBillForPayment.getText().toString();
+            boolean contains = false;
+            for (int i = 0; i < test.length(); i++) {
+                String chars = String.valueOf(test.charAt(i));
+                if (chars.equals(".")) {
+                    contains = true;
+                }
+            }
+            if (!contains) {
+                if(tvInputSumBillForPayment.getText().toString().equals(""))
+                    tvInputSumBillForPayment.append("0.");
+                else
+                    tvInputSumBillForPayment.append(".");
+            }
+        });
+
+        delete.setOnClickListener(v118 -> { if (!tvInputSumBillForPayment.getText().toString().equals("")) tvInputSumBillForPayment.setText(tvInputSumBillForPayment.getText().toString().substring(0, tvInputSumBillForPayment.getText().toString().length() - 1)); });
+        clear.setOnClickListener(v119 -> tvInputSumBillForPayment.setText(""));
+        btn_Cancel.setOnClickListener(v120 -> { paymentDialog.dismiss(); billPaymentedSum = 0; });
+        btnOtherPay.setOnClickListener(view -> {
+            showOtherPaymentType();
+        });
+
+        paymentDialog.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+        paymentDialog.show();
+
+
+        int displayWidth = displayMetrics.widthPixels;
+        WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
+        layoutParams.copyFrom(paymentDialog.getWindow().getAttributes());
+        int dialogWindowWidth = (int) (displayWidth * 0.4f);
+        layoutParams.width = dialogWindowWidth;
+        layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        paymentDialog.getWindow().setAttributes(layoutParams);
+//
+//        paymentDialog.getWindow().setLayout(470,LinearLayout.LayoutParams.WRAP_CONTENT);
+        paymentDialog.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        paymentDialog.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+    }
+
+    private static void showOtherPaymentType(){
+        mRealm.executeTransaction(realm -> {
+            RealmResults<PaymentType> result = realm.where(PaymentType.class)
+                    .notEqualTo("predefinedIndex",BaseEnum.Pay_Cash)
+                    .and()
+                    .notEqualTo("predefinedIndex",BaseEnum.Pay_CreditCard)
+                    .findAll();
+            if(!result.isEmpty()){
+                List<PaymentType> list = new ArrayList<>();
+                list.addAll(result);
+
+                ListAdapter adapterDialog = new ArrayAdapter<PaymentType>(context, R.layout.item_workplace_main_dialog, list) {
+
+                    ViewHolder holder;
+
+                    class ViewHolder {
+                        TextView title;
+                    }
+
+                    public View getView(int position, View convertView, ViewGroup parent) {
+                        if (convertView == null) {
+                            convertView = inflater.inflate(R.layout.item_workplace_main_dialog, null);
+
+                            holder = new ViewHolder();
+                            holder.title = (TextView) convertView.findViewById(R.id.textView122);
+                            convertView.setTag(holder);
+                        } else {
+                            // view already defined, retrieve view holder
+                            holder = (ViewHolder) convertView.getTag();
+                        }
+                        holder.title.setText(list.get(position).getName());
+                        holder.title.setTag(list.get(position));
+
+                        return convertView;
+                    }
+                };
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                builder.setTitle("Select Other payment type");
+                builder.setAdapter(adapterDialog, (dialog, position) -> {
+                    PaymentType paySelected = list.get(position);
+                    setClickListenerOtherPay(paySelected);
+                    Log.d("LOG_TAG", "pos = " + paySelected.getName());
+
+                    dialog.dismiss();
+                });
+                builder.setNegativeButton("Cancel",(dialogInterface, i) -> dialogInterface.dismiss());
+
+                AlertDialog alert = builder.create();
+                alert.show();
+//
+//                AlertDialog.Builder adb = new AlertDialog.Builder(context);
+//                adb.setTitle("Other payment type");
+//                ArrayAdapter<PaymentType> adapter = new ArrayAdapter<PaymentType>(context, android.R.layout.select_dialog_singlechoice, list);
+//                adb.setSingleChoiceItems(adapter, -1, otherPaymentClickListener);
+//                adb.show();
+            }
+        });
+    }
+
+   private static void setClickListenerOtherPay(PaymentType paymentType){
+       boolean printFiscalCheck = paymentType.getPrintFiscalCheck();
+       String code = paymentType.getCode();
+       if(code == null)
+           code = "404";
+       int resultCloseReceip = 0;
+
+       //primesc rindurile la cont
+       RealmList<BillString> billStrings = new RealmList<>();
+       RealmList<BillPaymentType> billPaymentTypes = new RealmList<>();
+
+       RealmResults<BillString> billStringsResult = mRealm.where(BillString.class)
+               .equalTo("billID", openedBillId)
+               .and()
+               .equalTo("isDeleted",false)
+               .findAll();
+       if (!billStringsResult.isEmpty()) {
+           billStrings.addAll(billStringsResult);
+       }
+
+       //tipurile de achitare deja facute la cont in caz ca nu a fost achitat integral
+       RealmResults<BillPaymentType> billPayResult = mRealm.where(BillPaymentType.class)
+               .equalTo("billID", openedBillId).findAll();
+       if(!billPayResult.isEmpty()){
+           billPaymentTypes.addAll(billPayResult);
+       }
+
+       int bilNumber = 0;
+       Bill bilResult = mRealm.where(Bill.class).equalTo("id",openedBillId).findFirst();
+       if(bilResult != null)
+           bilNumber = bilResult.getShiftReceiptNumSoftware();
+
+       double inputSum = 0;
+       try {
+           inputSum = Double.valueOf(tvInputSumBillForPayment.getText().toString());
+       } catch (Exception e) {
+           inputSum = Double.valueOf(tvInputSumBillForPayment.getText().toString().replace(",", "."));
+       }
+
+       if ((billPaymentedSum + inputSum) >= sumBillToPay) {
+           int modeFiscalWork = context.getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork",BaseEnum.NONE_SELECTED_FISCAL_MODE);
+
+           if (printFiscalCheck) {
+               if(modeFiscalWork == BaseEnum.FISCAL_DEVICE){
+                   DatecsFiscalDevice fiscalDevice = null;
+                   if(BaseApplication.getInstance().getMyFiscalDevice() != null){
+                       fiscalDevice = BaseApplication.getInstance().getMyFiscalDevice();
+                   }
+                   if(fiscalDevice != null && fiscalDevice.isConnectedDeviceV2()){
+                       resultCloseReceip = BaseApplication.getInstance().printFiscalReceipt(fiscalReceipt, billStrings, paymentType, inputSum, billPaymentTypes,bilNumber);
+                       if (resultCloseReceip != 0) {
+                           BillPaymentType billPaymentType= new BillPaymentType();
+                           billPaymentType.setId(UUID.randomUUID().toString());
+                           billPaymentType.setBillID(openedBillId);
+                           billPaymentType.setName(paymentType.getName());
+                           billPaymentType.setPaymentCode(Integer.valueOf(code));
+                           billPaymentType.setPaymentTypeID(paymentType.getExternalId());
+                           billPaymentType.setSum(inputSum);
+                           billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
+                           billPaymentType.setCreateDate(new Date().getTime());
+
+                           int finalResultCloseReceip = resultCloseReceip;
+                           mRealm.executeTransaction(realm ->{
+                               Bill bill = realm.where(Bill.class).equalTo("id",openedBillId).findFirst();
+                               if(bill != null){
+                                   bill.setReceiptNumFiscalMemory(finalResultCloseReceip);
+                                   bill.setState(1);
+                                   bill.setCloseDate(new Date().getTime());
+                                   bill.setClosedBy(BaseApplication.getInstance().getUser().getId());
+                                   bill.getBillPaymentTypes().add(billPaymentType);
+
+                               }
+                           });
+
+                           initRecyclerView();
+
+                           billPaymentedSum = 0;
+                           paymentDialog.dismiss();
+
+                           if(drawer.isDrawerOpen(GravityCompat.END))
+                               drawer.closeDrawer(GravityCompat.END);
+                           openedBillId = null;
+                       }
+                   }
+                   else{
+                       Toast.makeText(context, "Aparatul fiscal nu este conectat!", Toast.LENGTH_SHORT).show();
+                   }
+               }
+               if(modeFiscalWork == BaseEnum.FISCAL_SERVICE){
+                   BaseApplication.getInstance().printReceiptFiscalService(billStrings, paymentType, inputSum, billPaymentTypes);
+
+                   BillPaymentType billPaymentType= new BillPaymentType();
+                   billPaymentType.setId(UUID.randomUUID().toString());
+                   billPaymentType.setBillID(openedBillId);
+                   billPaymentType.setName(paymentType.getName());
+                   billPaymentType.setPaymentCode(Integer.valueOf(code));
+                   billPaymentType.setPaymentTypeID(paymentType.getExternalId());
+                   billPaymentType.setSum(inputSum);
+                   billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
+                   billPaymentType.setCreateDate(new Date().getTime());
+
+                   mRealm.executeTransaction(realm ->{
+                       Bill bill = realm.where(Bill.class).equalTo("id",openedBillId).findFirst();
+                       if(bill != null){
+                           bill.setReceiptNumFiscalMemory(0);
+                           bill.setState(1);
+                           bill.setCloseDate(new Date().getTime());
+                           bill.setClosedBy(BaseApplication.getInstance().getUser().getId());
+                           bill.getBillPaymentTypes().add(billPaymentType);
+
+                       }
+                   });
+                   initRecyclerView();
+
+                   billPaymentedSum = 0;
+                   paymentDialog.dismiss();
+
+                   openedBillId = null;
+               }
+
+           }
+           else {
+               BillPaymentType billPaymentType= new BillPaymentType();
+               billPaymentType.setId(UUID.randomUUID().toString());
+               billPaymentType.setBillID(openedBillId);
+               billPaymentType.setName(paymentType.getName());
+               billPaymentType.setPaymentCode(Integer.valueOf(code));
+               billPaymentType.setPaymentTypeID(paymentType.getExternalId());
+               billPaymentType.setSum(sumBillToPay - billPaymentedSum);
+               billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
+               billPaymentType.setCreateDate(new Date().getTime());
+
+               mRealm.executeTransaction(realm ->{
+                   Bill bill = realm.where(Bill.class).equalTo("id",openedBillId).findFirst();
+                   if(bill != null){
+                       bill.setReceiptNumFiscalMemory(0);
+                       bill.setState(1);
+                       bill.setCloseDate(new Date().getTime());
+                       bill.setClosedBy(BaseApplication.getInstance().getUser().getId());
+                       bill.getBillPaymentTypes().add(billPaymentType);
+                   }
+               });
+               initRecyclerView();
+
+               billPaymentedSum = 0;
+               paymentDialog.dismiss();
+               openedBillId = null;
+           }
+       }
+       else if ((billPaymentedSum + inputSum) < sumBillToPay) {
+           BillPaymentType billPaymentType = new BillPaymentType();
+           billPaymentType.setId(UUID.randomUUID().toString());
+           billPaymentType.setBillID(openedBillId);
+           billPaymentType.setName(paymentType.getName());
+           billPaymentType.setPaymentCode(Integer.valueOf(code));
+           billPaymentType.setPaymentTypeID(paymentType.getExternalId());
+           billPaymentType.setSum(inputSum);
+           billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
+           billPaymentType.setCreateDate(new Date().getTime());
+
+           mRealm.executeTransaction(realm ->{
+               Bill bill = realm.where(Bill.class).equalTo("id",openedBillId).findFirst();
+               if(bill != null){
+                   bill.setState(0);
+                   bill.getBillPaymentTypes().add(billPaymentType);
+               }
+           });
+
+           billPaymentedSum = inputSum;
+           tvToPay.setText(String.format("%.2f", sumBillToPay - billPaymentedSum).replace(",","."));
+           tvInputSumBillForPayment.setText(String.format("%.2f",sumBillToPay - billPaymentedSum).replace(",","."));
+       }
+   }
+
     private void checkItem_Dialog(int dialog){
+
+        final boolean[] isCloseFromEnter = {false};
         View dialogView = inflater.inflate(R.layout.dialog_check_assortment_item, null);
 
         final AlertDialog dialogCheckItem = new AlertDialog.Builder(MainActivity.this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
@@ -2120,14 +2460,12 @@ public class MainActivity extends AppCompatActivity {
                 btn_add.setVisibility(View.GONE);
             }
         });
-
         btn_clear.setOnClickListener(v132 -> {
             tvInputBarcode.setText("");
             btn_add.setVisibility(View.GONE);
             btn_search.setVisibility(View.GONE);
             tvBarcodeOrCodeText.setVisibility(View.VISIBLE);
         });
-
         tvInputBarcode.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -2151,7 +2489,6 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
         btn_search.setOnClickListener(v133 -> {
             AssortmentRealm assortmentEntry;
             if(tvInputBarcode.getText().toString().length() == 13 || tvInputBarcode.getText().toString().length() == 8){
@@ -2188,16 +2525,33 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "Item not found!", Toast.LENGTH_SHORT).show();
             }
         });
-
         btn_Cancel.setOnClickListener(v134 -> {
-            dialogCheckItem.dismiss();
+            if(!isCloseFromEnter[0])
+                dialogCheckItem.dismiss();
+            isCloseFromEnter[0] = false;
         });
+
+
 
         // Set the dialog to not focusable.
 //        dialogCheckItem.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
         dialogCheckItem.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
         dialogCheckItem.show();
-        dialogCheckItem.getWindow().setLayout(410,LinearLayout.LayoutParams.WRAP_CONTENT);
+
+        tvInputBarcode.requestFocus();
+
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int displayWidth = displayMetrics.widthPixels;
+//        int displayHeight = displayMetrics.heightPixels;
+        WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
+        layoutParams.copyFrom(dialogCheckItem.getWindow().getAttributes());
+        int dialogWindowWidth = (int) (displayWidth * 0.4f);
+//        int dialogWindowHeight = (int) (displayHeight * 0.5f);
+        layoutParams.width = dialogWindowWidth;
+        layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        dialogCheckItem.getWindow().setAttributes(layoutParams);
+
         dialogCheckItem.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
                 | View.SYSTEM_UI_FLAG_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
@@ -2271,8 +2625,10 @@ public class MainActivity extends AppCompatActivity {
 
                                 btn_add.setOnClickListener(view -> {
                                     dialogCheckItem.dismiss();
+                                    Toast.makeText(MainActivity.this, "Нажат add position", Toast.LENGTH_SHORT).show();
                                     addItemsToOpenedBill(assortmentFind, 1, tvInputBarcode.getText().toString(), true);
                                 });
+                                isCloseFromEnter[0] = true;
                             }
                             else{
                                 tvNameItem.setText("");
@@ -2282,7 +2638,6 @@ public class MainActivity extends AppCompatActivity {
                                 Toast.makeText(MainActivity.this, "Item not found!", Toast.LENGTH_SHORT).show();
                             }
                         }break;
-                        default:break;
                     }
                 }
                 return false;
@@ -2371,4 +2726,277 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void readAssortment (final Call<AssortmentListService> assortiment){
+        assortiment.enqueue(new Callback<AssortmentListService>() {
+            @Override
+            public void onResponse(Call<AssortmentListService> call, Response<AssortmentListService> response) {
+                AssortmentListService assortiment_body = response.body();
+                GetAssortmentListResult result = assortiment_body != null ? assortiment_body.getGetAssortmentListResult() : null;
+
+                int errorecode = 101;
+                if (result != null) {
+                    errorecode = result.getErrorCode();
+                }
+                if(errorecode == 0){
+                    List<AssortmentServiceEntry> assortmentListData = result.getAssortments();
+                    mRealm.executeTransaction(realm -> {
+
+                        for(AssortmentServiceEntry assortmentServiceEntry: assortmentListData){
+                            AssortmentRealm ass = new AssortmentRealm();
+
+                            RealmList<Barcodes> listBarcode = new RealmList<>();
+                            RealmList<Promotion> listPromotion = new RealmList<>();
+
+                            if(assortmentServiceEntry.getBarcodes() != null){
+                                for(String barcodes : assortmentServiceEntry.getBarcodes()){
+                                    Barcodes barcodes1 = new Barcodes();
+                                    barcodes1.setBar(barcodes);
+                                    listBarcode.add(barcodes1);
+                                }
+                            }
+                            if(assortmentServiceEntry.getPromotions()!= null){
+                                listPromotion.addAll(assortmentServiceEntry.getPromotions());
+                            }
+                            ass.setId(assortmentServiceEntry.getID());
+                            ass.setName(assortmentServiceEntry.getName());
+                            ass.setBarcodes(listBarcode);
+                            ass.setFolder(assortmentServiceEntry.getIsFolder());
+                            ass.setPromotions(listPromotion);
+                            ass.setAllowDiscounts(assortmentServiceEntry.getAllowDiscounts());
+                            ass.setAllowNonInteger(assortmentServiceEntry.getAllowNonInteger());
+                            ass.setCode(assortmentServiceEntry.getCode());
+                            ass.setEnableSaleTimeRange(assortmentServiceEntry.getEnableSaleTimeRange());
+                            ass.setMarking(assortmentServiceEntry.getMarking());
+                            ass.setParentID(assortmentServiceEntry.getParentID());
+                            ass.setPrice(assortmentServiceEntry.getPrice());
+                            ass.setPriceLineId(assortmentServiceEntry.getPriceLineId());
+                            ass.setShortName(assortmentServiceEntry.getShortName());
+                            ass.setVat(assortmentServiceEntry.getVAT());
+                            ass.setUnit(assortmentServiceEntry.getUnit());
+                            ass.setQuickButtonNumber(assortmentServiceEntry.getQuickButtonNumber());
+                            ass.setQuickGroupName(assortmentServiceEntry.getQuickGroupName());
+                            ass.setStockBalance(assortmentServiceEntry.getStockBalance());
+                            ass.setStockBalanceDate(assortmentServiceEntry.getStockBalanceDate());
+                            ass.setSaleStartTime(replaceDate(assortmentServiceEntry.getSaleStartTime()));
+                            ass.setSaleEndTime(replaceDate(assortmentServiceEntry.getSaleEndTime()));
+                            ass.setPriceLineStartDate(replaceDate(assortmentServiceEntry.getPriceLineStartDate()));
+                            ass.setPriceLineEndDate(replaceDate(assortmentServiceEntry.getPriceLineEndDate()));
+
+                            realm.insert(ass);
+                        }
+
+                        if(result.getQuickGroups() != null){
+                            for(QuickGroup quickGroup : result.getQuickGroups()){
+                                QuickGroupRealm quickGroupRealm = new QuickGroupRealm();
+
+                                String nameGroup = quickGroup.getName();
+                                RealmList<String> assortment = new RealmList<>();
+                                assortment.addAll(quickGroup.getAssortmentID());
+
+                                quickGroupRealm.setGroupName(nameGroup);
+                                quickGroupRealm.setAssortmentId(assortment);
+
+                                realm.insert(quickGroupRealm);
+                            }
+                        }
+
+                    });
+                    new UserTask().execute();
+
+                }else{
+                    //if error code is not equal 0
+                }
+            }
+            @Override
+            public void onFailure(Call<AssortmentListService> call, Throwable t) {
+                //on failure
+            }
+        });
+    }
+    private void readWorkPlaceSettings(Call<WorkPlaceSettings> workPlaceSettingsCall){
+        workPlaceSettingsCall.enqueue(new Callback<WorkPlaceSettings>() {
+            @Override
+            public void onResponse(Call<WorkPlaceSettings> call, Response<WorkPlaceSettings> response) {
+                WorkPlaceSettings workPlaceSettings = response.body();
+
+                GetWorkplaceSettingsResult result = workPlaceSettings != null ? workPlaceSettings.getGetWorkplaceSettingsResult() : null;
+
+                int errorecode = 101;
+                if (result != null) {
+                    errorecode = result.getErrorCode();
+                }
+                if(errorecode == 0){
+                    if(result.getPaymentTypes() != null){
+                        List<PaymentType> paymentTypes = result.getPaymentTypes();
+                        for(PaymentType paymentType : paymentTypes){
+                            mRealm.executeTransaction(new Realm.Transaction() {
+                                @Override
+                                public void execute(Realm realm) {
+                                    realm.insert(paymentType);
+                                }
+                            });
+                        }
+                    }
+                    if( result.getFiscalDevice() != null){
+                        FiscalDevice fiscalDevice = result.getFiscalDevice();
+                        mRealm.executeTransaction(new Realm.Transaction() {
+                            @Override
+                            public void execute(Realm realm) {
+                                realm.insert(fiscalDevice);
+                            }
+                        });
+                    }
+                    pgH.dismiss();
+
+                    viewPager.setAdapter(null);
+                    adapterRightMenu = new ViewPageAdapterRightMenu(context, getSupportFragmentManager());
+                    viewPager.setAdapter(adapterRightMenu);
+                    viewPager.setOffscreenPageLimit(4);
+
+                    tabLayout.setupWithViewPager(viewPager);
+                    tabLayout.setTabMode(TabLayout.MODE_FIXED);
+                    tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
+
+                }else{
+                    //if error code is not equal 0
+                }
+            }
+            @Override
+            public void onFailure(Call<WorkPlaceSettings> call, Throwable t) {
+                //on failure
+            }
+        });
+
+    }
+    private void readUsers(Call<UserListServiceResult> userListServiceResultCall){
+        userListServiceResultCall.enqueue(new Callback<UserListServiceResult>() {
+            @Override
+            public void onResponse(Call<UserListServiceResult> call, Response<UserListServiceResult> response) {
+                UserListServiceResult userListServiceResult = response.body();
+                GetUsersListResult result = userListServiceResult != null ? userListServiceResult.getGetUsersListResult() : null;
+
+                int errorecode = 101;
+                if (result != null) {
+                    errorecode = result.getErrorCode();
+                }
+                if(errorecode == 0){
+                    List<User> users = result.getUsers();
+                    mRealm.executeTransaction(realm -> {
+                        for(User user : users){
+                            String login = BaseApplication.getInstance().getUser().getUserName();
+                            String pass = GetSHA1HashUserPassword("This is the code for UserPass",BaseApplication.getInstance().getUserPasswordsNotHashed()).replace("\n","");
+                            if(user.getUserName().equals(login) && user.getPassword().equals(pass)) {
+                                BaseApplication.getInstance().setUser(user);
+                                tvUserNameNav.setText(user.getFirstName() + " " +  user.getLastName());
+                            }
+                            realm.insert(user);
+                        }
+                    });
+                    new WorkPlaceTask().execute();
+
+                }else{
+                    //if error code is not equal 0
+                }
+            }
+            @Override
+            public void onFailure(Call<UserListServiceResult> call, Throwable t) {
+               //on failure
+            }
+        });
+
+    }
+
+    class AssortmentTask extends AsyncTask<Void,Void,Void> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            pgH.setTitle("Synchronization");
+            pgH.setMessage("loading assortment list...");
+            pgH.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            pgH.show();
+        }
+
+        @Override
+        protected Void doInBackground(Void... dates) {
+            String uri = sharedPreferenceSettings.getString("URI",null);
+            CommandServices commandServices = ApiUtils.commandEposService(uri);
+
+            final Call<AssortmentListService> assortiment = commandServices.getAssortiment(tokenId, workPlaceID);
+            readAssortment(assortiment);
+            return null;
+        }
+    }
+    class UserTask extends AsyncTask<Void,Void,Void> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            pgH.dismiss();
+            pgH.setTitle("Synchronization");
+            pgH.setMessage("loading user list...");
+            pgH.setIndeterminate(true);
+            pgH.show();
+        }
+
+        @Override
+        protected Void doInBackground(Void... dates) {
+            String uri = sharedPreferenceSettings.getString("URI",null);
+            CommandServices commandServices = ApiUtils.commandEposService(uri);
+
+            final Call<UserListServiceResult> userListServiceResultCall = commandServices.getUsers(tokenId, workPlaceID);
+            readUsers(userListServiceResultCall);
+            return null;
+        }
+    }
+    class WorkPlaceTask extends AsyncTask<Void,Void,Void> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            pgH.dismiss();
+            pgH.setTitle("Synchronization");
+            pgH.setMessage("loading workplace settings...");
+            pgH.setIndeterminate(true);
+            pgH.show();
+        }
+
+        @Override
+        protected Void doInBackground(Void... dates) {
+            String uri = sharedPreferenceSettings.getString("URI",null);
+            CommandServices commandServices = ApiUtils.commandEposService(uri);
+
+            final Call<WorkPlaceSettings> workPlaceSettingsCall = commandServices.getWorkplaceSettings(tokenId, workPlaceID);
+            readWorkPlaceSettings(workPlaceSettingsCall);
+            return null;
+        }
+    }
+
+    public static void  initUSBDevice() {
+        if (mUSBManager != null) {
+            HashMap<String, UsbDevice> deviceList = mUSBManager.getDeviceList();
+
+            Iterator<UsbDevice> deviceIterator = deviceList.values().iterator();
+            while (deviceIterator.hasNext()) {
+                UsbDevice device = deviceIterator.next();
+
+                if ((device.getVendorId() == BaseEnum.DATECS_USB_VID) || (device.getVendorId() == BaseEnum.FTDI_USB_VID && device.getManufacturerName().equals("Datecs")) ) {
+                    if(mUSBManager.hasPermission(device)){
+                        AbstractConnector connector = new UsbDeviceConnector(context, mUSBManager, device);
+                        deviceConnect(connector);
+                    }
+                    else{
+                        mUSBManager.requestPermission(device, mPermissionIntent);
+                    }
+                }
+                else if(device.getManufacturerName().equals("ACS")) {
+                    if(mUSBManager.hasPermission(device)){
+                        new OpenTask().execute(device);
+                    }
+                    else{
+                        mUSBManager.requestPermission(device, mPermissionIntent);
+                    }
+                }
+
+            }
+        }
+    }
 }

@@ -32,17 +32,14 @@ public interface CommandServices {
     @POST("/brokerservice/json/DeactivateApplication")
     Call<DeactivateApplicationResult> deactivateApplicationCall(@Body BodyDeactivateApp bodyDeactivateApp);
 
-    @GET("/epos/json/GetAssortmentList")
-    Call<AssortmentListService> getAssortiment(@Query("Token") String param1, @Query("WorkplaceId") String param2);
-
-    @GET("/fpservice/json/GetState")
-    Call<SimpleResult> getState ();
+    @POST("/brokerservice/json/RegisterApplication")
+    Call<RegisterApplicationResult> registerApplicationCall(@Body BodyRegisterApp bodyRegisterApp);
 
     @POST("/brokerservice/json/GetURI")
     Call<GetURIResult> getURICall(@Body String instalationId);
 
-    @GET("/epos/json/GetUsersList")
-    Call<UserListServiceResult> getUsers(@Query("Token") String token, @Query("WorkplaceId") String workPlaceId);
+    @POST("/brokerservice/json/UnRegisterApplication")
+    Call<UnRegisterApplicationResult> unRegisterApplicationCall(@Body BodyUnRegisterApp bodyUnRegisterApp);
 
     @POST("/fpservice/json/PrintBill")
     Call<SimpleResult> printBill (@Body PrintBillFiscalService bill);
@@ -53,8 +50,11 @@ public interface CommandServices {
     @GET("/fpservice/json/PrintReportZ")
     Call<ZResponse> printZReport();
 
-    @POST("/brokerservice/json/RegisterApplication")
-    Call<RegisterApplicationResult> registerApplicationCall(@Body BodyRegisterApp bodyRegisterApp);
+    @GET("/fpservice/json/GetState")
+    Call<SimpleResult> getState ();
+
+    @GET("/epos/json/GetAssortmentList")
+    Call<AssortmentListService> getAssortiment(@Query("Token") String param1, @Query("WorkplaceId") String param2);
 
     @POST("/epos/json/SaveBills")
     Call<ResultEposSimple> saveBillCall(@Body SendBillsToServer billsToServer);
@@ -71,6 +71,8 @@ public interface CommandServices {
     @GET("/epos/json/AuthentificateUser")
     Call<AuthentificateUserResult> autentificateUser (@Query("APIKey") String apiKey, @Query("userLogin") String userLogin, @Query("userPass") String userPass);
 
-    @POST("/brokerservice/json/UnRegisterApplication")
-    Call<UnRegisterApplicationResult> unRegisterApplicationCall(@Body BodyUnRegisterApp bodyUnRegisterApp);
+    @GET("/epos/json/GetUsersList")
+    Call<UserListServiceResult> getUsers(@Query("Token") String token, @Query("WorkplaceId") String workPlaceId);
+
+
 }

@@ -39,6 +39,8 @@ public class FinancialRepActivity extends AppCompatActivity {
     private ConstraintLayout csl_finReport;
     private ConstraintLayout csl_history;
     private ConstraintLayout csl_settings;
+    TextView tvUserNameNav;
+    TextView tvUserEmailNav;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,9 +57,13 @@ public class FinancialRepActivity extends AppCompatActivity {
         cash_collection = findViewById(R.id.cl_incasatia);
 
         csl_sales = findViewById(R.id.csl_sales);
-        csl_settings = findViewById(R.id.csl_setting_nav);
-        csl_history = findViewById(R.id.csl_history);
+        csl_shifts = findViewById(R.id.csl_shift);
         csl_reports = findViewById(R.id.csl_reports);
+        csl_finReport = findViewById(R.id.csl_fin_reports);
+        csl_history = findViewById(R.id.csl_history);
+        csl_settings = findViewById(R.id.csl_setting_nav);
+        tvUserNameNav = findViewById(R.id.tv_user_name_nav);
+        tvUserEmailNav = findViewById(R.id.tv_email_auth_user);
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
@@ -66,14 +72,26 @@ public class FinancialRepActivity extends AppCompatActivity {
         csl_sales.setOnClickListener(view -> {
             finish();
         });
-        csl_history.setOnClickListener(view -> {
-            startActivityForResult(new Intent(this, HistoryActivity.class), BaseEnum.Activity_History);
+        csl_shifts.setOnClickListener(view -> {
+            startActivityForResult(new Intent(this, ShiftsActivity.class), BaseEnum.Activity_Shifts);
             finish();
         });
         csl_reports.setOnClickListener(view -> {
             startActivityForResult(new Intent(this, ReportsActivity.class), BaseEnum.Activity_Reports);
             finish();
         });
+        csl_finReport.setOnClickListener(view -> {
+            drawer.closeDrawer(GravityCompat.START);
+        });
+        csl_history.setOnClickListener(view -> {
+            startActivityForResult(new Intent(this, HistoryActivity.class), BaseEnum.Activity_History);
+            finish();
+        });
+        csl_settings.setOnClickListener(v ->{
+            startActivityForResult(new Intent(this, SettingsActivity.class),BaseEnum.Activity_Settings);
+            finish();
+        });
+
 
         cash_in.setOnClickListener(v -> {
             Shift shiftEntry = BaseApplication.getInstance().getShift();
@@ -242,6 +260,8 @@ public class FinancialRepActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         hideSystemUI();
+        tvUserNameNav.setText(BaseApplication.getInstance().getUser().getFirstName() + " " +  BaseApplication.getInstance().getUser().getLastName());
+        tvUserEmailNav.setText(BaseApplication.getInstance().getUser().getEmail());
     }
     private void postMessage(String message){
         Toast.makeText(this,message,Toast.LENGTH_SHORT).show();

@@ -41,6 +41,8 @@ public class HistoryActivity extends AppCompatActivity {
     private ConstraintLayout csl_settings;
 
     private Realm mRealm;
+    TextView tvUserNameNav;
+    TextView tvUserEmailNav;
 
     CustomRCHistoryRealmAdapter historyRealmAdapter;
 
@@ -57,29 +59,42 @@ public class HistoryActivity extends AppCompatActivity {
         totalEntriesLog = findViewById(R.id.tv_total_log_entries);
 
         csl_sales = findViewById(R.id.csl_sales);
-        csl_settings = findViewById(R.id.csl_setting_nav);
-        csl_history = findViewById(R.id.csl_history);
-        csl_finReport = findViewById(R.id.csl_fin_reports);
+        csl_shifts = findViewById(R.id.csl_shift);
         csl_reports = findViewById(R.id.csl_reports);
+        csl_finReport = findViewById(R.id.csl_fin_reports);
+        csl_history = findViewById(R.id.csl_history);
+        csl_settings = findViewById(R.id.csl_setting_nav);
+        tvUserNameNav = findViewById(R.id.tv_user_name_nav);
+        tvUserEmailNav = findViewById(R.id.tv_email_auth_user);
 
         mRealm = Realm.getDefaultInstance();
+
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.addDrawerListener(toggle);
+        toggle.syncState();
 
         csl_sales.setOnClickListener(view -> {
             finish();
         });
-
-        csl_finReport.setOnClickListener(view -> {
-            startActivityForResult(new Intent(this, FinancialRepActivity.class), BaseEnum.Activity_FinRep);
+        csl_shifts.setOnClickListener(view -> {
+            startActivityForResult(new Intent(this, ShiftsActivity.class), BaseEnum.Activity_Shifts);
             finish();
         });
         csl_reports.setOnClickListener(view -> {
             startActivityForResult(new Intent(this, ReportsActivity.class), BaseEnum.Activity_Reports);
             finish();
         });
-
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.addDrawerListener(toggle);
-        toggle.syncState();
+        csl_finReport.setOnClickListener(view -> {
+            startActivityForResult(new Intent(this, FinancialRepActivity.class), BaseEnum.Activity_FinRep);
+            finish();
+        });
+        csl_history.setOnClickListener(view -> {
+            drawer.closeDrawer(GravityCompat.START);
+        });
+        csl_settings.setOnClickListener(v ->{
+            startActivityForResult(new Intent(this, SettingsActivity.class),BaseEnum.Activity_Settings);
+            finish();
+        });
 
         RealmResults<History> result = mRealm.where(History.class).sort("date",Sort.DESCENDING).findAll();
 
@@ -94,6 +109,8 @@ public class HistoryActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         hideSystemUI();
+        tvUserNameNav.setText(BaseApplication.getInstance().getUser().getFirstName() + " " +  BaseApplication.getInstance().getUser().getLastName());
+        tvUserEmailNav.setText(BaseApplication.getInstance().getUser().getEmail());
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {

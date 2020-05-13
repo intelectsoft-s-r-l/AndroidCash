@@ -14,10 +14,13 @@ public class Shift extends RealmObject {
     private long endDate;
     @Required
     private String workPlaceId;
+    private String workPlaceName;
     @Required
     private String author;
+    private String authorName;
     private String name;
     private String closedBy;
+    private String closedByName;
     private boolean closed;
     private boolean isSended;
     private long needClose;
@@ -109,5 +112,29 @@ public class Shift extends RealmObject {
 
     public void setBillCounter(int billCounter) {
         this.billCounter = billCounter;
+    }
+
+    public String getWorkPlaceName() {
+        return workPlaceName;
+    }
+
+    public void setWorkPlaceName(String workPlaceName) {
+        this.workPlaceName = workPlaceName;
+    }
+
+    public String getAuthorName() {
+        return authorName;
+    }
+
+    public void setAuthorName(String authorName) {
+        this.authorName = authorName;
+    }
+
+    public String getClosedByName() {
+        return closedByName;
+    }
+
+    public void setClosedByName(String closedByName) {
+        this.closedByName = closedByName;
     }
 }

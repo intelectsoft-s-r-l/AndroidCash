@@ -1,24 +1,15 @@
 package edi.md.androidcash;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Application;
-import android.app.Dialog;
-import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
-import android.os.Bundle;
-import android.os.CountDownTimer;
-import android.util.DisplayMetrics;
-import android.view.LayoutInflater;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.Window;
-import android.widget.Button;
-import android.widget.TextView;
+import android.os.AsyncTask;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -26,27 +17,28 @@ import androidx.annotation.NonNull;
 import com.crashlytics.android.Crashlytics;
 import com.datecs.fiscalprinter.SDK.model.DatecsFiscalDevice;
 import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReceipt;
-import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReport;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.remoteconfig.BuildConfig;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 
-import edi.md.androidcash.NetworkUtils.AssortmentServiceEntry;
-import edi.md.androidcash.NetworkUtils.EposResult.AssortmentListService;
-import edi.md.androidcash.NetworkUtils.EposResult.GetAssortmentListResult;
-import edi.md.androidcash.NetworkUtils.FiscalServiceResult.PrintReportZResult;
-import edi.md.androidcash.NetworkUtils.FiscalServiceResult.ZResponse;
-import edi.md.androidcash.NetworkUtils.Promotion;
-import edi.md.androidcash.NetworkUtils.QuickGroup;
 import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
-import edi.md.androidcash.RealmHelper.AssortmentRealm;
-import edi.md.androidcash.RealmHelper.Barcodes;
 import edi.md.androidcash.RealmHelper.History;
-import edi.md.androidcash.RealmHelper.QuickGroupRealm;
-import edi.md.androidcash.SettingUtils.ShiftManage;
+import edi.md.androidcash.Utils.UpdateHelper;
 import io.fabric.sdk.android.Fabric;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -83,8 +75,8 @@ public class BaseApplication extends Application {
     public static BaseApplication instance = null;
     private Realm mRealm;
 
-    private TimerTask timerTaskSync;
-    private Timer sync;
+    private TimerTask timerTaskSyncBill;
+    private Timer timerSyncBill;
     private TimerTask timerTaskSyncBackground;
     private Timer syncBackground;
 
@@ -102,15 +94,19 @@ public class BaseApplication extends Application {
     //SharedPreference variable
     public static final String deviceId = "DeviceId";
 
+    private UsbDevice deviceFiscal;
+
     @Override
     public void onCreate() {
         super.onCreate();
         Fabric.with(this, new Crashlytics());
         Realm.init(this);
 
+//        Thread.setDefaultUncaughtExceptionHandler(handleAppCrash);
+
         instance = this;
 
-        final RealmConfiguration configuration = new RealmConfiguration.Builder().name("cash.realm").schemaVersion(3).migration(new RealmMigrations()).build();
+        final RealmConfiguration configuration = new RealmConfiguration.Builder().name("cash.realm").schemaVersion(1).migration(new RealmMigrations()).build();
         Realm.setDefaultConfiguration(configuration);
         Realm.getInstance(configuration);
         mRealm  = Realm.getDefaultInstance();
@@ -120,11 +116,35 @@ public class BaseApplication extends Application {
         filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
 
 
-        sync = new Timer();
+        timerSyncBill = new Timer();
         sheduleSendBillSHiftToServer();
-        sync.schedule(timerTaskSync, 10000, 60000);
+        timerSyncBill.schedule(timerTaskSyncBill, 10000, 60000);
 
-//        autoUpdateAssortment ();
+        FirebaseRemoteConfig remoteConfig = FirebaseRemoteConfig.getInstance();
+
+        FirebaseRemoteConfigSettings configSettings = new FirebaseRemoteConfigSettings.Builder()
+                .setMinimumFetchIntervalInSeconds(6)
+                .setDeveloperModeEnabled(BuildConfig.DEBUG)
+                .build();
+        remoteConfig.setConfigSettingsAsync(configSettings);
+
+        //defaultvalue
+        Map<String,Object> defaultValue = new HashMap<>();
+        defaultValue.put(UpdateHelper.KEY_UPDATE_URL,"https://edi.md/androidapps/cash.apk");
+        defaultValue.put(UpdateHelper.KEY_UPDATE_VERSION,"1.0");
+        defaultValue.put(UpdateHelper.KEY_UPDATE_ENABLE,false);
+
+        remoteConfig.setDefaultsAsync(defaultValue);
+
+        remoteConfig.fetch(6).addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                if(task.isSuccessful()){
+                    Log.d("TAG", "remote config is fetched.");
+                    remoteConfig.activate();
+                }
+            }
+        });
     }
 
     public static BaseApplication getInstance(){
@@ -134,8 +154,8 @@ public class BaseApplication extends Application {
     @Override
     public void onTerminate() {
         Realm.getDefaultInstance().close();
-        if(sync!=null)
-            sync.cancel();
+        if(timerSyncBill !=null)
+            timerSyncBill.cancel();
 
         super.onTerminate();
     }
@@ -152,8 +172,8 @@ public class BaseApplication extends Application {
     public void setUserPasswordsNotHashed(String pass){
         this.userPassWithoutHash = pass;
     }
-    public void setUser(User user) {
-        this.user = user;
+    public void setUser(User user235) {
+        this.user = user235;
     }
 
     public Shift getShift() {
@@ -164,6 +184,14 @@ public class BaseApplication extends Application {
     }
     public void setShift(Shift shift) {
         this.shift = shift;
+    }
+
+    public UsbDevice getDeviceFiscal() {
+        return deviceFiscal;
+    }
+
+    public void setDeviceFiscal(UsbDevice deviceFiscal) {
+        this.deviceFiscal = deviceFiscal;
     }
 
     public DatecsFiscalDevice getMyFiscalDevice() {
@@ -272,16 +300,22 @@ public class BaseApplication extends Application {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            if(e.getMessage().contains("-112001"))
-                postToast("Fiscal printer error: Fiscal printer command invalid syntax");
-            if(e.getMessage().equals("-111024"))
-                postToast("Registration mode error: End of 24 hour blocking");
-            else if(e.getMessage().contains("-111003"))
-                postToast("Registration mode error: Cannot do operation");
-            else if(e.getMessage().contains("-111018"))
-                postToast("Registration mode error: Payment is initiated");
-            else{
-                postToast(e.getMessage());
+            switch (e.getMessage()) {
+                case "-111024":
+                    postToast("Registration mode error: End of 24 hour blocking");
+                    break;
+                case "-111003":
+                    postToast("Registration mode error: Cannot do operation");
+                    break;
+                case "-111018":
+                    postToast("Registration mode error: Payment is initiated");
+                    break;
+                case "-112001":
+                    postToast("Fiscal printer error: Fiscal printer command invalid syntax");
+                    break;
+                default:
+                    postToast(e.getMessage() + " print fiscal check");
+                    break;
             }
             return Integer.valueOf(resCloseBill);
         }
@@ -342,35 +376,28 @@ public class BaseApplication extends Application {
         printBillFiscalService.setLines(lineFiscalService);
         printBillFiscalService.setPayments(paymentFiscalServices);
 
-        String ip = getSharedPreferences(SharedPrefFiscalService, MODE_PRIVATE).getString("IpAdressFiscalService",null);
-        String port = getSharedPreferences(SharedPrefFiscalService, MODE_PRIVATE).getString("PortFiscalService",null);
+        String uri = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getString("FiscalServiceAddress","0.0.0.0:1111");
 
         int[] result = {101};
-        if(ip != null && port != null) {
-            String uri = ip + ":" + port;
 
-            CommandServices commandServices = ApiUtils.commandEposService(uri);
-            Call<SimpleResult> call = commandServices.printBill(printBillFiscalService);
+        CommandServices commandServices = ApiUtils.commandEposService(uri);
+        Call<SimpleResult> call = commandServices.printBill(printBillFiscalService);
 
-            call.enqueue(new Callback<SimpleResult>() {
-                @Override
-                public void onResponse(Call<SimpleResult> call, Response<SimpleResult> response) {
-                    SimpleResult result1 = response.body();
-                    if(result1 != null){
-                        result[0] = result1.getErrorCode();
-                    }
+        call.enqueue(new Callback<SimpleResult>() {
+            @Override
+            public void onResponse(Call<SimpleResult> call, Response<SimpleResult> response) {
+                SimpleResult result1 = response.body();
+                if(result1 != null){
+                    result[0] = result1.getErrorCode();
                 }
+            }
 
-                @Override
-                public void onFailure(Call<SimpleResult> call, Throwable t) {
-                    result[0] = 111;
-                }
-            });
-        }
-    }
+            @Override
+            public void onFailure(Call<SimpleResult> call, Throwable t) {
+                result[0] = 111;
+            }
 
-    public void logNewHistory(History history){
-        mRealm.executeTransaction(realm -> realm.insert(history));
+        });
     }
 
     //fiscal device operation
@@ -436,7 +463,6 @@ public class BaseApplication extends Application {
     }
 
     private void cancelSale(final cmdReceipt.FiscalReceipt fiscalReceipt) {
-
         try {
             if (fiscalReceipt.isOpen()) {
                 fiscalReceipt.closeFiscalReceipt();
@@ -471,7 +497,11 @@ public class BaseApplication extends Application {
                                 );
                                 fiscalReceipt.closeFiscalReceipt();
                             } catch (Exception e) {
-                                postToast(e.getMessage());
+                                if(e.getMessage().equals("-111018"))
+                                    postToast("Cancel sales! Registration mode error: Payment is initiated");
+                                else
+                                    postToast(e.getMessage());
+
                                 e.printStackTrace();
                             }
                         }
@@ -486,7 +516,6 @@ public class BaseApplication extends Application {
                     fiscalReceipt.closeFiscalReceipt();
                 }
             }
-
         } catch (Exception e) {
             postToast(e.getMessage());
             e.printStackTrace();
@@ -496,7 +525,7 @@ public class BaseApplication extends Application {
     //sync shift and bills to server background
     public void sendShiftToServer(Shift shift){
         String uri = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("URI",null);
-        String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("InstallationID","null");
+        String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("Token","null");
         CommandServices commandServices = ApiUtils.commandEposService(uri);
 
         SaveShift saveShift = new SaveShift();
@@ -551,7 +580,7 @@ public class BaseApplication extends Application {
     }
     public void sendBilltToServer(RealmResults<Bill> billRealmResults){
         String uri = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("URI",null);
-        String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("InstallationID","null");
+        String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("Token","null");
         CommandServices commandServices = ApiUtils.commandEposService(uri);
 
         SimpleDateFormat format = new SimpleDateFormat("Z");
@@ -675,13 +704,13 @@ public class BaseApplication extends Application {
                 }
                 @Override
                 public void onFailure(Call<ResultEposSimple> call, Throwable t) {
-                    String tt= t.getMessage();
+                    String tt = t.getMessage();
                 }
             });
         }
     }
     private void sheduleSendBillSHiftToServer(){
-        timerTaskSync = new TimerTask() {
+        timerTaskSyncBill = new TimerTask() {
             @Override
             public void run() {
                 mRealm  = Realm.getDefaultInstance();
@@ -700,12 +729,9 @@ public class BaseApplication extends Application {
 
                     if(!resultBills.isEmpty())
                         sendBilltToServer(resultBills);
-
                 });
-
             }
         };
-
     }
 
     //sync in background assortment
@@ -718,7 +744,7 @@ public class BaseApplication extends Application {
 //                    int timeUpdate = getSharedPreferences(SharedPrefSyncSettings,MODE_PRIVATE).getInt("intervalForAutoUpdate",0);
 //
 //                    if(timeUpdate != 0) {
-//                        String uri = getSharedPreferences("Settings",MODE_PRIVATE).getString("URI",null);
+//                        String uri = getSharedPreferences("SettingsActivity",MODE_PRIVATE).getString("URI",null);
 //                        String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("Token",null);
 //                        String workplaceId = getSharedPreferences(SharedPrefWorkPlaceSettings,MODE_PRIVATE).getString("WorkPlaceID",null);
 //                        if(token != null && workplaceId != null) {
@@ -850,5 +876,43 @@ public class BaseApplication extends Application {
 
     private static void postToast(final String message) {
         Toast.makeText(getInstance(), message, Toast.LENGTH_LONG).show();
+    }
+
+    private Thread.UncaughtExceptionHandler handleAppCrash = new Thread.UncaughtExceptionHandler() {
+        @Override
+        public void uncaughtException(Thread thread, Throwable ex) {
+            new RetrieveFeedTask().execute(ex.toString());
+        }
+    };
+
+    public class RetrieveFeedTask extends AsyncTask<String, Void, Void> {
+
+        protected Void doInBackground(String... voids) {
+            String version ="0.0";
+            try {
+                PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+                version = pInfo.versionName;
+            } catch (PackageManager.NameNotFoundException e) {
+                e.printStackTrace();
+            }
+
+            String apiToken = "1155488985:AAEzmGo_NN8B1hVPNgLGv6eKZAB4Bi_vKuM";
+
+            String chatId = "362622044";
+            String text = "Android casa v:" + version + "     " + voids[0];
+
+            String urlString = "https://api.telegram.org/bot" +apiToken +  "/sendMessage?chat_id="+ chatId + "&text=" + text;
+            //https://api.telegram.org/bot664321744:AAGimqEuidlzO84qMoY1-_C-1OsNWRQ8FyM/sendMessage?chat_id=-1001349137188&amp&text=Hello+World
+            urlString = String.format(urlString, apiToken, chatId, text);
+
+            try {
+                URL url = new URL(urlString);
+                URLConnection conn = url.openConnection();
+                InputStream is = new BufferedInputStream(conn.getInputStream());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
     }
 }

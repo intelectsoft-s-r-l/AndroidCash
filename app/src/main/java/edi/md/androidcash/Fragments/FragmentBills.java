@@ -57,15 +57,20 @@ public class FragmentBills extends Fragment {
            id = shift[0].getId();
         }
         String finalId = id;
+        mRealm = Realm.getDefaultInstance();
         mRealm.executeTransaction(realm -> {
-                results[0] = mRealm.where(Bill.class).equalTo("shiftId", finalId).and().equalTo("state", 0).findAll();
+                results[0] = realm.where(Bill.class).equalTo("shiftId", finalId).and().equalTo("state", 0).findAll();
             });
 
         CustomRCBillListRealmAdapter adapterBillList = new CustomRCBillListRealmAdapter(results[0],true);
+
+        int count = MainActivity.tabLayout.getTabCount();
+
         BadgeDrawable badge = MainActivity.tabLayout.getTabAt(2).getOrCreateBadge();
         badge.setVisible(true);
         badge.setNumber(results[0].size());
         recyclerView.setAdapter(adapterBillList);
+
     }
 
     @Override

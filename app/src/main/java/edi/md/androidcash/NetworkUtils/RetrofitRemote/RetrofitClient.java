@@ -127,9 +127,9 @@ public class RetrofitClient {
 
     private static OkHttpClient getOkHttpClient() {
         return new OkHttpClient.Builder()
-                .connectTimeout(8, TimeUnit.MINUTES)
-                .readTimeout(15, TimeUnit.MINUTES)
-                .writeTimeout(8, TimeUnit.MINUTES)
+                .connectTimeout(8, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(8, TimeUnit.SECONDS)
                 .build();
     }
 }

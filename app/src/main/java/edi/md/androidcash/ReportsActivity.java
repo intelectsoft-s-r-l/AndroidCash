@@ -4,6 +4,7 @@ import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import android.app.Activity;
@@ -28,7 +29,6 @@ import edi.md.androidcash.NetworkUtils.FiscalServiceResult.XResponse;
 import edi.md.androidcash.NetworkUtils.FiscalServiceResult.ZResponse;
 import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
 import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
-import edi.md.androidcash.SettingUtils.Reports;
 import edi.md.androidcash.Utils.BaseEnum;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -56,6 +56,8 @@ public class ReportsActivity extends AppCompatActivity {
     TextView x_errore,z_errore;
 
     int fiscalManager = 0;
+    TextView tvUserNameNav;
+    TextView tvUserEmailNav;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +70,8 @@ public class ReportsActivity extends AppCompatActivity {
         drawerConstraint = findViewById(R.id.nav_view_menu_reports);
 
         csl_sales = findViewById(R.id.csl_sales);
+        csl_shifts = findViewById(R.id.csl_shift);
+        csl_reports = findViewById(R.id.csl_reports);
         csl_finReport = findViewById(R.id.csl_fin_reports);
         csl_history = findViewById(R.id.csl_history);
         csl_settings = findViewById(R.id.csl_setting_nav);
@@ -76,6 +80,8 @@ public class ReportsActivity extends AppCompatActivity {
         Z_report = findViewById(R.id.btn_z_report_settings);
         x_errore = findViewById(R.id.txt_error_x_report_settings);
         z_errore = findViewById(R.id.txt_error_z_report_settings);
+        tvUserNameNav = findViewById(R.id.tv_user_name_nav);
+        tvUserEmailNav = findViewById(R.id.tv_email_auth_user);
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
@@ -86,12 +92,23 @@ public class ReportsActivity extends AppCompatActivity {
         csl_sales.setOnClickListener(view -> {
             finish();
         });
+        csl_shifts.setOnClickListener(view -> {
+            startActivityForResult(new Intent(this, ShiftsActivity.class), BaseEnum.Activity_Shifts);
+            finish();
+        });
+        csl_reports.setOnClickListener(view -> {
+            drawer.closeDrawer(GravityCompat.START);
+        });
+        csl_finReport.setOnClickListener(view -> {
+            startActivityForResult(new Intent(this, FinancialRepActivity.class), BaseEnum.Activity_FinRep);
+            finish();
+        });
         csl_history.setOnClickListener(view -> {
             startActivityForResult(new Intent(this, HistoryActivity.class), BaseEnum.Activity_History);
             finish();
         });
-        csl_finReport.setOnClickListener(view -> {
-            startActivityForResult(new Intent(this, FinancialRepActivity.class), BaseEnum.Activity_FinRep);
+        csl_settings.setOnClickListener(v ->{
+            startActivityForResult(new Intent(this, SettingsActivity.class),BaseEnum.Activity_Settings);
             finish();
         });
 
@@ -146,33 +163,29 @@ public class ReportsActivity extends AppCompatActivity {
             }
             if(fiscalManager == BaseEnum.FISCAL_SERVICE){
                 x_errore.setText("");
-                String ip = getSharedPreferences(SharedPrefFiscalService, MODE_PRIVATE).getString("IpAdressFiscalService",null);
-                String port = getSharedPreferences(SharedPrefFiscalService, MODE_PRIVATE).getString("PortFiscalService",null);
-                if(ip != null && port != null) {
-                    String uri = ip + ":" + port;
+                String uri = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getString("FiscalServiceAddress","0.0.0.0:1111");
+                               CommandServices commandServices = ApiUtils.commandFPService(uri);
+                Call<XResponse> responseCall = commandServices.printXReport();
 
-                    CommandServices commandServices = ApiUtils.commandFPService(uri);
-                    Call<XResponse> responseCall = commandServices.printXReport();
-
-                    responseCall.enqueue(new Callback<XResponse>() {
-                        @Override
-                        public void onResponse(Call<XResponse> call, Response<XResponse> response) {
-                            XResponse xResponse = response.body();
-                            if(xResponse != null){
-                                PrintReportXResult reportXResult = xResponse.getPrintReportXResult();
-                                int errorCode = reportXResult.getErrorCode();
-                                if(errorCode == 0)
-                                    x_errore.setText("Raportul X a fost imprimat!");
-                            }
+                responseCall.enqueue(new Callback<XResponse>() {
+                    @Override
+                    public void onResponse(Call<XResponse> call, Response<XResponse> response) {
+                        XResponse xResponse = response.body();
+                        if(xResponse != null){
+                            PrintReportXResult reportXResult = xResponse.getPrintReportXResult();
+                            int errorCode = reportXResult.getErrorCode();
+                            if(errorCode == 0)
+                                x_errore.setText("Raportul X a fost imprimat!");
                         }
+                    }
 
-                        @Override
-                        public void onFailure(Call<XResponse> call, Throwable t) {
-                            x_errore.setText(t.getMessage());
-                        }
-                    });
-                }
+                    @Override
+                    public void onFailure(Call<XResponse> call, Throwable t) {
+                        x_errore.setText(t.getMessage());
+                    }
+                });
             }
+
         });
         Z_report.setOnClickListener(v -> {
             if(fiscalManager == BaseEnum.FISCAL_DEVICE){
@@ -224,32 +237,28 @@ public class ReportsActivity extends AppCompatActivity {
             }
             if(fiscalManager == BaseEnum.FISCAL_SERVICE){
                 z_errore.setText("");
-                String ip = getSharedPreferences(SharedPrefFiscalService, MODE_PRIVATE).getString("IpAdressFiscalService",null);
-                String port = getSharedPreferences(SharedPrefFiscalService, MODE_PRIVATE).getString("PortFiscalService",null);
-                if(ip != null && port != null) {
-                    String uri = ip + ":" + port;
+                String uri = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getString("FiscalServiceAddress","0.0.0.0:1111");
 
-                    CommandServices commandServices = ApiUtils.commandFPService(uri);
-                    Call<ZResponse> responseCall = commandServices.printZReport();
+                CommandServices commandServices = ApiUtils.commandFPService(uri);
+                Call<ZResponse> responseCall = commandServices.printZReport();
 
-                    responseCall.enqueue(new Callback<ZResponse>() {
-                        @Override
-                        public void onResponse(Call<ZResponse> call, Response<ZResponse> response) {
-                            ZResponse zResponse = response.body();
-                            if(zResponse != null){
-                                PrintReportZResult reportZResult = zResponse.getPrintReportZResult();
-                                int errorCode = reportZResult.getErrorCode();
-                                if(errorCode == 0)
-                                    z_errore.setText("Raportul Z a fost imprimat!");
-                            }
+                responseCall.enqueue(new Callback<ZResponse>() {
+                    @Override
+                    public void onResponse(Call<ZResponse> call, Response<ZResponse> response) {
+                        ZResponse zResponse = response.body();
+                        if(zResponse != null){
+                            PrintReportZResult reportZResult = zResponse.getPrintReportZResult();
+                            int errorCode = reportZResult.getErrorCode();
+                            if(errorCode == 0)
+                                z_errore.setText("Raportul Z a fost imprimat!");
                         }
+                    }
 
-                        @Override
-                        public void onFailure(Call<ZResponse> call, Throwable t) {
-                            z_errore.setText(t.getMessage());
-                        }
-                    });
-                }
+                    @Override
+                    public void onFailure(Call<ZResponse> call, Throwable t) {
+                        z_errore.setText(t.getMessage());
+                    }
+                });
             }
         });
 
@@ -258,6 +267,8 @@ public class ReportsActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         hideSystemUI();
+        tvUserNameNav.setText(BaseApplication.getInstance().getUser().getFirstName() + " " +  BaseApplication.getInstance().getUser().getLastName());
+        tvUserEmailNav.setText(BaseApplication.getInstance().getUser().getEmail());
     }
 
     @Override

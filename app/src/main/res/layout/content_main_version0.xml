@@ -133,10 +133,10 @@
 
         <TextView
             android:id="@+id/txt_due_summ_bill"
-            android:layout_width="50dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="@font/roboto"
-            android:text="-"
+            android:text="Andrei Cucerean"
             android:textSize="18sp"
             app:layout_constraintStart_toStartOf="@+id/textView76"
             app:layout_constraintTop_toBottomOf="@+id/textView76" />
@@ -144,8 +144,9 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_pay_bill"
             style="@style/Widget.MaterialComponents.Button"
-            android:layout_width="355dp"
+            android:layout_width="0dp"
             android:layout_height="72dp"
+            android:layout_marginStart="2dp"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
             android:layout_marginBottom="4dp"
@@ -156,12 +157,13 @@
             android:textSize="24sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/btn_new_bill"
             app:layout_constraintTop_toBottomOf="@+id/txt_discount_summ_bill" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_new_bill"
             style="@style/Widget.MaterialComponents.Button"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="72dp"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
@@ -220,22 +222,24 @@
         android:id="@+id/tab_items_right_menu"
         style="@style/Widget.MaterialComponents.TabLayout"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="60dp"
         android:layout_marginStart="3dp"
         android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
         android:animateLayoutChanges="false"
         android:animationCache="false"
-        android:background="@color/tab_background"
+        android:background="@color/colorPrimary"
         android:elevation="5dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/guideline10"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/vp_right_container"
         app:tabGravity="fill"
         app:tabIndicatorColor="#1c1c1c"
         app:tabIndicatorHeight="4dp"
         app:tabMode="fixed"
         app:tabSelectedTextColor="@android:color/black"
-        app:tabTextColor="@color/form_loginColor">
+        app:tabTextColor="@color/list_bills_appbar">
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
@@ -257,11 +261,11 @@
         android:id="@+id/vp_right_container"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toTopOf="@+id/tab_items_right_menu"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/guideline10"
-        app:layout_constraintTop_toBottomOf="@+id/tab_items_right_menu"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <View
         android:id="@+id/divider12"

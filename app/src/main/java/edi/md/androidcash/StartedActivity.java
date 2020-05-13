@@ -37,6 +37,7 @@ import androidx.core.content.ContextCompat;
 
 import com.acs.smartcard.Reader;
 import com.acs.smartcard.ReaderException;
+import com.google.android.material.button.MaterialButton;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -62,7 +63,9 @@ import edi.md.androidcash.NetworkUtils.EposResult.TokenReceivedFromAutenficateUs
 import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
 import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
 import edi.md.androidcash.NetworkUtils.User;
+import edi.md.androidcash.Utils.BaseEnum;
 import edi.md.androidcash.Utils.Rfc2898DerivesBytes;
+import edi.md.androidcash.Utils.UpdateHelper;
 import edi.md.androidcash.connectors.AbstractConnector;
 import edi.md.androidcash.connectors.UsbDeviceConnector;
 import io.realm.Realm;
@@ -73,7 +76,7 @@ import retrofit2.Response;
 import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
 import static edi.md.androidcash.BaseApplication.SharedPrefWorkPlaceSettings;
 
-public class StartedActivity extends AppCompatActivity {
+public class StartedActivity extends AppCompatActivity implements UpdateHelper.OnUpdateCheckListener{ //
     public static final int REQUEST_ID_MULTIPLE_PERMISSIONS = 1, DATECS_USB_VID = 65520, FTDI_USB_VID = 1027;
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
     private PendingIntent mPermissionIntent;
@@ -86,24 +89,41 @@ public class StartedActivity extends AppCompatActivity {
 
     //Reader ACR
     private Reader mReader;
-    boolean isFiscalPrinter = false;
+    int fiscalMode;
 
     //layout with authentificate forms
-    ConstraintLayout layoutRegister, layoutLogin;
+    ConstraintLayout layoutRegister, layoutLogin, layoutPassword, layoutCard;
+
     //views register device form
     EditText RetIDNOCompany,RetEmail, RetPassword;
-    Button btnRegister;
+    MaterialButton btnRegister;
     ProgressBar RpgBar;
 
     //views login user form
     EditText LetUserName, LetPassword;
-    Button btnLogin;
+    MaterialButton btnLogin;
     TextView LtvOthersAuthMethods, LtvForgotPass;
     ProgressBar Lpgbar;
 
     //format date and time zone
     SimpleDateFormat simpleDateFormat;
     TimeZone timeZone;
+//
+    @Override
+    public void onUpdateCheckListener(String uri) {
+        Log.d("TAG", "onUpdateCheckListener." + uri);
+        android.app.AlertDialog alertDialog = new android.app.AlertDialog.Builder(this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme)
+                .setTitle("New version available")
+                .setMessage("Please update to new version to continue use")
+                .setPositiveButton("UPDATE",(dialogInterface, i) -> {
+                    Toast.makeText(this, "" + uri, Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("No,thanks", (dialogInterface, i) -> {
+                    dialogInterface.dismiss();
+                })
+                .create();
+        alertDialog.show();
+    }
 
     private class OpenTask extends AsyncTask<UsbDevice, Void, Exception> {
         @Override
@@ -129,7 +149,6 @@ public class StartedActivity extends AppCompatActivity {
             }
         }
     }
-
     private class CloseTask extends AsyncTask<Void, Void, Void> {
         @Override
         protected Void doInBackground(Void... params) {
@@ -138,13 +157,11 @@ public class StartedActivity extends AppCompatActivity {
         }
 
     }
-
     private class TransmitParams {
         public byte[] command;
         public int slotNum;
         public int controlCode;
     }
-
     private class TransmitProgress {
         public byte[] command;
         public int commandLength;
@@ -152,7 +169,6 @@ public class StartedActivity extends AppCompatActivity {
         public int responseLength;
         public Exception e;
     }
-
     private class TransmitTask extends AsyncTask<TransmitParams, Void, TransmitProgress> {
 
         @Override
@@ -224,8 +240,9 @@ public class StartedActivity extends AppCompatActivity {
             if (ACTION_USB_PERMISSION.equals(action)) {
                 synchronized (this) {
                     UsbDevice device = (UsbDevice) intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                    if(isFiscalPrinter){
+                    if(fiscalMode == BaseEnum.FISCAL_DEVICE){
                         if (device.getManufacturerName().equals("Datecs")) {
+                            BaseApplication.getInstance().setDeviceFiscal(device);
                             if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                                 AbstractConnector connector = new UsbDeviceConnector(StartedActivity.this, mManager, device);
                                 HashMap<String, UsbDevice> deviceList = mManager.getDeviceList();
@@ -276,7 +293,7 @@ public class StartedActivity extends AppCompatActivity {
             }
             else if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
                 for (UsbDevice device : mManager.getDeviceList().values()) {
-                    if(isFiscalPrinter){
+                    if(fiscalMode == BaseEnum.FISCAL_DEVICE){
                         if (device.getManufacturerName().equals("Datecs")) {
                             mManager.requestPermission(device, mPermissionIntent);
                         }
@@ -295,23 +312,19 @@ public class StartedActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        //set full screen mode
-//        requestWindowFeature(Window.FEATURE_NO_TITLE);
-//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
         // Get USB manager
         mManager = (UsbManager) getSystemService(Context.USB_SERVICE);
         // Register receiver for USB permission
         mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
 
-        isFiscalPrinter = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork", 0) == 1;
+        fiscalMode = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork", 0);
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_USB_PERMISSION);
         filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
         filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
         registerReceiver(mReceiver, filter);
-//------------------------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
         setContentView(R.layout.activity_start);
         //init constraint layouts with authentificate form
         layoutRegister = findViewById(R.id.csl_register_form);
@@ -331,6 +344,9 @@ public class StartedActivity extends AppCompatActivity {
         LtvOthersAuthMethods = findViewById(R.id.txt_other_auth_methods);
         Lpgbar = findViewById(R.id.progressBar_login_form);
         btnLogin = findViewById(R.id.btn_login_user_form);
+
+        //--------------------------------------- check update app version ------------------
+        UpdateHelper.with(this).onUpdateCheck(this).check();
 
         //check if it device support NFC
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
@@ -488,7 +504,7 @@ public class StartedActivity extends AppCompatActivity {
                 if(token == null && tokenValidDate == 0){
                     authenticateUser(userName,userPass,false);
                 }
-                if(currDate.before(dateToken))
+                if(currDate.after(dateToken))
                     authenticateUser(userName,userPass,false);
 
                 Intent main = new Intent(StartedActivity.this,MainActivity.class);
@@ -504,7 +520,7 @@ public class StartedActivity extends AppCompatActivity {
                 if(token == null && tokenValidDate == 0){
                     authenticateUser(userName,userPass,true);
                 }
-                else if(currDate.before(dateToken))
+                else if(currDate.after(dateToken))
                     authenticateUser(userName,userPass,true);
                 else {
                     Intent main = new Intent(StartedActivity.this,MainActivity.class);
@@ -560,6 +576,11 @@ public class StartedActivity extends AppCompatActivity {
                                 .apply();
                         if(initialStart){
                             Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                            User user = new User();
+                            user.setUserName(userName);
+                            user.setPassword(getMD5HashCardCode(passUser));
+                            BaseApplication.getInstance().setUserPasswordsNotHashed(passUser);
+                            BaseApplication.getInstance().setUser(user);
                             startActivity(main);
                             finish();
                         }
@@ -770,20 +791,21 @@ public class StartedActivity extends AppCompatActivity {
                         }
                         String cardCode = getMD5HashCardCode(sb.toString());
 
-//                        if(layoutLogin.getVisibility() == View.VISIBLE){
-//                            Realm realms = Realm.getDefaultInstance();
-//                            realms.executeTransaction(realm -> {
-//                                User userCard = realm.where(User.class).equalTo("cardBarcode",cardCode).findFirst();
-//
-//                                if(userCard != null){
-//                                    User authentificateUser = realm.copyFromRealm(userCard);
-//                                    Intent main = new Intent(StartedActivity.this,MainActivity.class);
-//                                    ((BaseApplication)getApplication()).setUser(authentificateUser);
-//                                    startActivity(main);
-//                                    finish();
-//                                }
-//                            });
-//                        }
+                        Realm realms = Realm.getDefaultInstance();
+                        realms.executeTransaction(realm -> {
+                            User userCard = realm.where(User.class).equalTo("cardBarcode",cardCode).findFirst();
+
+                            if(userCard != null){
+                                User authentificateUser = realm.copyFromRealm(userCard);
+                                Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                                ((BaseApplication)getApplication()).setUser(authentificateUser);
+                                startActivity(main);
+                                finish();
+                            }
+                            else{
+                                Toast.makeText(this, "Card code not found!", Toast.LENGTH_SHORT).show();
+                            }
+                        });
 
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -827,20 +849,21 @@ public class StartedActivity extends AppCompatActivity {
 
                         String cardCode = getMD5HashCardCode(sb.toString());
 
-//                        if(frame_card.getVisibility() == View.VISIBLE){
-//                            Realm realms = Realm.getDefaultInstance();
-//                            realms.executeTransaction(realm -> {
-//                                User userCard = realm.where(User.class).equalTo("cardBarcode",cardCode).findFirst();
-//
-//                                if(userCard != null){
-//                                    User authentificateUser = realm.copyFromRealm(userCard);
-//                                    Intent main = new Intent(StartedActivity.this,MainActivity.class);
-//                                    ((BaseApplication)getApplication()).setUser(authentificateUser);
-//                                    startActivity(main);
-//                                    finish();
-//                                }
-//                            });
-//                        }
+                        Realm realms = Realm.getDefaultInstance();
+                        realms.executeTransaction(realm -> {
+                            User userCard = realm.where(User.class).equalTo("cardBarcode",cardCode).findFirst();
+
+                            if(userCard != null){
+                                User authentificateUser = realm.copyFromRealm(userCard);
+                                Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                                ((BaseApplication)getApplication()).setUser(authentificateUser);
+                                startActivity(main);
+                                finish();
+                            }
+                            else{
+                                Toast.makeText(this, "Card code not found!", Toast.LENGTH_SHORT).show();
+                            }
+                        });
 
                         byte[] id = tagFromIntent.getId();
                         Log.d("NFC", "MifareClassic Reverse " + toReversedHex(id));

@@ -1,4 +1,5 @@
 package edi.md.androidcash.Fragments;
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -65,6 +66,7 @@ public class FragmentAssortmentList extends Fragment {
         });
 
         grid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @SuppressLint("ResourceAsColor")
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 if(adapter.getItem(i) != null && !adapter.getItem(i).isFolder()){
@@ -79,13 +81,14 @@ public class FragmentAssortmentList extends Fragment {
                     AssortmentRealm assortmentRealm = adapter.getItem(i);
 //                    guidItem = assortmentRealm.getId();
 
-                    MaterialButton button = new MaterialButton(getActivity());
+                    Button button = new Button(getActivity());
                     button.setText(assortmentRealm.getName());
                     button.setTag(assortmentRealm);
                     button.setOnClickListener(butons_);
 
                     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT);
-                    layout_buttons.addView(button,lp);
+                    lp.setMargins(5,0,0,0);
+                    layout_buttons.addView(button, lp);
 
                     findAssortmentFromFolder(adapter.getItem(i).getId());
                 }

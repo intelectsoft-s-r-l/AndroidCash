@@ -381,7 +381,7 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/csl_input_data"
-        android:layout_width="398dp"
+        android:layout_width="0dp"
         android:layout_height="70dp"
         android:layout_marginStart="1dp"
         android:layout_marginEnd="1dp"
@@ -397,10 +397,10 @@
             android:layout_height="0dp"
             android:layout_marginStart="8dp"
             android:gravity="center_vertical"
+            android:maxLength="13"
             android:paddingStart="5dp"
             android:textColor="@android:color/black"
             android:textSize="30sp"
-            android:maxLength="13"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/divider14"
             app:layout_constraintStart_toStartOf="parent"
