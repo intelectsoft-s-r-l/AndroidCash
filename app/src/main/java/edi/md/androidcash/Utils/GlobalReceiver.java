@@ -33,7 +33,7 @@ public class GlobalReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        Toast.makeText(context, "Android: " + intent.getAction() , Toast.LENGTH_SHORT).show();
+        Toast.makeText(context, "Android global receiver: " + intent.getAction() , Toast.LENGTH_SHORT).show();
 
         try {
             if (intent != null) {

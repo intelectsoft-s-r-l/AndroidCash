@@ -10,6 +10,9 @@ public class SimpleResult {
     @SerializedName("ErrorMessage")
     @Expose
     private String errorMessage;
+    @SerializedName("TaskId")
+    @Expose
+    private int taskId;
 
     public Integer getErrorCode() {
         return errorCode;
@@ -25,5 +28,13 @@ public class SimpleResult {
 
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
+    }
+
+    public int getTaskId() {
+        return taskId;
+    }
+
+    public void setTaskId(int taskId) {
+        this.taskId = taskId;
     }
 }

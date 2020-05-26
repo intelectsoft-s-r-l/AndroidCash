@@ -2,7 +2,9 @@ package edi.md.androidcash;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.app.DownloadManager;
 import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -10,6 +12,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import android.net.Uri;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.MifareClassic;
@@ -23,12 +26,9 @@ import android.util.Base64;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -38,13 +38,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 
 import com.acs.smartcard.Reader;
 import com.acs.smartcard.ReaderException;
+import com.google.android.material.button.MaterialButton;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -60,6 +60,7 @@ import java.util.TimeZone;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import edi.md.androidcash.DatcesNewFile.PrinterManager;
 import edi.md.androidcash.NetworkUtils.BrokerResultBody.Body.BodyRegisterApp;
 import edi.md.androidcash.NetworkUtils.BrokerResultBody.GetURIResult;
 import edi.md.androidcash.NetworkUtils.BrokerResultBody.RegisterApplicationResult;
@@ -68,7 +69,10 @@ import edi.md.androidcash.NetworkUtils.EposResult.TokenReceivedFromAutenficateUs
 import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
 import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
 import edi.md.androidcash.NetworkUtils.User;
+import edi.md.androidcash.Utils.BaseEnum;
 import edi.md.androidcash.Utils.Rfc2898DerivesBytes;
+import edi.md.androidcash.Utils.UpdateHelper;
+import edi.md.androidcash.Utils.UpdateInformation;
 import edi.md.androidcash.connectors.AbstractConnector;
 import edi.md.androidcash.connectors.UsbDeviceConnector;
 import io.realm.Realm;
@@ -79,7 +83,7 @@ import retrofit2.Response;
 import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
 import static edi.md.androidcash.BaseApplication.SharedPrefWorkPlaceSettings;
 
-public class StartedActivity extends AppCompatActivity {
+public class StartedActivity extends AppCompatActivity implements UpdateHelper.OnUpdateCheckListener{ //
     public static final int REQUEST_ID_MULTIPLE_PERMISSIONS = 1, DATECS_USB_VID = 65520, FTDI_USB_VID = 1027;
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
     private PendingIntent mPermissionIntent;
@@ -92,24 +96,126 @@ public class StartedActivity extends AppCompatActivity {
 
     //Reader ACR
     private Reader mReader;
-    boolean isFiscalPrinter = false;
+    int fiscalMode;
 
     //layout with authentificate forms
-    ConstraintLayout layoutRegister, layoutLogin;
+    ConstraintLayout layoutRegister, layoutLogin, layoutPassword, layoutCard;
+
     //views register device form
     EditText RetIDNOCompany,RetEmail, RetPassword;
-    Button btnRegister;
+    MaterialButton btnRegister;
     ProgressBar RpgBar;
 
     //views login user form
     EditText LetUserName, LetPassword;
-    Button btnLogin;
+    MaterialButton btnLogin;
     TextView LtvOthersAuthMethods, LtvForgotPass;
     ProgressBar Lpgbar;
 
     //format date and time zone
     SimpleDateFormat simpleDateFormat;
     TimeZone timeZone;
+
+    private ProgressDialog pgH;
+//
+    @Override
+    public void onUpdateCheckListener(UpdateInformation information) {
+        boolean update = information.isUpdate();
+        boolean updateTrial = information.isUpdateTrial();
+
+        boolean autoUpDate = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getBoolean("autoUpdate",false);
+        boolean autoUpDateTrial = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getBoolean("autoUpdateTrial",false);
+
+        if(autoUpDateTrial){
+            if(updateTrial && !information.getNewVersionTrial().equals(information.getCurrentVersion())){
+                android.app.AlertDialog alertDialog = new android.app.AlertDialog.Builder(this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme)
+                        .setTitle("New trial version " + information.getNewVersionTrial() + " available")
+                        .setMessage("Please update to new trial version to continue use.Current version: " + information.getCurrentVersion())
+                        .setPositiveButton("UPDATE",(dialogInterface, i) -> {
+                            pgH.setMessage("download new trial version...");
+                            pgH.setIndeterminate(true);
+                            pgH.show();
+                            downloadAndInstallApk(information.getUrlTrial());
+                        })
+                        .setNegativeButton("No,thanks", (dialogInterface, i) -> {
+                            dialogInterface.dismiss();
+                        })
+                        .create();
+                alertDialog.show();
+            }
+        }
+        else{
+            if(autoUpDate){
+                if(update && !information.getNewVerion().equals(information.getCurrentVersion())){
+                    android.app.AlertDialog alertDialog = new android.app.AlertDialog.Builder(this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme)
+                            .setTitle("New version " + information.getNewVerion() + " available")
+                            .setMessage("Please update to new version to continue use.Current version: " + information.getCurrentVersion() + "\n"+ information.getChanges())
+                            .setPositiveButton("UPDATE",(dialogInterface, i) -> {
+                                pgH.setMessage("download new trial version...");
+                                pgH.setIndeterminate(true);
+                                pgH.show();
+                                downloadAndInstallApk(information.getUrl());
+                            })
+                            .setNegativeButton("No,thanks", (dialogInterface, i) -> {
+                                dialogInterface.dismiss();
+                            })
+                            .create();
+                    alertDialog.show();
+                }
+            }
+        }
+    }
+
+    private void downloadAndInstallApk(String url){
+        //get destination to update file and set Uri
+        //TODO: First I wanted to store my update .apk file on internal storage for my app but apparently android does not allow you to open and install
+        //aplication with existing package from there. So for me, alternative solution is Download directory in external storage. If there is better
+
+        String destination = Environment.getExternalStorageDirectory()+ "/IntelectSoft";
+        String fileName = "/cash_trial.apk";
+        destination += fileName;
+        final Uri uri = Uri.parse("file://" + destination);
+
+        //Delete update file if exists
+        File file = new File(destination);
+        if (file.exists())
+            //file.delete() - test this, I think sometimes it doesnt work
+            file.delete();
+
+        //set download manager
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+        request.setDescription("Download trial version...");
+        request.setTitle("Android cash");
+
+        //set destination
+        request.setDestinationUri(uri);
+
+        // get download service and enqueue file
+        final DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+        final long downloadId = manager.enqueue(request);
+
+        //set BroadcastReceiver to install app when .apk is downloaded
+        BroadcastReceiver onComplete = new BroadcastReceiver() {
+            public void onReceive(Context ctxt, Intent intent) {
+                pgH.dismiss();
+                File file = new File(Environment.getExternalStorageDirectory()+ "/IntelectSoft","/cash_trial.apk"); // mention apk file path here
+
+                Uri uri = FileProvider.getUriForFile(StartedActivity.this, BuildConfig.APPLICATION_ID + ".provider",file);
+                if(file.exists()){
+                    Intent install = new Intent(Intent.ACTION_VIEW);
+                    install.setDataAndType(uri, "application/vnd.android.package-archive");
+                    install.putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true);
+                    install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(install);
+                }
+                unregisterReceiver(this);
+                finish();
+
+            }
+        };
+        //register receiver for when .apk download is compete
+        registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+    }
 
     private class OpenTask extends AsyncTask<UsbDevice, Void, Exception> {
         @Override
@@ -135,7 +241,6 @@ public class StartedActivity extends AppCompatActivity {
             }
         }
     }
-
     private class CloseTask extends AsyncTask<Void, Void, Void> {
         @Override
         protected Void doInBackground(Void... params) {
@@ -144,13 +249,11 @@ public class StartedActivity extends AppCompatActivity {
         }
 
     }
-
     private class TransmitParams {
         public byte[] command;
         public int slotNum;
         public int controlCode;
     }
-
     private class TransmitProgress {
         public byte[] command;
         public int commandLength;
@@ -158,7 +261,6 @@ public class StartedActivity extends AppCompatActivity {
         public int responseLength;
         public Exception e;
     }
-
     private class TransmitTask extends AsyncTask<TransmitParams, Void, TransmitProgress> {
 
         @Override
@@ -230,8 +332,9 @@ public class StartedActivity extends AppCompatActivity {
             if (ACTION_USB_PERMISSION.equals(action)) {
                 synchronized (this) {
                     UsbDevice device = (UsbDevice) intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                    if(isFiscalPrinter){
+                    if(fiscalMode == BaseEnum.FISCAL_DEVICE){
                         if (device.getManufacturerName().equals("Datecs")) {
+                            BaseApplication.getInstance().setDeviceFiscal(device);
                             if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                                 AbstractConnector connector = new UsbDeviceConnector(StartedActivity.this, mManager, device);
                                 HashMap<String, UsbDevice> deviceList = mManager.getDeviceList();
@@ -282,7 +385,7 @@ public class StartedActivity extends AppCompatActivity {
             }
             else if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
                 for (UsbDevice device : mManager.getDeviceList().values()) {
-                    if(isFiscalPrinter){
+                    if(fiscalMode == BaseEnum.FISCAL_DEVICE){
                         if (device.getManufacturerName().equals("Datecs")) {
                             mManager.requestPermission(device, mPermissionIntent);
                         }
@@ -301,23 +404,19 @@ public class StartedActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        //set full screen mode
-//        requestWindowFeature(Window.FEATURE_NO_TITLE);
-//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
         // Get USB manager
         mManager = (UsbManager) getSystemService(Context.USB_SERVICE);
         // Register receiver for USB permission
         mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
 
-        isFiscalPrinter = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork", 0) == 1;
+        fiscalMode = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork", 0);
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_USB_PERMISSION);
         filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
         filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
         registerReceiver(mReceiver, filter);
-//------------------------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
         setContentView(R.layout.activity_start);
         //init constraint layouts with authentificate form
         layoutRegister = findViewById(R.id.csl_register_form);
@@ -337,6 +436,14 @@ public class StartedActivity extends AppCompatActivity {
         LtvOthersAuthMethods = findViewById(R.id.txt_other_auth_methods);
         Lpgbar = findViewById(R.id.progressBar_login_form);
         btnLogin = findViewById(R.id.btn_login_user_form);
+
+        //--------------------------------------- check update app version ------------------
+        boolean autoUpDate = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getBoolean("autoUpdate",false);
+        boolean autoUpDateTrial = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getBoolean("autoUpdateTrial",false);
+        if(autoUpDateTrial || autoUpDate)
+            UpdateHelper.with(this).onUpdateCheck(this).check();
+
+        pgH = new ProgressDialog(this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme);
 
         //check if it device support NFC
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
@@ -466,16 +573,19 @@ public class StartedActivity extends AppCompatActivity {
         btnLogin.setOnClickListener(v1 ->{
             Lpgbar.setVisibility(View.VISIBLE);
 
+            String userName = LetUserName.getText().toString();
+            String userPass = LetPassword.getText().toString();
+
             //save user password only app is runing
-            BaseApplication.getInstance().setUserPasswordsNotHashed(LetPassword.getText().toString());
+            BaseApplication.getInstance().setUserPasswordsNotHashed(userPass);
 
             //hash SHA1 password
-            String passGenerate = GetSHA1HashUserPassword("This is the code for UserPass",LetPassword.getText().toString()).replace("\n","");
+            String passGenerate = GetSHA1HashUserPassword("This is the code for UserPass",userPass).replace("\n","");
 
             //search in local data base user with such data
             Realm realm = Realm.getDefaultInstance();
             User result = realm.where(User.class)
-                    .equalTo("userName",LetUserName.getText().toString())
+                    .equalTo("userName",userName)
                     .and()
                     .equalTo("password",passGenerate)
                     .findFirst();
@@ -483,69 +593,42 @@ public class StartedActivity extends AppCompatActivity {
                 //such user found,save this user while app is running
                 BaseApplication.getInstance().setUser(realm.copyFromRealm(result));
 
+                String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("Token",null);
+                long tokenValidDate = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getLong("TokenValidTo",0);
+                Date dateToken = new Date(tokenValidDate);
+                Date currDate = new Date();
+
+                if(token == null && tokenValidDate == 0){
+                    authenticateUser(userName,userPass,false);
+                }
+                if(currDate.after(dateToken))
+                    authenticateUser(userName,userPass,false);
+
                 Intent main = new Intent(StartedActivity.this,MainActivity.class);
                 startActivity(main);
-
                 finish();
             }
             else{
-                //user not found in local data bases then we connect to accounting system for receive token and verify user
-                String uri = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("URI",null);
-                String install_id = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("InstallationID",null);
+                String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("Token",null);
+                long tokenValidDate = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getLong("TokenValidTo",0);
+                Date dateToken = new Date(tokenValidDate);
+                Date currDate = new Date();
 
-                CommandServices commandServices = ApiUtils.commandEposService(uri);
-                Call<AuthentificateUserResult> call = commandServices.autentificateUser(install_id,LetUserName.getText().toString(),LetPassword.getText().toString());
-                call.enqueue(new Callback<AuthentificateUserResult>() {
-                    @Override
-                    public void onResponse(Call<AuthentificateUserResult> call, Response<AuthentificateUserResult> response) {
-                        AuthentificateUserResult authentificateUserResult = response.body();
-                        if(authentificateUserResult != null){
-
-                            //get information for token
-                            TokenReceivedFromAutenficateUser token = authentificateUserResult.getAuthentificateUserResult();
-                            if(token.getErrorCode() == 0){
-                                //save token in shared preferense
-                                String date = token.getTokenValidTo();
-                                date = date.replace("/Date(","");
-                                date = date.replace("+0200)/","");
-                                long dateLong = Long.parseLong(date);
-
-                                getSharedPreferences(SharedPrefSettings,MODE_PRIVATE)
-                                        .edit()
-                                        .putString("Token",token.getToken())
-                                        .putLong("TokenValidTo",dateLong)
-                                        .apply();
-
-                                Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                                BaseApplication.getInstance().setUser(new User());
-                                startActivity(main);
-                                Lpgbar.setVisibility(View.INVISIBLE);
-                                finish();
-                            }
-                            else{
-                                Toast.makeText(StartedActivity.this, "Error to authentificate user!"+ token.getErrorCode(), Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<AuthentificateUserResult> call, Throwable t) {
-                        Lpgbar.setVisibility(View.INVISIBLE);
-                        AlertDialog.Builder dialog_user = new AlertDialog.Builder(StartedActivity.this);
-                        dialog_user.setTitle("Atentie!");
-                        dialog_user.setMessage("Eroare!");
-                        dialog_user.setPositiveButton("Ok", (dialog, which) -> {
-                            dialog.dismiss();
-                        });
-                        dialog_user.setNeutralButton("Oricum intra",(dialog,which) -> {
-                            Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                            BaseApplication.getInstance().setUser(new User());
-                            startActivity(main);
-                            finish();
-                        });
-                        dialog_user.show();
-                    }
-                });
+                if(token == null && tokenValidDate == 0){
+                    authenticateUser(userName,userPass,true);
+                }
+                else if(currDate.after(dateToken))
+                    authenticateUser(userName,userPass,true);
+                else {
+                    Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                    User user = new User();
+                    user.setUserName(userName);
+                    user.setPassword(passGenerate);
+                    BaseApplication.getInstance().setUserPasswordsNotHashed(userPass);
+                    BaseApplication.getInstance().setUser(user);
+                    startActivity(main);
+                    finish();
+                }
             }
 
         });
@@ -563,6 +646,59 @@ public class StartedActivity extends AppCompatActivity {
 
         //Device load
         initUSBDevice();
+    }
+
+    private void authenticateUser(String userName, String passUser,boolean initialStart){
+        //user not found in local data bases then we connect to accounting system for receive token and verify user
+        String uri = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("URI",null);
+        String install_id = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("InstallationID",null);
+
+        CommandServices commandServices = ApiUtils.commandEposService(uri);
+        Call<AuthentificateUserResult> call = commandServices.autentificateUser(install_id,userName,passUser);
+        call.enqueue(new Callback<AuthentificateUserResult>() {
+            @Override
+            public void onResponse(Call<AuthentificateUserResult> call, Response<AuthentificateUserResult> response) {
+                AuthentificateUserResult authentificateUserResult = response.body();
+                if(authentificateUserResult != null){
+
+                    //get information for token
+                    TokenReceivedFromAutenficateUser token = authentificateUserResult.getAuthentificateUserResult();
+                    if(token.getErrorCode() == 0){
+                        //save token in shared preferense
+                        String date = token.getTokenValidTo();
+                        date = date.replace("/Date(","");
+                        date = date.replace("+0200)/","");
+                        date = date.replace("+0300)/","");
+                        long dateLong = Long.parseLong(date);
+
+                        getSharedPreferences(SharedPrefSettings,MODE_PRIVATE)
+                                .edit()
+                                .putString("Token",token.getToken())
+                                .putLong("TokenValidTo",dateLong)
+                                .apply();
+                        if(initialStart){
+                            Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                            User user = new User();
+                            user.setUserName(userName);
+                            user.setPassword(GetSHA1HashUserPassword("This is the code for UserPass",passUser).replace("\n",""));
+                            BaseApplication.getInstance().setUserPasswordsNotHashed(passUser);
+                            BaseApplication.getInstance().setUser(user);
+                            startActivity(main);
+                            finish();
+                        }
+                    }
+                    else{
+                        Toast.makeText(StartedActivity.this, "Error to authenticate user to server! "+ token.getErrorCode(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<AuthentificateUserResult> call, Throwable t) {
+                Lpgbar.setVisibility(View.INVISIBLE);
+                Toast.makeText(StartedActivity.this, "Error to authenticate user to server! "+ t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void doRegisterAppToBrokerServer(BodyRegisterApp bodyRegisterApp){
@@ -757,20 +893,21 @@ public class StartedActivity extends AppCompatActivity {
                         }
                         String cardCode = getMD5HashCardCode(sb.toString());
 
-//                        if(layoutLogin.getVisibility() == View.VISIBLE){
-//                            Realm realms = Realm.getDefaultInstance();
-//                            realms.executeTransaction(realm -> {
-//                                User userCard = realm.where(User.class).equalTo("cardBarcode",cardCode).findFirst();
-//
-//                                if(userCard != null){
-//                                    User authentificateUser = realm.copyFromRealm(userCard);
-//                                    Intent main = new Intent(StartedActivity.this,MainActivity.class);
-//                                    ((BaseApplication)getApplication()).setUser(authentificateUser);
-//                                    startActivity(main);
-//                                    finish();
-//                                }
-//                            });
-//                        }
+                        Realm realms = Realm.getDefaultInstance();
+                        realms.executeTransaction(realm -> {
+                            User userCard = realm.where(User.class).equalTo("cardBarcode",cardCode).findFirst();
+
+                            if(userCard != null){
+                                User authentificateUser = realm.copyFromRealm(userCard);
+                                Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                                ((BaseApplication)getApplication()).setUser(authentificateUser);
+                                startActivity(main);
+                                finish();
+                            }
+                            else{
+                                Toast.makeText(this, "Card code not found!", Toast.LENGTH_SHORT).show();
+                            }
+                        });
 
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -814,20 +951,21 @@ public class StartedActivity extends AppCompatActivity {
 
                         String cardCode = getMD5HashCardCode(sb.toString());
 
-//                        if(frame_card.getVisibility() == View.VISIBLE){
-//                            Realm realms = Realm.getDefaultInstance();
-//                            realms.executeTransaction(realm -> {
-//                                User userCard = realm.where(User.class).equalTo("cardBarcode",cardCode).findFirst();
-//
-//                                if(userCard != null){
-//                                    User authentificateUser = realm.copyFromRealm(userCard);
-//                                    Intent main = new Intent(StartedActivity.this,MainActivity.class);
-//                                    ((BaseApplication)getApplication()).setUser(authentificateUser);
-//                                    startActivity(main);
-//                                    finish();
-//                                }
-//                            });
-//                        }
+                        Realm realms = Realm.getDefaultInstance();
+                        realms.executeTransaction(realm -> {
+                            User userCard = realm.where(User.class).equalTo("cardBarcode",cardCode).findFirst();
+
+                            if(userCard != null){
+                                User authentificateUser = realm.copyFromRealm(userCard);
+                                Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                                ((BaseApplication)getApplication()).setUser(authentificateUser);
+                                startActivity(main);
+                                finish();
+                            }
+                            else{
+                                Toast.makeText(this, "Card code not found!", Toast.LENGTH_SHORT).show();
+                            }
+                        });
 
                         byte[] id = tagFromIntent.getId();
                         Log.d("NFC", "MifareClassic Reverse " + toReversedHex(id));
@@ -1113,7 +1251,6 @@ public class StartedActivity extends AppCompatActivity {
                 if (imm != null) {
                     imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
                 }
-
             }
         }
 

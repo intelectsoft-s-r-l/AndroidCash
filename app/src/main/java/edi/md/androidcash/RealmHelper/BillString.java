@@ -16,6 +16,8 @@ public class BillString extends RealmObject {
     @Required
     private String assortmentExternID;
     private String assortmentFullName;
+    private boolean allowNonInteger;
+    private boolean allowDiscounts;
     @Required
     private String createBy;
     private long createDate;
@@ -64,6 +66,22 @@ public class BillString extends RealmObject {
 
     public void setAssortmentFullName(String assortmentFullName) {
         this.assortmentFullName = assortmentFullName;
+    }
+
+    public boolean isAllowNonInteger() {
+        return allowNonInteger;
+    }
+
+    public void setAllowNonInteger(boolean allowNonInteger) {
+        this.allowNonInteger = allowNonInteger;
+    }
+
+    public boolean isAllowDiscounts() {
+        return allowDiscounts;
+    }
+
+    public void setAllowDiscounts(boolean allowDiscounts) {
+        this.allowDiscounts = allowDiscounts;
     }
 
     public String getCreateBy() {

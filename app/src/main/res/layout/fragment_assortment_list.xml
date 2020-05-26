@@ -9,11 +9,12 @@
     <LinearLayout
         android:id="@+id/ll_tree_way"
         android:layout_width="match_parent"
-        android:layout_height="45dp"
+        android:layout_height="50dp"
         android:layout_marginTop="4dp"
         android:layout_marginEnd="4dp"
         android:orientation="horizontal"
         android:padding="5dp"
+        app:layout_constraintBottom_toTopOf="@+id/gv_assortment_list"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">

@@ -10,7 +10,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/csl_login_form"
         android:layout_width="400dp"
-        android:layout_height="570dp"
+        android:layout_height="540dp"
         android:background="@android:color/white"
         android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -102,16 +102,6 @@
             app:layout_constraintTop_toBottomOf="@id/tv_forgot_pass_login_form" />
 
         <TextView
-            android:id="@+id/txt_other_auth_methods"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:text="Other authentificate methods"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_login_user_form" />
-
-        <TextView
             android:id="@+id/tv_forgot_pass_login_form"
             android:layout_width="150dp"
             android:layout_height="wrap_content"
@@ -127,7 +117,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/csl_register_form"
         android:layout_width="400dp"
-        android:layout_height="570dp"
+        android:layout_height="540dp"
         android:background="@android:color/white"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -206,11 +196,12 @@
                 android:textSize="24sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_register_device"
+            style="@style/Widget.MaterialComponents.Button"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:background="@color/form_loginColor"
+            android:backgroundTint="@color/form_loginColor"
             android:text="Register"
             android:textColor="@android:color/white"
             android:textSize="24sp"

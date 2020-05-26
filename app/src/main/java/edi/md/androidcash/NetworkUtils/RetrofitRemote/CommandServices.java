@@ -14,8 +14,6 @@ import edi.md.androidcash.NetworkUtils.EposResult.ResultEposSimple;
 import edi.md.androidcash.NetworkUtils.EposResult.UserListServiceResult;
 import edi.md.androidcash.NetworkUtils.EposResult.WorkPlaceSettings;
 import edi.md.androidcash.NetworkUtils.FiscalServiceResult.SimpleResult;
-import edi.md.androidcash.NetworkUtils.FiscalServiceResult.XResponse;
-import edi.md.androidcash.NetworkUtils.FiscalServiceResult.ZResponse;
 import edi.md.androidcash.NetworkUtils.SendBillsToServer;
 import edi.md.androidcash.NetworkUtils.SendShiftToServer;
 import retrofit2.Call;
@@ -32,29 +30,29 @@ public interface CommandServices {
     @POST("/brokerservice/json/DeactivateApplication")
     Call<DeactivateApplicationResult> deactivateApplicationCall(@Body BodyDeactivateApp bodyDeactivateApp);
 
-    @GET("/epos/json/GetAssortmentList")
-    Call<AssortmentListService> getAssortiment(@Query("Token") String param1, @Query("WorkplaceId") String param2);
-
-    @GET("/fpservice/json/GetState")
-    Call<SimpleResult> getState ();
+    @POST("/brokerservice/json/RegisterApplication")
+    Call<RegisterApplicationResult> registerApplicationCall(@Body BodyRegisterApp bodyRegisterApp);
 
     @POST("/brokerservice/json/GetURI")
     Call<GetURIResult> getURICall(@Body String instalationId);
 
-    @GET("/epos/json/GetUsersList")
-    Call<UserListServiceResult> getUsers(@Query("Token") String token, @Query("WorkplaceId") String workPlaceId);
+    @POST("/brokerservice/json/UnRegisterApplication")
+    Call<UnRegisterApplicationResult> unRegisterApplicationCall(@Body BodyUnRegisterApp bodyUnRegisterApp);
 
     @POST("/fpservice/json/PrintBill")
     Call<SimpleResult> printBill (@Body PrintBillFiscalService bill);
 
     @GET("/fpservice/json/PrintReportX")
-    Call<XResponse> printXReport ();
+    Call<SimpleResult> printXReport (@Query("prn") int param);
 
     @GET("/fpservice/json/PrintReportZ")
-    Call<ZResponse> printZReport();
+    Call<SimpleResult> printZReport(@Query("prn") int param);
 
-    @POST("/brokerservice/json/RegisterApplication")
-    Call<RegisterApplicationResult> registerApplicationCall(@Body BodyRegisterApp bodyRegisterApp);
+    @GET("/fpservice/json/GetState")
+    Call<SimpleResult> getState ();
+
+    @GET("/epos/json/GetAssortmentList")
+    Call<AssortmentListService> getAssortiment(@Query("Token") String param1, @Query("WorkplaceId") String param2);
 
     @POST("/epos/json/SaveBills")
     Call<ResultEposSimple> saveBillCall(@Body SendBillsToServer billsToServer);
@@ -71,6 +69,8 @@ public interface CommandServices {
     @GET("/epos/json/AuthentificateUser")
     Call<AuthentificateUserResult> autentificateUser (@Query("APIKey") String apiKey, @Query("userLogin") String userLogin, @Query("userPass") String userPass);
 
-    @POST("/brokerservice/json/UnRegisterApplication")
-    Call<UnRegisterApplicationResult> unRegisterApplicationCall(@Body BodyUnRegisterApp bodyUnRegisterApp);
+    @GET("/epos/json/GetUsersList")
+    Call<UserListServiceResult> getUsers(@Query("Token") String token, @Query("WorkplaceId") String workPlaceId);
+
+
 }

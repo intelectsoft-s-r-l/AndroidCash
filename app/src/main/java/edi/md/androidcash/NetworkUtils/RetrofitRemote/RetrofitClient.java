@@ -30,43 +30,28 @@ public class RetrofitClient {
 
     public static Retrofit getBrokerClient(String url){
 
-        if(retrofit == null){
-
-            retrofit = new Retrofit.Builder()
-                    .baseUrl(url)
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .client(getUnsafeOkHttpClient())
-                    .build();
-        }
+        retrofit = new Retrofit.Builder()
+                .baseUrl(url)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(getUnsafeOkHttpClient())
+                .build();
         return retrofit;
     }
     public static Retrofit getEposClient(String url){
-
-        if(retrofitEpos == null){
-
-            retrofitEpos = new Retrofit.Builder()
-                    .baseUrl(url)
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .client(getOkHttpClient())
-                    .build();
-        }
+        retrofitEpos = new Retrofit.Builder()
+                .baseUrl(url)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(getOkHttpClient())
+                .build();
         return retrofitEpos;
     }
     public static Retrofit getFpServiceClient(String url){
 
-        if(retrofitFpService == null){
-            try{
-                retrofitFpService = new Retrofit.Builder()
-                        .baseUrl(url)
-                        .addConverterFactory(GsonConverterFactory.create())
-                        .client(getOkHttpClient())
-                        .build();
-            }
-            catch (Exception e){
-                String msg = e.getMessage();
-            }
-        }
-
+        retrofitFpService = new Retrofit.Builder()
+                .baseUrl(url)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(getOkHttpClient())
+                .build();
         return retrofitFpService;
     }
 
@@ -127,9 +112,9 @@ public class RetrofitClient {
 
     private static OkHttpClient getOkHttpClient() {
         return new OkHttpClient.Builder()
-                .connectTimeout(8, TimeUnit.MINUTES)
-                .readTimeout(15, TimeUnit.MINUTES)
-                .writeTimeout(8, TimeUnit.MINUTES)
+                .connectTimeout(8, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(8, TimeUnit.SECONDS)
                 .build();
     }
 }
