@@ -25,6 +25,7 @@ import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 
 import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
 import edi.md.androidcash.RealmHelper.History;
+import edi.md.androidcash.Utils.BaseEnum;
 import edi.md.androidcash.Utils.UpdateHelper;
 import io.fabric.sdk.android.Fabric;
 
@@ -120,6 +121,10 @@ public class BaseApplication extends Application {
         sheduleSendBillSHiftToServer();
         timerSyncBill.schedule(timerTaskSyncBill, 10000, 60000);
 
+        checkUpdates();
+    }
+
+    public void checkUpdates(){
         FirebaseRemoteConfig remoteConfig = FirebaseRemoteConfig.getInstance();
 
         FirebaseRemoteConfigSettings configSettings = new FirebaseRemoteConfigSettings.Builder()
@@ -133,6 +138,12 @@ public class BaseApplication extends Application {
         defaultValue.put(UpdateHelper.KEY_UPDATE_URL,"https://edi.md/androidapps/cash.apk");
         defaultValue.put(UpdateHelper.KEY_UPDATE_VERSION,"1.0");
         defaultValue.put(UpdateHelper.KEY_UPDATE_ENABLE,false);
+        defaultValue.put(UpdateHelper.KEY_UPDATE_CHANGES,"");
+
+        defaultValue.put(UpdateHelper.KEY_UPDATE_TRIAL_URL,"https://edi.md/androidapps/cash_trial.apk");
+        defaultValue.put(UpdateHelper.KEY_UPDATE_TRIAL_VERSION,"1.1");
+        defaultValue.put(UpdateHelper.KEY_UPDATE_TRIAL_ENABLE,false);
+        defaultValue.put(UpdateHelper.KEY_UPDATE_TRIAL_CHANGES,"");
 
         remoteConfig.setDefaultsAsync(defaultValue);
 
@@ -320,10 +331,14 @@ public class BaseApplication extends Application {
             return Integer.valueOf(resCloseBill);
         }
     }
-    public void printReceiptFiscalService (RealmList<BillString> billString, PaymentType paymentType, double suma, RealmList<BillPaymentType> paymentList){
+    public void printReceiptFiscalService (RealmList<BillString> billString, PaymentType paymentType, double suma, RealmList<BillPaymentType> paymentList,String numberBill){
         List<BillPaymentFiscalService> paymentFiscalServices = new ArrayList<>();
         List<BillLineFiscalService> lineFiscalService = new ArrayList<>();
         PrintBillFiscalService printBillFiscalService = new PrintBillFiscalService();
+        printBillFiscalService.setHeaderText(user.getFirstName() + " " +  user.getLastName());
+        printBillFiscalService.setNumber(numberBill);
+
+
 
         for(BillString billStringEntry: billString){
             BillLineFiscalService billLineFiscalService = new BillLineFiscalService();
@@ -340,6 +355,9 @@ public class BaseApplication extends Application {
             billLineFiscalService.setAmount(billStringEntry.getQuantity());
             billLineFiscalService.setName(billStringEntry.getAssortmentFullName());
             billLineFiscalService.setPrice(billStringEntry.getPriceWithDiscount());
+            if(billStringEntry.getPrice() != billStringEntry.getPriceWithDiscount()){
+                billLineFiscalService.setDiscount(billStringEntry.getPrice() - billStringEntry.getPriceWithDiscount());
+            }
             billLineFiscalService.setVAT(codeVat);
 
             lineFiscalService.add(billLineFiscalService);
@@ -349,9 +367,8 @@ public class BaseApplication extends Application {
             for(BillPaymentType billPaymentType:paymentList){
                 BillPaymentFiscalService billPaymentFiscalService = new BillPaymentFiscalService();
 
-//                billPaymentFiscalService.setCode(String.valueOf(paymentType.getCode()));
+                billPaymentFiscalService.setCode(String.valueOf(paymentType.getCode()));
                 billPaymentFiscalService.setPaymentSum(billPaymentType.getSum());
-                billPaymentFiscalService.setCode("1");
 
                 paymentFiscalServices.add(billPaymentFiscalService);
             }
@@ -367,8 +384,7 @@ public class BaseApplication extends Application {
             BillPaymentFiscalService billPaymentFiscalService = new BillPaymentFiscalService();
 
             billPaymentFiscalService.setPaymentSum(suma);
-            billPaymentFiscalService.setCode("1");
-//            billPaymentFiscalService.setCode(String.valueOf(paymentType.getCode()));
+            billPaymentFiscalService.setCode(String.valueOf(paymentType.getCode()));
 
             paymentFiscalServices.add(billPaymentFiscalService);
         }
@@ -380,7 +396,7 @@ public class BaseApplication extends Application {
 
         int[] result = {101};
 
-        CommandServices commandServices = ApiUtils.commandEposService(uri);
+        CommandServices commandServices = ApiUtils.commandFPService(uri);
         Call<SimpleResult> call = commandServices.printBill(printBillFiscalService);
 
         call.enqueue(new Callback<SimpleResult>() {

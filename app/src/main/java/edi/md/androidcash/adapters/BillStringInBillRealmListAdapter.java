@@ -18,7 +18,7 @@ import io.realm.RealmBaseAdapter;
  * Created by Igor on 23.12.2019
  */
 
-public class CustomNewBillRealmAdapter extends RealmBaseAdapter<BillString> implements ListAdapter {
+public class BillStringInBillRealmListAdapter extends RealmBaseAdapter<BillString> implements ListAdapter {
 
 
     private static class ViewHolder {
@@ -26,7 +26,7 @@ public class CustomNewBillRealmAdapter extends RealmBaseAdapter<BillString> impl
     }
 
 
-    public CustomNewBillRealmAdapter(@Nullable OrderedRealmCollection<BillString> data) {
+    public BillStringInBillRealmListAdapter(@Nullable OrderedRealmCollection<BillString> data) {
         super(data);
     }
 
@@ -53,7 +53,7 @@ public class CustomNewBillRealmAdapter extends RealmBaseAdapter<BillString> impl
 
             viewHolder.countString.setText(String.format("%.2f", item.getQuantity()).replace(",","."));
             viewHolder.priceString.setText(String.format("%.2f", item.getPriceWithDiscount()).replace(",","."));
-            viewHolder.sumString.setText(String.format("%.2f", item.getSum()).replace(",","."));
+            viewHolder.sumString.setText(String.format("%.2f", item.getSumWithDiscount()).replace(",","."));
             if(item.getPriceWithDiscount() < item.getPrice())
                 viewHolder.priceString.setTextColor(Color.parseColor("#79BD60"));
         }

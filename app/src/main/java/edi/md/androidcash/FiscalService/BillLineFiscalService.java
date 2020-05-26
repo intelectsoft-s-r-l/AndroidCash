@@ -7,6 +7,9 @@ public class BillLineFiscalService {
     @SerializedName("Amount")
     @Expose
     private Double amount;
+    @SerializedName("Discount")
+    @Expose
+    private double discount;
     @SerializedName("Name")
     @Expose
     private String name;
@@ -26,6 +29,14 @@ public class BillLineFiscalService {
 
     public void setAmount(Double amount) {
         this.amount = amount;
+    }
+
+    public double getDiscount() {
+        return discount;
+    }
+
+    public void setDiscount(double discount) {
+        this.discount = discount;
     }
 
     public String getName() {

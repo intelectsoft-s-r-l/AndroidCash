@@ -6,19 +6,15 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.badge.BadgeDrawable;
-import com.google.android.material.navigation.NavigationView;
 
 import java.text.SimpleDateFormat;
 import java.util.Random;
@@ -31,7 +27,6 @@ import edi.md.androidcash.Utils.BaseEnum;
 import io.realm.OrderedRealmCollection;
 import io.realm.Realm;
 import io.realm.RealmChangeListener;
-import io.realm.RealmList;
 import io.realm.RealmRecyclerViewAdapter;
 import io.realm.RealmResults;
 
@@ -39,7 +34,7 @@ import io.realm.RealmResults;
  * Created by Igor on 10.02.2020
  */
 
-public class CustomRCBillListRealmAdapter extends RealmRecyclerViewAdapter<Bill, CustomRCBillListRealmAdapter.ViewHolderString> {
+public class BillListRealmRCAdapter extends RealmRecyclerViewAdapter<Bill, BillListRealmRCAdapter.ViewHolderString> {
 
     Realm mRealm;
     SimpleDateFormat simpleDateFormatMD;
@@ -59,7 +54,7 @@ public class CustomRCBillListRealmAdapter extends RealmRecyclerViewAdapter<Bill,
         notifyItemRangeRemoved(0, size);
     }
 
-    public CustomRCBillListRealmAdapter(@Nullable OrderedRealmCollection<Bill> data, boolean autoUpdate) {
+    public BillListRealmRCAdapter(@Nullable OrderedRealmCollection<Bill> data, boolean autoUpdate) {
         super(data, autoUpdate);
         mRealm = Realm.getDefaultInstance();
 

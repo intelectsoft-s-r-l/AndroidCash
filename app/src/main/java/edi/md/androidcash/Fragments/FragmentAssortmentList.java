@@ -1,5 +1,7 @@
 package edi.md.androidcash.Fragments;
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,8 +17,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import com.google.android.material.button.MaterialButton;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -24,7 +24,7 @@ import java.util.Comparator;
 import edi.md.androidcash.MainActivity;
 import edi.md.androidcash.R;
 import edi.md.androidcash.RealmHelper.AssortmentRealm;
-import edi.md.androidcash.adapters.GridAssortmentListAdapter;
+import edi.md.androidcash.adapters.AssortmentListGridAdapter;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
@@ -34,13 +34,14 @@ import io.realm.RealmResults;
 
 public class FragmentAssortmentList extends Fragment {
 
-    Realm mRealm;
-    GridView grid;
+    static Realm mRealm;
+    static GridView grid;
     ImageButton btnHome;
-    GridAssortmentListAdapter adapter;
+    static AssortmentListGridAdapter adapter;
 //    String guidItem = "00000000-0000-0000-0000-000000000000";
     LinearLayout layout_buttons;
-    ViewGroup container;
+    static ViewGroup container;
+    static Context context;
 
     @Nullable
     @Override
@@ -52,6 +53,8 @@ public class FragmentAssortmentList extends Fragment {
         grid = rootViewAdmin.findViewById(R.id.gv_assortment_list);
         btnHome = rootViewAdmin.findViewById(R.id.img_btn_home_assortment);
         layout_buttons = rootViewAdmin.findViewById(R.id.ll_tree_way);
+
+        context = getContext();
 
         homeAssortment();
 
@@ -85,9 +88,12 @@ public class FragmentAssortmentList extends Fragment {
                     button.setText(assortmentRealm.getName());
                     button.setTag(assortmentRealm);
                     button.setOnClickListener(butons_);
+                    button.setBackgroundColor(Color.rgb(0,138,124)); //color primary
+                    button.setTextColor(Color.WHITE);
+                    button.setPadding(5,0,5,0);
 
                     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT);
-                    lp.setMargins(5,0,0,0);
+                    lp.setMargins(5,-5,0,-5);
                     layout_buttons.addView(button, lp);
 
                     findAssortmentFromFolder(adapter.getItem(i).getId());
@@ -104,7 +110,7 @@ public class FragmentAssortmentList extends Fragment {
             ViewGroup parent  = (ViewGroup) view.getParent();
             int count = parent.getChildCount();
 
-            for (int i=count-1; i>0; i--){
+            for (int i = count-1; i > 0; i--){
                 Button vi = (Button) parent.getChildAt(i);
                 AssortmentRealm entry = (AssortmentRealm)vi.getTag();
                 if(!entry.getId().equals(assortmentEntry.getId())){
@@ -118,7 +124,53 @@ public class FragmentAssortmentList extends Fragment {
         }
     };
 
-    private void homeAssortment (){
+    public static void searchAssortiment(String text){
+        ArrayList<AssortmentRealm> listArray = new ArrayList<>();
+
+        String filteringLower = "*" + text.toLowerCase() + "*";
+        String filteringUpper = "*" + text.toUpperCase() + "*";
+
+        mRealm.executeTransaction(realm -> {
+            RealmResults<AssortmentRealm> result = realm.where(AssortmentRealm.class)
+                    .like("name",filteringLower).or()
+                    .like("marking",filteringLower).or()
+                    .like("code",filteringLower).or()
+                    .like("barcodes.bar",filteringLower).or()
+                    .like("name",filteringUpper).or()
+                    .like("code",filteringUpper).or()
+                    .like("marking",filteringUpper).or()
+                    .like("barcodes.bar",filteringUpper)
+                    .findAll();
+
+            if(!result.isEmpty()) {
+                listArray.addAll(result);
+            }
+        });
+
+        if(listArray.size() % 4 != 0.0){
+            do{
+                AssortmentRealm test = null;
+                listArray.add(test);
+            }
+            while ((listArray.size() + 1) % 4 == 0);
+        }
+
+        if(listArray.size() < 16){
+            while ((listArray.size() < 16)){
+                AssortmentRealm test = null;
+                listArray.add(test);
+            }
+        }
+        int contHM = container.getMeasuredHeight();
+        int heightButton = (contHM - 74) / 4;
+
+        sortAssortmentList(listArray);
+
+        adapter = new AssortmentListGridAdapter(context,R.layout.item_grid_quick_buttons,listArray,heightButton);
+        grid.setAdapter(adapter);
+    }
+
+    public static void homeAssortment (){
 
         ArrayList<AssortmentRealm> listArray = new ArrayList<>();
 
@@ -153,7 +205,7 @@ public class FragmentAssortmentList extends Fragment {
 
         sortAssortmentList(listArray);
 
-        adapter = new GridAssortmentListAdapter(getActivity(),R.layout.item_grid_quick_buttons,listArray,heightButton);
+        adapter = new AssortmentListGridAdapter(context,R.layout.item_grid_quick_buttons,listArray,heightButton);
         grid.setAdapter(adapter);
     }
 
@@ -191,7 +243,7 @@ public class FragmentAssortmentList extends Fragment {
 
         sortAssortmentList(listArray);
 
-        adapter = new GridAssortmentListAdapter(getActivity(),R.layout.item_grid_quick_buttons,listArray,heightButton);
+        adapter = new AssortmentListGridAdapter(context,R.layout.item_grid_quick_buttons,listArray,heightButton);
         grid.setAdapter(adapter);
     }
 

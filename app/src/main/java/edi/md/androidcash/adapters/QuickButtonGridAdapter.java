@@ -20,10 +20,10 @@ import edi.md.androidcash.RealmHelper.AssortmentRealm;
  * Created by Igor on 30.01.2020
  */
 
-public class GridQuickButtonAssortmentAdapter extends ArrayAdapter<AssortmentRealm> {
+public class QuickButtonGridAdapter extends ArrayAdapter<AssortmentRealm> {
 
     int heightView;
-    public GridQuickButtonAssortmentAdapter(@NonNull Context context, int resource, @NonNull List<AssortmentRealm> objects, int heightButton) {
+    public QuickButtonGridAdapter(@NonNull Context context, int resource, @NonNull List<AssortmentRealm> objects, int heightButton) {
         super(context, resource, objects);
         this.heightView = heightButton;
     }

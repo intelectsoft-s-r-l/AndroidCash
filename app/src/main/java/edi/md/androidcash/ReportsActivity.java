@@ -1,6 +1,7 @@
 package edi.md.androidcash;
 
 import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -17,16 +18,15 @@ import android.os.Message;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.datecs.fiscalprinter.SDK.model.DatecsFiscalDevice;
 import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReport;
 
-import edi.md.androidcash.NetworkUtils.FiscalServiceResult.PrintReportXResult;
-import edi.md.androidcash.NetworkUtils.FiscalServiceResult.PrintReportZResult;
-import edi.md.androidcash.NetworkUtils.FiscalServiceResult.XResponse;
-import edi.md.androidcash.NetworkUtils.FiscalServiceResult.ZResponse;
+import edi.md.androidcash.NetworkUtils.FiscalServiceResult.SimpleResult;
 import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
 import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
 import edi.md.androidcash.Utils.BaseEnum;
@@ -34,7 +34,8 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import static edi.md.androidcash.BaseApplication.SharedPrefFiscalService;
+import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
+import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
 import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
 
 public class ReportsActivity extends AppCompatActivity {
@@ -87,7 +88,7 @@ public class ReportsActivity extends AppCompatActivity {
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        fiscalManager = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork", BaseEnum.NONE_SELECTED_FISCAL_MODE);
+        fiscalManager = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork", BaseEnum.FISCAL_SERVICE);
 
         csl_sales.setOnClickListener(view -> {
             finish();
@@ -147,13 +148,45 @@ public class ReportsActivity extends AppCompatActivity {
                             public void run() {
                                 if (reportNummber[0] != -1) {
                                     foundMessage.obtainMessage(111,reportNummber[0]).sendToTarget();
-                                    DialogZXReportsSummary dialogSummary = new DialogZXReportsSummary(ReportsActivity.this, reportSummary);
-                                    dialogSummary.show();
+                                    View dialogView = getLayoutInflater().inflate(R.layout.dialog_x_z_total,null);
+
+                                    final AlertDialog dialog_summary = new AlertDialog.Builder(ReportsActivity.this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
+                                    dialog_summary.setCancelable(false);
+                                    dialog_summary.setView(dialogView);
+                                    dialog_summary.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+
+                                    TextView tvTaxA = dialog_summary.findViewById(R.id.tvTaxA);
+                                    TextView tvTaxB = dialog_summary.findViewById(R.id.tvTaxB);
+                                    TextView tvTaxC = dialog_summary.findViewById(R.id.tvTaxC);
+                                    TextView tvTaxD = dialog_summary.findViewById(R.id.tvTaxD);
+                                    TextView tvTaxE = dialog_summary.findViewById(R.id.tvTaxE);
+                                    TextView tvTaxF = dialog_summary.findViewById(R.id.tvTaxF);
+                                    TextView tvTaxG = dialog_summary.findViewById(R.id.tvTaxG);
+                                    TextView tvTaxH = dialog_summary.findViewById(R.id.tvTaxH);
+                                    Button btnOk = dialog_summary.findViewById(R.id.btn_tax_total_reports);
+
+                                    btnOk.setOnClickListener(new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View view) {
+                                            dialog_summary.dismiss();
+                                        }
+                                    });
+
+                                    tvTaxA.setText(String.valueOf(reportSummary.totalA));
+                                    tvTaxB.setText(String.valueOf(reportSummary.totalB));
+                                    tvTaxC.setText(String.valueOf(reportSummary.totalC));
+                                    tvTaxD.setText(String.valueOf(reportSummary.totalD));
+                                    tvTaxE.setText(String.valueOf(reportSummary.totalE));
+                                    tvTaxF.setText(String.valueOf(reportSummary.totalF));
+                                    tvTaxG.setText(String.valueOf(reportSummary.totalG));
+                                    tvTaxH.setText(String.valueOf(reportSummary.totalH));
+
+                                    dialog_summary.show();
+
                                     DisplayMetrics metrics = new DisplayMetrics(); //get metrics of screen
                                     getWindowManager().getDefaultDisplay().getMetrics(metrics);
-                                    int width = (int) (metrics.widthPixels * 0.5); //set width to 50% of display
-                                    int height = (int) (metrics.heightPixels * 0.9); //set height to 90% of display
-                                    dialogSummary.getWindow().setLayout(width, height); //set layout
+                                    int width = (int) (metrics.widthPixels * 0.4); //set width to 50% of display
+                                    dialog_summary.getWindow().setLayout(width, LinearLayout.LayoutParams.WRAP_CONTENT); //set la
                                     progress.dismiss();
                                 }
                             }
@@ -165,22 +198,21 @@ public class ReportsActivity extends AppCompatActivity {
                 x_errore.setText("");
                 String uri = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getString("FiscalServiceAddress","0.0.0.0:1111");
                                CommandServices commandServices = ApiUtils.commandFPService(uri);
-                Call<XResponse> responseCall = commandServices.printXReport();
+                Call<SimpleResult> responseCall = commandServices.printXReport(BaseEnum.FiscalPrint_Master);
 
-                responseCall.enqueue(new Callback<XResponse>() {
+                responseCall.enqueue(new Callback<SimpleResult>() {
                     @Override
-                    public void onResponse(Call<XResponse> call, Response<XResponse> response) {
-                        XResponse xResponse = response.body();
+                    public void onResponse(Call<SimpleResult> call, Response<SimpleResult> response) {
+                        SimpleResult xResponse = response.body();
                         if(xResponse != null){
-                            PrintReportXResult reportXResult = xResponse.getPrintReportXResult();
-                            int errorCode = reportXResult.getErrorCode();
+                            int errorCode = xResponse.getErrorCode();
                             if(errorCode == 0)
                                 x_errore.setText("Raportul X a fost imprimat!");
                         }
                     }
 
                     @Override
-                    public void onFailure(Call<XResponse> call, Throwable t) {
+                    public void onFailure(Call<SimpleResult> call, Throwable t) {
                         x_errore.setText(t.getMessage());
                     }
                 });
@@ -220,13 +252,45 @@ public class ReportsActivity extends AppCompatActivity {
                             public void run() {
                                 if (reportNumber[0] != -1) {
                                     foundMessage.obtainMessage(222,reportNumber[0]).sendToTarget();
-                                    DialogZXReportsSummary dialogSummary = new DialogZXReportsSummary(ReportsActivity.this, reportSummary);
-                                    dialogSummary.show();
+                                    View dialogView = getLayoutInflater().inflate(R.layout.dialog_x_z_total,null);
+
+                                    final AlertDialog dialog_summary = new AlertDialog.Builder(ReportsActivity.this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
+                                    dialog_summary.setCancelable(false);
+                                    dialog_summary.setView(dialogView);
+                                    dialog_summary.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+
+                                    TextView tvTaxA = dialog_summary.findViewById(R.id.tvTaxA);
+                                    TextView tvTaxB = dialog_summary.findViewById(R.id.tvTaxB);
+                                    TextView tvTaxC = dialog_summary.findViewById(R.id.tvTaxC);
+                                    TextView tvTaxD = dialog_summary.findViewById(R.id.tvTaxD);
+                                    TextView tvTaxE = dialog_summary.findViewById(R.id.tvTaxE);
+                                    TextView tvTaxF = dialog_summary.findViewById(R.id.tvTaxF);
+                                    TextView tvTaxG = dialog_summary.findViewById(R.id.tvTaxG);
+                                    TextView tvTaxH = dialog_summary.findViewById(R.id.tvTaxH);
+                                    Button btnOk = dialog_summary.findViewById(R.id.btn_tax_total_reports);
+
+                                    btnOk.setOnClickListener(new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View view) {
+                                            dialog_summary.dismiss();
+                                        }
+                                    });
+
+                                    tvTaxA.setText(String.valueOf(reportSummary.totalA));
+                                    tvTaxB.setText(String.valueOf(reportSummary.totalB));
+                                    tvTaxC.setText(String.valueOf(reportSummary.totalC));
+                                    tvTaxD.setText(String.valueOf(reportSummary.totalD));
+                                    tvTaxE.setText(String.valueOf(reportSummary.totalE));
+                                    tvTaxF.setText(String.valueOf(reportSummary.totalF));
+                                    tvTaxG.setText(String.valueOf(reportSummary.totalG));
+                                    tvTaxH.setText(String.valueOf(reportSummary.totalH));
+
+                                    dialog_summary.show();
+
                                     DisplayMetrics metrics = new DisplayMetrics(); //get metrics of screen
                                     getWindowManager().getDefaultDisplay().getMetrics(metrics);
-                                    int width = (int) (metrics.widthPixels * 0.5); //set width to 50% of display
-                                    int height = (int) (metrics.heightPixels * 0.9); //set height to 90% of display
-                                    dialogSummary.getWindow().setLayout(width, height); //set layout
+                                    int width = (int) (metrics.widthPixels * 0.4); //set width to 50% of display
+                                    dialog_summary.getWindow().setLayout(width, LinearLayout.LayoutParams.WRAP_CONTENT); //set la
                                     progress.dismiss();
                                 }
                             }
@@ -240,22 +304,21 @@ public class ReportsActivity extends AppCompatActivity {
                 String uri = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getString("FiscalServiceAddress","0.0.0.0:1111");
 
                 CommandServices commandServices = ApiUtils.commandFPService(uri);
-                Call<ZResponse> responseCall = commandServices.printZReport();
+                Call<SimpleResult> responseCall = commandServices.printZReport(BaseEnum.FiscalPrint_Master);
 
-                responseCall.enqueue(new Callback<ZResponse>() {
+                responseCall.enqueue(new Callback<SimpleResult>() {
                     @Override
-                    public void onResponse(Call<ZResponse> call, Response<ZResponse> response) {
-                        ZResponse zResponse = response.body();
+                    public void onResponse(Call<SimpleResult> call, Response<SimpleResult> response) {
+                        SimpleResult zResponse = response.body();
                         if(zResponse != null){
-                            PrintReportZResult reportZResult = zResponse.getPrintReportZResult();
-                            int errorCode = reportZResult.getErrorCode();
+                            int errorCode = zResponse.getErrorCode();
                             if(errorCode == 0)
                                 z_errore.setText("Raportul Z a fost imprimat!");
                         }
                     }
 
                     @Override
-                    public void onFailure(Call<ZResponse> call, Throwable t) {
+                    public void onFailure(Call<SimpleResult> call, Throwable t) {
                         z_errore.setText(t.getMessage());
                     }
                 });
@@ -324,49 +387,4 @@ public class ReportsActivity extends AppCompatActivity {
             }
         }
     };
-
-    //DIALOG  ZXReportsSummary
-    public class DialogZXReportsSummary extends Dialog implements View.OnClickListener {
-        private final cmdReport.ReportSummary summary;
-
-        private DialogZXReportsSummary(Activity a, cmdReport.ReportSummary summary) {
-            super(a);
-            this.summary = summary;
-        }
-
-        @Override
-        protected void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            requestWindowFeature(Window.FEATURE_NO_TITLE);
-            setContentView(R.layout.dialog_xz_summary);
-
-            TextView tvTaxA = findViewById(R.id.tvTaxA);
-            TextView tvTaxB = findViewById(R.id.tvTaxB);
-            TextView tvTaxC = findViewById(R.id.tvTaxC);
-            TextView tvTaxD = findViewById(R.id.tvTaxD);
-            TextView tvTaxE = findViewById(R.id.tvTaxE);
-            TextView tvTaxF = findViewById(R.id.tvTaxF);
-            TextView tvTaxG = findViewById(R.id.tvTaxG);
-            TextView tvTaxH = findViewById(R.id.tvTaxH);
-            Button btnOk = findViewById(R.id.btn_dialogOk);
-            btnOk.setOnClickListener(this);
-
-            tvTaxA.setText(String.valueOf(summary.totalA));
-            tvTaxB.setText(String.valueOf(summary.totalB));
-            tvTaxC.setText(String.valueOf(summary.totalC));
-            tvTaxD.setText(String.valueOf(summary.totalD));
-            tvTaxE.setText(String.valueOf(summary.totalE));
-            tvTaxF.setText(String.valueOf(summary.totalF));
-            tvTaxG.setText(String.valueOf(summary.totalG));
-            tvTaxH.setText(String.valueOf(summary.totalH));
-
-        }
-
-        //DIALOG ON CLICK OK
-        @Override
-        public void onClick(View v) {
-            dismiss();
-
-        }
-    }
 }

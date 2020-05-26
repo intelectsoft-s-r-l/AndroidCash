@@ -21,7 +21,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import edi.md.androidcash.RealmHelper.History;
 import edi.md.androidcash.Utils.BaseEnum;
-import edi.md.androidcash.adapters.CustomRCHistoryRealmAdapter;
+import edi.md.androidcash.adapters.HistoryRealmRCAdapter;
 import io.realm.Realm;
 import io.realm.RealmResults;
 import io.realm.Sort;
@@ -44,7 +44,7 @@ public class HistoryActivity extends AppCompatActivity {
     TextView tvUserNameNav;
     TextView tvUserEmailNav;
 
-    CustomRCHistoryRealmAdapter historyRealmAdapter;
+    HistoryRealmRCAdapter historyRealmAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,7 +99,7 @@ public class HistoryActivity extends AppCompatActivity {
         RealmResults<History> result = mRealm.where(History.class).sort("date",Sort.DESCENDING).findAll();
 
         if(!result.isEmpty()){
-            historyRealmAdapter = new CustomRCHistoryRealmAdapter(result,true);
+            historyRealmAdapter = new HistoryRealmRCAdapter(result,true);
             recyclerView.setAdapter(historyRealmAdapter);
             totalEntriesLog.setText(String.valueOf(result.size()));
         }

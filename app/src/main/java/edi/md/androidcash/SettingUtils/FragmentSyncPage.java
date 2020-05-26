@@ -72,7 +72,7 @@ public class FragmentSyncPage extends Fragment {
     private Realm mRealm;
 
     private ConstraintLayout csl_sync, csl_startSync, csl_autoSync;
-    private SharedPreferences sharedPrefSettings, sharedPrefSync;
+    private SharedPreferences sharedPrefSettings;
     private ProgressDialog pgH;
 
 
@@ -92,15 +92,14 @@ public class FragmentSyncPage extends Fragment {
         mRealm = Realm.getDefaultInstance();
 
         sharedPrefSettings = getActivity().getSharedPreferences(SharedPrefSettings,MODE_PRIVATE);
-        sharedPrefSync = getActivity().getSharedPreferences(SharedPrefSyncSettings,MODE_PRIVATE);
 
         uri = sharedPrefSettings.getString("URI",null);
         token = sharedPrefSettings.getString("Token","null");
         workplaceId = getActivity().getSharedPreferences(SharedPrefWorkPlaceSettings, MODE_PRIVATE).getString("WorkPlaceID", null);
 
-        mLastSync.setText("The latest synchronization was: " + sharedPrefSync.getString("LastSync"," "));
-        updateAuto = sharedPrefSync.getBoolean("AutoSync",false);
-        updateToStart =  sharedPrefSync.getBoolean("SyncToStart",false);
+        mLastSync.setText("The latest synchronization was: " + sharedPrefSettings.getString("LastSync"," "));
+        updateAuto = sharedPrefSettings.getBoolean("AutoSync",false);
+        updateToStart =  sharedPrefSettings.getBoolean("SyncToStart",false);
 
         if(updateToStart)
             startUpSyncSwitch.setChecked(true);
@@ -137,16 +136,16 @@ public class FragmentSyncPage extends Fragment {
 
         startUpSyncSwitch.setOnCheckedChangeListener((compoundButton, checked) -> {
             if(checked)
-                sharedPrefSync.edit().putBoolean("SyncToStart",true).apply();
+                sharedPrefSettings.edit().putBoolean("SyncToStart",true).apply();
             else
-                sharedPrefSync.edit().putBoolean("SyncToStart",false).apply();
+                sharedPrefSettings.edit().putBoolean("SyncToStart",false).apply();
         });
 
         autoSyncSwitch.setOnCheckedChangeListener(((compoundButton, checked) -> {
             if(checked)
-                sharedPrefSync.edit().putBoolean("AutoSync",true).apply();
+                sharedPrefSettings.edit().putBoolean("AutoSync",true).apply();
             else
-                sharedPrefSync.edit().putBoolean("AutoSync",false).apply();
+                sharedPrefSettings.edit().putBoolean("AutoSync",false).apply();
         }));
 
 

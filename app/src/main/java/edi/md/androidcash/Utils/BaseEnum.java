@@ -21,6 +21,8 @@ public class BaseEnum {
             History_PaymentBill = 24, History_SynchronizationStarted = 25, History_SynchronizationFinish = 26, History_DeferredBill = 27, History_InsertMoneyToDraw = 28, History_WithdrawMoneyFromDraw = 29,
             History_CollectionMoney = 30, History_UserLogIn = 31, History_UserLogOut = 32, History_RecreatBill = 33, History_ChangeItemCount = 34;
 
+    public static final int FiscalPrint_Master = 0, FiscalPrint_Slave = 1;
+
     @IntDef({FISCAL_SERVICE, FISCAL_DEVICE, NONE_SELECTED_FISCAL_MODE})
     @Retention(RetentionPolicy.SOURCE)
     public @interface fiscalCommands {
@@ -50,5 +52,10 @@ public class BaseEnum {
             History_InsertMoneyToDraw, History_WithdrawMoneyFromDraw, History_CollectionMoney, History_UserLogIn, History_UserLogOut, History_RecreatBill, History_ChangeItemCount})
     @Retention(RetentionPolicy.SOURCE)
     public @interface historyType {
+    }
+
+    @IntDef({FiscalPrint_Master,FiscalPrint_Slave})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface fiscalTypePrint {
     }
 }

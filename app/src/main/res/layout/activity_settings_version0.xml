@@ -81,6 +81,62 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
+            <View
+                android:id="@+id/divider34"
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_marginStart="56dp"
+                android:background="@color/form_loginColor"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/csl_update" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/csl_sync"
+                android:layout_width="0dp"
+                android:layout_height="88dp"
+                android:clickable="true"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/divider7">
+
+                <TextView
+                    android:id="@+id/textView22"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="Data synchronization settings "
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/imageView19"
+                    app:layout_constraintTop_toBottomOf="@id/textView23" />
+
+                <TextView
+                    android:id="@+id/textView23"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:fontFamily="@font/roboto"
+                    android:text="Sync"
+                    android:textColor="@color/blue_color"
+                    android:textSize="16sp"
+                    app:layout_constraintBottom_toTopOf="@id/textView22"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/imageView19"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_chainStyle="packed" />
+
+                <ImageView
+                    android:id="@+id/imageView19"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:srcCompat="@drawable/baseline_account_circle_black_48dp" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/csl_customer_disp"
                 android:layout_width="0dp"
@@ -178,42 +234,42 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/csl_sync"
+                android:id="@+id/csl_update"
                 android:layout_width="0dp"
                 android:layout_height="88dp"
                 android:clickable="true"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/divider7">
+                app:layout_constraintTop_toBottomOf="@+id/divider4">
 
                 <TextView
-                    android:id="@+id/textView22"
+                    android:id="@+id/textView25"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:text="Data synchronization settings "
+                    android:text="Download updates, last update"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@id/imageView19"
-                    app:layout_constraintTop_toBottomOf="@id/textView23" />
+                    app:layout_constraintStart_toEndOf="@id/imageView120"
+                    app:layout_constraintTop_toBottomOf="@id/textView24" />
 
                 <TextView
-                    android:id="@+id/textView23"
+                    android:id="@+id/textView24"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
                     android:fontFamily="@font/roboto"
-                    android:text="Sync"
+                    android:text="Software update"
                     android:textColor="@color/blue_color"
                     android:textSize="16sp"
-                    app:layout_constraintBottom_toTopOf="@id/textView22"
+                    app:layout_constraintBottom_toTopOf="@id/textView25"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@id/imageView19"
+                    app:layout_constraintStart_toEndOf="@id/imageView120"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintVertical_chainStyle="packed" />
 
                 <ImageView
-                    android:id="@+id/imageView19"
+                    android:id="@+id/imageView120"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
@@ -290,7 +346,7 @@
                 android:textSize="18sp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/divider4" />
+                app:layout_constraintTop_toBottomOf="@+id/divider34" />
 
             <View
                 android:id="@+id/divider7"

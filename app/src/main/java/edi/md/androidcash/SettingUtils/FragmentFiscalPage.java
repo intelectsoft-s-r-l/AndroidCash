@@ -113,6 +113,8 @@ public class FragmentFiscalPage extends Fragment {
             csl_fiscServiceSettings.setBackgroundColor(Color.parseColor("#2CACABAB"));
         }
         else if(fiscalWorkMode == BaseEnum.FISCAL_SERVICE){
+            connectToFiscalService();
+
             fiscalServiceButton.setChecked(true);
             fiscalDeviceButton.setChecked(false);
             btnFiscalServiceSettings.setEnabled(true);
@@ -131,6 +133,7 @@ public class FragmentFiscalPage extends Fragment {
             csl_fiscDeviceSettings.setBackgroundColor(Color.parseColor("#2CACABAB"));
             csl_fiscServiceSettings.setBackgroundColor(Color.TRANSPARENT);
         });
+
         fiscalDeviceButton.setOnClickListener(view -> {
             sharedPrefSettings.edit().putInt("ModeFiscalWork",BaseEnum.FISCAL_DEVICE).apply();
             csl_fiscServiceSettings.setEnabled(false);
@@ -154,36 +157,7 @@ public class FragmentFiscalPage extends Fragment {
 
         });
         csl_fiscServiceSettings.setOnClickListener(view -> {
-            String uri = sharedPrefSettings.getString("FiscalServiceAddress","0.0.0.0:1111");
-
-            fiscalServiceState.setTextColor(Color.rgb(145,145,145));
-            fiscalServiceState.setText("Connecting to http://" + uri + "/fpservice" );
-
-            CommandServices commandServices = ApiUtils.commandFPService(uri);
-            Call<SimpleResult> call = commandServices.getState();
-
-            call.enqueue(new Callback<SimpleResult>() {
-                @Override
-                public void onResponse(Call<SimpleResult> call, Response<SimpleResult> response) {
-                    SimpleResult result = response.body();
-
-                    if(result != null && result.getErrorCode() == 0){
-                        fiscalServiceState.setText("Connected to http://" + uri + "/fpservice" );
-                        fiscalServiceState.setTextColor(Color.rgb(48, 128, 20));
-                    }
-                    else{
-                        fiscalServiceState.setText("Not connected to http://" + uri + "/fpservice , Error: " + result.getErrorCode() + ". Tap to test connection");
-                        fiscalServiceState.setTextColor(Color.rgb(219,45,45));
-                    }
-
-                }
-
-                @Override
-                public void onFailure(Call<SimpleResult> call, Throwable t) {
-                    fiscalServiceState.setText("Not connected to http://" + uri + "/fpservice , Error:" + t.getMessage() + ". Tap to test connection");
-                    fiscalServiceState.setTextColor(Color.rgb(219,45,45));
-                }
-            });
+            connectToFiscalService();
         });
 
         btnFiscalServiceSettings.setOnClickListener(view -> {
@@ -234,5 +208,38 @@ public class FragmentFiscalPage extends Fragment {
 
 
         return rootViewAdmin;
+    }
+
+    private void connectToFiscalService(){
+        String uriService = sharedPrefSettings.getString("FiscalServiceAddress","0.0.0.0:1111");
+
+        fiscalServiceState.setTextColor(Color.rgb(145,145,145));
+        fiscalServiceState.setText("Connecting to http://" + uriService + "/fpservice" );
+
+        CommandServices commandServices = ApiUtils.commandFPService(uriService);
+        Call<SimpleResult> call = commandServices.getState();
+
+        call.enqueue(new Callback<SimpleResult>() {
+            @Override
+            public void onResponse(Call<SimpleResult> call, Response<SimpleResult> response) {
+                SimpleResult result = response.body();
+
+                if(result != null && result.getErrorCode() == 0){
+                    fiscalServiceState.setText("Connected to http://" + uriService + "/fpservice" );
+                    fiscalServiceState.setTextColor(Color.rgb(48, 128, 20));
+                }
+                else{
+                    fiscalServiceState.setText("Not connected to http://" + uriService + "/fpservice , Error: " + result.getErrorCode() + ". Tap to test connection");
+                    fiscalServiceState.setTextColor(Color.rgb(219,45,45));
+                }
+
+            }
+
+            @Override
+            public void onFailure(Call<SimpleResult> call, Throwable t) {
+                fiscalServiceState.setText("Not connected to http://" + uriService + "/fpservice , Error:" + t.getMessage() + ". Tap to test connection");
+                fiscalServiceState.setTextColor(Color.rgb(219,45,45));
+            }
+        });
     }
 }

@@ -1,9 +1,7 @@
 package edi.md.androidcash.DynamicTabs;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,12 +15,11 @@ import androidx.fragment.app.Fragment;
 import java.util.ArrayList;
 import java.util.List;
 
-import edi.md.androidcash.Fragments.FragmentAssortmentList;
 import edi.md.androidcash.MainActivity;
 import edi.md.androidcash.R;
 import edi.md.androidcash.RealmHelper.AssortmentRealm;
 import edi.md.androidcash.RealmHelper.QuickGroupRealm;
-import edi.md.androidcash.adapters.GridQuickButtonAssortmentAdapter;
+import edi.md.androidcash.adapters.QuickButtonGridAdapter;
 import io.realm.Realm;
 
 /**
@@ -38,7 +35,7 @@ public class DynamicFragment extends Fragment {
 
     List<AssortmentRealm> list;
 
-    private GridQuickButtonAssortmentAdapter assortmentAdapter;
+    private QuickButtonGridAdapter assortmentAdapter;
 
     private Realm mRealm;
 
@@ -96,7 +93,7 @@ public class DynamicFragment extends Fragment {
             int contHM = container.getMeasuredHeight();
             int heightButton = (contHM - 8) / 4;
             height = heightButton;
-            assortmentAdapter = new GridQuickButtonAssortmentAdapter(getContext(),R.layout.item_grid_quick_buttons,list,heightButton);
+            assortmentAdapter = new QuickButtonGridAdapter(getContext(),R.layout.item_grid_quick_buttons,list,heightButton);
 
             gridView.setAdapter(assortmentAdapter);
 

@@ -1,6 +1,5 @@
 package edi.md.androidcash;
 
-import android.app.ActionBar;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.PendingIntent;
@@ -34,10 +33,12 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -46,7 +47,6 @@ import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SearchView;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -60,6 +60,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.view.GravityCompat;
 import androidx.core.view.MenuItemCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
 import androidx.viewpager.widget.ViewPager;
@@ -70,12 +71,8 @@ import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReceipt;
 import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReport;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.dialog.MaterialDialogs;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -94,6 +91,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import edi.md.androidcash.DatcesNewFile.PrinterManager;
+import edi.md.androidcash.Fragments.FragmentAssortmentList;
 import edi.md.androidcash.Fragments.FragmentBills;
 import edi.md.androidcash.NetworkUtils.AssortmentServiceEntry;
 import edi.md.androidcash.NetworkUtils.EposResult.AssortmentListService;
@@ -107,8 +105,7 @@ import edi.md.androidcash.NetworkUtils.EposResult.TokenReceivedFromAutenficateUs
 import edi.md.androidcash.NetworkUtils.EposResult.UserListServiceResult;
 import edi.md.androidcash.NetworkUtils.EposResult.WorkPlaceSettings;
 import edi.md.androidcash.NetworkUtils.FiscalDevice;
-import edi.md.androidcash.NetworkUtils.FiscalServiceResult.PrintReportZResult;
-import edi.md.androidcash.NetworkUtils.FiscalServiceResult.ZResponse;
+import edi.md.androidcash.NetworkUtils.FiscalServiceResult.SimpleResult;
 import edi.md.androidcash.NetworkUtils.PaymentType;
 import edi.md.androidcash.NetworkUtils.Promotion;
 import edi.md.androidcash.NetworkUtils.QuickGroup;
@@ -126,20 +123,19 @@ import edi.md.androidcash.RealmHelper.QuickGroupRealm;
 import edi.md.androidcash.RealmHelper.Shift;
 import edi.md.androidcash.Utils.BaseEnum;
 import edi.md.androidcash.Utils.Rfc2898DerivesBytes;
-import edi.md.androidcash.Utils.UpdateHelper;
-import edi.md.androidcash.adapters.CustomBillStringRealmListAdapter;
-import edi.md.androidcash.adapters.CustomRCBillStringRealmAdapter;
-import edi.md.androidcash.adapters.ViewPageAdapterRightMenu;
+import edi.md.androidcash.adapters.BillStringInBillRealmListAdapter;
+import edi.md.androidcash.adapters.NewBillStringsRealmRCAdapter;
+import edi.md.androidcash.adapters.TabQuickMenuAdapter;
 import edi.md.androidcash.connectors.AbstractConnector;
 import edi.md.androidcash.connectors.UsbDeviceConnector;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmResults;
+import io.realm.Sort;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import static edi.md.androidcash.BaseApplication.SharedPrefFiscalService;
 import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
 import static edi.md.androidcash.BaseApplication.SharedPrefWorkPlaceSettings;
 import static edi.md.androidcash.BaseApplication.deviceId;
@@ -162,7 +158,7 @@ public class MainActivity extends AppCompatActivity{
 
     private static Realm mRealm;
 
-    private static CustomRCBillStringRealmAdapter adapter;
+    private static NewBillStringsRealmRCAdapter adapter;
 
     //declare timer for shift
     private CountDownTimer countDownShiftTimer = null;
@@ -200,7 +196,7 @@ public class MainActivity extends AppCompatActivity{
     public static LayoutInflater inflater;
     static Display display;
 
-    ViewPageAdapterRightMenu adapterRightMenu;
+    TabQuickMenuAdapter adapterRightMenu;
     private static TextView tvInputSumBillForPayment;
     static double sumBillToPay;
     private static TextView tvToPay;
@@ -213,7 +209,7 @@ public class MainActivity extends AppCompatActivity{
     private ConstraintLayout csl_settings;
     private ConstraintLayout csl_finOper;
 
-    static DisplayMetrics displayMetrics;
+    public static DisplayMetrics displayMetrics;
 
     private ProgressDialog pgH;
     private List<WorkplaceEntry> workplaceEntryList = new ArrayList<>();
@@ -317,8 +313,6 @@ public class MainActivity extends AppCompatActivity{
 
         setContentView(R.layout.drawer_layout_bill);
 
-
-
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         context = this;
@@ -366,7 +360,7 @@ public class MainActivity extends AppCompatActivity{
         workPlaceID = getSharedPreferences(SharedPrefWorkPlaceSettings,MODE_PRIVATE).getString("WorkPlaceID",null);
         if (workPlaceID != null) {
             viewPager.setAdapter(null);
-            adapterRightMenu = new ViewPageAdapterRightMenu(this, getSupportFragmentManager());
+            adapterRightMenu = new TabQuickMenuAdapter(this, getSupportFragmentManager());
             viewPager.setAdapter(adapterRightMenu);
             viewPager.setOffscreenPageLimit(4);
 
@@ -466,10 +460,12 @@ public class MainActivity extends AppCompatActivity{
             }
         });
         btnAddItem.setOnClickListener(v->{
-            checkItem_Dialog(BaseEnum.Dialog_AddItem);
+            btnAddItem.setEnabled(false);
+            checkItem_Dialog(BaseEnum.Dialog_AddItem,btnAddItem);
         });
         btnCheckPrice.setOnClickListener(view -> {
-            checkItem_Dialog(BaseEnum.Dialog_CheckPrice);
+            btnCheckPrice.setEnabled(false);
+            checkItem_Dialog(BaseEnum.Dialog_CheckPrice,btnCheckPrice);
         });
         btnAddClient.setOnClickListener(view -> {
             View dialogView = inflater.inflate(R.layout.dialog_add_client, null);
@@ -557,10 +553,10 @@ public class MainActivity extends AppCompatActivity{
                         }))
                         .show();
             }
-            else{
+            else if(openedBillId != null){
+                btnPay.setEnabled(false);
                 paymentBill(Double.valueOf(btnPay.getText().toString().replace("MDL ","")));
             }
-
         });
     }
 
@@ -714,6 +710,7 @@ public class MainActivity extends AppCompatActivity{
 
                         AlertDialog.Builder builder = new AlertDialog.Builder(context);
                         builder.setTitle("Select workplace item");
+                        builder.setCancelable(false);
                         builder.setAdapter(adapterDialog, (dialog, position) -> {
                             sharedPreferenceWorkPlace.edit().putString("WorkPlaceID", workplaceEntryList.get(position).getID()).apply();
                             sharedPreferenceWorkPlace.edit().putString("WorkPlaceName", workplaceEntryList.get(position).getName()).apply();
@@ -725,6 +722,14 @@ public class MainActivity extends AppCompatActivity{
 
                         AlertDialog alert = builder.create();
                         alert.show();
+
+                        int displayWidth = displayMetrics.widthPixels;
+                        WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
+                        layoutParams.copyFrom(alert.getWindow().getAttributes());
+                        int dialogWindowWidth = (int) (displayWidth * 0.4f);
+                        layoutParams.width = dialogWindowWidth;
+                        layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+                        alert.getWindow().setAttributes(layoutParams);
 
 
                     }
@@ -860,9 +865,6 @@ public class MainActivity extends AppCompatActivity{
         View decorView = getWindow().getDecorView();
         decorView.setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                        // Set the content to appear under the system bars so that the
-                        // content doesn't resize when the system bars hide and show.
-
                         | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                         | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                         | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
@@ -977,7 +979,7 @@ public class MainActivity extends AppCompatActivity{
 
         if(results[0] != null || !results[0].isEmpty() ){
             totalItemsBill.setText(String.valueOf(results[0].size()));
-            CustomBillStringRealmListAdapter adapter = new CustomBillStringRealmListAdapter(results[0]);
+            BillStringInBillRealmListAdapter adapter = new BillStringInBillRealmListAdapter(results[0]);
             listContent.setAdapter(adapter);
         }
         totalBill.setText(String.format("%.2f",bill.getSumWithDiscount()).replace(",","."));
@@ -994,15 +996,40 @@ public class MainActivity extends AppCompatActivity{
         MenuItem searchItem = menu.findItem(R.id.action_search);
         final SearchView searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
 
-//        SearchManager searchManager = (SearchManager) MainActivity.this.getSystemService(Context.SEARCH_SERVICE);
-//
-//        SearchView searchView = null;
-//        if (searchItem != null) {
-//            searchView = (SearchView) searchItem.getActionView();
-//        }
-//        if (searchView != null) {
-//            searchView.setSearchableInfo(searchManager.getSearchableInfo(MainActivity.this.getComponentName()));
-//        }
+        searchView.setOnSearchClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Toast.makeText(MainActivity.this, "click setOnSearchClickListener", Toast.LENGTH_SHORT).show();
+                TabLayout.Tab tabs = tabLayout.getTabAt(1);
+                tabLayout.selectTab(tabs);
+                hideSystemUI();
+            }
+        });
+
+        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                FragmentAssortmentList.homeAssortment();
+                TabLayout.Tab tabs = tabLayout.getTabAt(0);
+                tabLayout.selectTab(tabs);
+                hideSystemUI();
+                return false;
+            }
+        });
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String s) {
+                FragmentAssortmentList.searchAssortiment(s);
+                hideSystemUI();
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String s) {
+                return false;
+            }
+        });
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -1049,7 +1076,7 @@ public class MainActivity extends AppCompatActivity{
             }
 
             if ((billPaymentedSum + inputSum) >= sumBillToPay) {
-                int modeFiscalWork = context.getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork",BaseEnum.NONE_SELECTED_FISCAL_MODE);
+                int modeFiscalWork = context.getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork",BaseEnum.FISCAL_SERVICE);
 
                 if (printFiscalCheck) {
                     if(modeFiscalWork == BaseEnum.FISCAL_DEVICE){
@@ -1087,6 +1114,7 @@ public class MainActivity extends AppCompatActivity{
 
                                 billPaymentedSum = 0;
                                 paymentDialog.dismiss();
+                                btnPay.setEnabled(true);
 
                                 if(drawer.isDrawerOpen(GravityCompat.END))
                                     drawer.closeDrawer(GravityCompat.END);
@@ -1098,7 +1126,7 @@ public class MainActivity extends AppCompatActivity{
                         }
                     }
                     if(modeFiscalWork == BaseEnum.FISCAL_SERVICE){
-                        BaseApplication.getInstance().printReceiptFiscalService(billStrings, paymentType, inputSum, billPaymentTypes);
+                        BaseApplication.getInstance().printReceiptFiscalService(billStrings, paymentType, inputSum, billPaymentTypes,"1");
 
                         BillPaymentType billPaymentType= new BillPaymentType();
                         billPaymentType.setId(UUID.randomUUID().toString());
@@ -1125,7 +1153,7 @@ public class MainActivity extends AppCompatActivity{
 
                         billPaymentedSum = 0;
                         paymentDialog.dismiss();
-
+                        btnPay.setEnabled(true);
                         openedBillId = null;
                     }
 
@@ -1155,6 +1183,7 @@ public class MainActivity extends AppCompatActivity{
 
                     billPaymentedSum = 0;
                     paymentDialog.dismiss();
+                    btnPay.setEnabled(true);
                     openedBillId = null;
                 }
             }
@@ -1176,8 +1205,7 @@ public class MainActivity extends AppCompatActivity{
                         bill.getBillPaymentTypes().add(billPaymentType);
                     }
                 });
-
-                billPaymentedSum = inputSum;
+                billPaymentedSum = billPaymentedSum + inputSum;
                 tvToPay.setText(String.format("%.2f", sumBillToPay - billPaymentedSum).replace(",","."));
                 tvInputSumBillForPayment.setText(String.format("%.2f",sumBillToPay - billPaymentedSum).replace(",","."));
             }
@@ -1319,7 +1347,7 @@ public class MainActivity extends AppCompatActivity{
 
         BillString lastBillString = null;
         if(countArray >= 1)
-            lastBillString = adapter.getItem(countArray - 1);
+            lastBillString = adapter.getItem(0);
 
         if(openedBillId == null) {
             openedBillId = UUID.randomUUID().toString();
@@ -1371,7 +1399,8 @@ public class MainActivity extends AppCompatActivity{
                 billString.setQuantity(count);
                 billString.setPrice(assortmentEntry.getPrice());
                 billString.setPriceLineID(assortmentEntry.getPriceLineId());
-
+                billString.setAllowNonInteger(assortmentEntry.isAllowNonInteger());
+                billString.setAllowDiscounts(assortmentEntry.isAllowDiscounts());
                 billString.setBarcode(barcode);
                 billString.setVat(assortmentEntry.getVat());
                 billString.setCreateDate(new Date().getTime());
@@ -1609,14 +1638,14 @@ public class MainActivity extends AppCompatActivity{
                 bill[0] = mRealm.where(Bill.class).equalTo("shiftId", shift.getId()).and().equalTo("state", BaseEnum.BILL_OPEN).and().equalTo("id",openedBillId).findFirst();
                 if (bill[0] != null) {
                     openedBillId = bill[0].getId();
-                    results[0] = mRealm.where(BillString.class).equalTo("billID", openedBillId).and().equalTo("isDeleted", false).sort("createDate").findAll();
+                    results[0] = mRealm.where(BillString.class).equalTo("billID", openedBillId).and().equalTo("isDeleted", false).sort("createDate", Sort.DESCENDING).findAll();
                 }
             });
-            adapter = new CustomRCBillStringRealmAdapter(results[0],false);
+            adapter = new NewBillStringsRealmRCAdapter(results[0],false);
 
             recyclerView.setAdapter(adapter);
             if (adapter.getItemCount() > 0)
-                recyclerView.smoothScrollToPosition(adapter.getItemCount() - 1);
+                recyclerView.smoothScrollToPosition(0);
 
             if(bill[0] != null){
                 btnPay.setText("MDL " + String.format("%.2f", bill[0].getSumWithDiscount()).replace(",","."));
@@ -1686,7 +1715,7 @@ public class MainActivity extends AppCompatActivity{
             history.setType(BaseEnum.History_ClosedShift);
             mRealm.executeTransaction(realm -> realm.insert(history));
 
-            int workFisc = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork",0);
+            int workFisc = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork",BaseEnum.FISCAL_SERVICE);
 
             if(workFisc == BaseEnum.FISCAL_DEVICE) {
                 if (datecsFiscalDevice != null && datecsFiscalDevice.isConnectedDeviceV2())
@@ -1818,7 +1847,7 @@ public class MainActivity extends AppCompatActivity{
         return hashtext;
     }
 
-    private static void postToastMessage(final String message) {
+    public static void postToastMessage(final String message) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
     }
 
@@ -1900,23 +1929,57 @@ public class MainActivity extends AppCompatActivity{
                 } finally {
                     progressDialogPrintReport.dismiss();
                 }
+
                activity.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        DialogZXReportsSummary dialogSummary = new DialogZXReportsSummary(activity, reportSummary);
-                        dialogSummary.show();
+                        View dialogView = inflater.inflate(R.layout.dialog_x_z_total,null);
+
+                        final AlertDialog dialog_summary = new AlertDialog.Builder(activity,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
+                        dialog_summary.setCancelable(false);
+                        dialog_summary.setView(dialogView);
+                        dialog_summary.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+
+                        TextView tvTaxA = dialog_summary.findViewById(R.id.tvTaxA);
+                        TextView tvTaxB = dialog_summary.findViewById(R.id.tvTaxB);
+                        TextView tvTaxC = dialog_summary.findViewById(R.id.tvTaxC);
+                        TextView tvTaxD = dialog_summary.findViewById(R.id.tvTaxD);
+                        TextView tvTaxE = dialog_summary.findViewById(R.id.tvTaxE);
+                        TextView tvTaxF = dialog_summary.findViewById(R.id.tvTaxF);
+                        TextView tvTaxG = dialog_summary.findViewById(R.id.tvTaxG);
+                        TextView tvTaxH = dialog_summary.findViewById(R.id.tvTaxH);
+                        Button btnOk = dialog_summary.findViewById(R.id.btn_tax_total_reports);
+
+                        btnOk.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                dialog_summary.dismiss();
+                            }
+                        });
+
+                        tvTaxA.setText(String.valueOf(reportSummary.totalA));
+                        tvTaxB.setText(String.valueOf(reportSummary.totalB));
+                        tvTaxC.setText(String.valueOf(reportSummary.totalC));
+                        tvTaxD.setText(String.valueOf(reportSummary.totalD));
+                        tvTaxE.setText(String.valueOf(reportSummary.totalE));
+                        tvTaxF.setText(String.valueOf(reportSummary.totalF));
+                        tvTaxG.setText(String.valueOf(reportSummary.totalG));
+                        tvTaxH.setText(String.valueOf(reportSummary.totalH));
+
+                        dialog_summary.show();
+
                         DisplayMetrics metrics = new DisplayMetrics(); //get metrics of screen
                         activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
-                        int width = (int) (metrics.widthPixels * 0.5); //set width to 50% of display
+                        int width = (int) (metrics.widthPixels * 0.4); //set width to 50% of display
                         int height = (int) (metrics.heightPixels * 0.9); //set height to 90% of display
-                        dialogSummary.getWindow().setLayout(width, height); //set layout
+                        dialog_summary.getWindow().setLayout(width, height); //set layout
                         progressDialogPrintReport.dismiss();
                     }
                 });
             }
         }).start();
     }
-    public static void printZReportFiscalService(String uri){
+    public static void printZReportFiscalService(String uri) {
         progressDialogPrintReport = new ProgressDialog(activity);
         progressDialogPrintReport.setCancelable(true);
         progressDialogPrintReport.setTitle("Z report is working !!!");
@@ -1925,20 +1988,19 @@ public class MainActivity extends AppCompatActivity{
         progressDialogPrintReport.show();
 
         CommandServices commandServices = ApiUtils.commandFPService(uri);
-        Call<ZResponse> responseCall = commandServices.printZReport();
+        Call<SimpleResult> responseCall = commandServices.printZReport(BaseEnum.FiscalPrint_Master);
 
-        responseCall.enqueue(new Callback<ZResponse>() {
+        responseCall.enqueue(new Callback<SimpleResult>() {
             @Override
-            public void onResponse(Call<ZResponse> call, Response<ZResponse> response) {
-                ZResponse zResponse = response.body();
-                if(zResponse != null){
-                    PrintReportZResult reportZResult = zResponse.getPrintReportZResult();
-                    int errorCode = reportZResult.getErrorCode();
-                    if(errorCode == 0){
+            public void onResponse(Call<SimpleResult> call, Response<SimpleResult> response) {
+                SimpleResult zResponse = response.body();
+                if (zResponse != null) {
+                    int errorCode = zResponse.getErrorCode();
+                    if (errorCode == 0) {
                         progressDialogPrintReport.dismiss();
                         History history = new History();
                         history.setDate(new Date().getTime());
-                        history.setMsg("Z report printed to fiscal service ");
+                        history.setMsg("Z report printed to fiscal service.Task id: " + zResponse.getTaskId());
                         history.setType(BaseEnum.History_Printed_Z);
                         mRealm.executeTransaction(realm -> realm.insert(history));
                     }
@@ -1947,58 +2009,13 @@ public class MainActivity extends AppCompatActivity{
             }
 
             @Override
-            public void onFailure(Call<ZResponse> call, Throwable t) {
+            public void onFailure(Call<SimpleResult> call, Throwable t) {
                 progressDialogPrintReport.dismiss();
                 Toast.makeText(activity, t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
 
     }
-
-    //DIALOG  ZXReportsSummary
-    public static class DialogZXReportsSummary extends Dialog implements View.OnClickListener {
-        private final cmdReport.ReportSummary summary;
-
-        private DialogZXReportsSummary(Activity a, cmdReport.ReportSummary summary) {
-            super(a);
-            this.summary = summary;
-        }
-
-        @Override
-        protected void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            requestWindowFeature(Window.FEATURE_NO_TITLE);
-            setContentView(R.layout.dialog_xz_summary);
-
-            TextView tvTaxA = findViewById(R.id.tvTaxA);
-            TextView tvTaxB = findViewById(R.id.tvTaxB);
-            TextView tvTaxC = findViewById(R.id.tvTaxC);
-            TextView tvTaxD = findViewById(R.id.tvTaxD);
-            TextView tvTaxE = findViewById(R.id.tvTaxE);
-            TextView tvTaxF = findViewById(R.id.tvTaxF);
-            TextView tvTaxG = findViewById(R.id.tvTaxG);
-            TextView tvTaxH = findViewById(R.id.tvTaxH);
-            Button btnOk = findViewById(R.id.btn_dialogOk);
-            btnOk.setOnClickListener(this);
-
-            tvTaxA.setText(String.valueOf(summary.totalA));
-            tvTaxB.setText(String.valueOf(summary.totalB));
-            tvTaxC.setText(String.valueOf(summary.totalC));
-            tvTaxD.setText(String.valueOf(summary.totalD));
-            tvTaxE.setText(String.valueOf(summary.totalE));
-            tvTaxF.setText(String.valueOf(summary.totalF));
-            tvTaxG.setText(String.valueOf(summary.totalG));
-            tvTaxH.setText(String.valueOf(summary.totalH));
-
-        }
-        //DIALOG ON CLICK OK
-        @Override
-        public void onClick(View v) {
-            dismiss();
-
-        }
-    }
-
     private static void paymentBill(double summBill){
 //        sumBillToPay = Double.valueOf(btnPay.getText().toString().replace("MDL ",""));
         sumBillToPay = summBill;
@@ -2075,16 +2092,16 @@ public class MainActivity extends AppCompatActivity{
         MaterialButton number_500 = dialogView.findViewById(R.id.btn_pay_500);
         MaterialButton point = dialogView.findViewById(R.id.btn_pay_point);
 
-        number_1.setOnClickListener(v1 -> tvInputSumBillForPayment.append("1"));
-        number_2.setOnClickListener(v12 -> tvInputSumBillForPayment.append("2"));
-        number_3.setOnClickListener(v13 -> tvInputSumBillForPayment.append("3"));
-        number_4.setOnClickListener(v14 -> tvInputSumBillForPayment.append("4"));
-        number_5.setOnClickListener(v15 -> tvInputSumBillForPayment.append("5"));
-        number_6.setOnClickListener(v16 -> tvInputSumBillForPayment.append("6"));
-        number_7.setOnClickListener(v17 -> tvInputSumBillForPayment.append("7"));
-        number_8.setOnClickListener(v18 -> tvInputSumBillForPayment.append("8"));
-        number_9.setOnClickListener(v19 -> tvInputSumBillForPayment.append("9"));
-        number_0.setOnClickListener(v110 -> tvInputSumBillForPayment.append("0"));
+        number_1.setOnClickListener(v1 -> addNumberToSumBill("1"));
+        number_2.setOnClickListener(v12 -> addNumberToSumBill("2"));
+        number_3.setOnClickListener(v13 -> addNumberToSumBill("3"));
+        number_4.setOnClickListener(v14 -> addNumberToSumBill("4"));
+        number_5.setOnClickListener(v15 -> addNumberToSumBill("5"));
+        number_6.setOnClickListener(v16 -> addNumberToSumBill("6"));
+        number_7.setOnClickListener(v17 -> addNumberToSumBill("7"));
+        number_8.setOnClickListener(v18 -> addNumberToSumBill("8"));
+        number_9.setOnClickListener(v19 -> addNumberToSumBill("9"));
+        number_0.setOnClickListener(v110 -> addNumberToSumBill("0"));
         number_50.setOnClickListener(v112 -> tvInputSumBillForPayment.setText("50"));
         number_100.setOnClickListener(v113 -> tvInputSumBillForPayment.setText("100"));
         number_200.setOnClickListener(v114 -> tvInputSumBillForPayment.setText("200"));
@@ -2143,7 +2160,7 @@ public class MainActivity extends AppCompatActivity{
 
         delete.setOnClickListener(v118 -> { if (!tvInputSumBillForPayment.getText().toString().equals("")) tvInputSumBillForPayment.setText(tvInputSumBillForPayment.getText().toString().substring(0, tvInputSumBillForPayment.getText().toString().length() - 1)); });
         clear.setOnClickListener(v119 -> tvInputSumBillForPayment.setText(""));
-        btn_Cancel.setOnClickListener(v120 -> { paymentDialog.dismiss(); billPaymentedSum = 0; });
+        btn_Cancel.setOnClickListener(v120 -> { paymentDialog.dismiss(); billPaymentedSum = 0;  btnPay.setEnabled(true); });
         btnOtherPay.setOnClickListener(view -> {
             showOtherPaymentType();
         });
@@ -2168,6 +2185,19 @@ public class MainActivity extends AppCompatActivity{
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
         paymentDialog.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+    }
+
+    private static void addNumberToSumBill(String number){
+        String text = tvInputSumBillForPayment.getText().toString();
+        if(text.contains(".")){
+            int index = text.indexOf(".");
+            if(text.length() - 1 <= index || text.length() - 2 == index){
+                tvInputSumBillForPayment.append(number);
+            }
+        }
+        else{
+            tvInputSumBillForPayment.append(number);
+        }
     }
 
     private static void showOtherPaymentType(){
@@ -2220,6 +2250,14 @@ public class MainActivity extends AppCompatActivity{
 
                 AlertDialog alert = builder.create();
                 alert.show();
+
+                int displayWidth = displayMetrics.widthPixels;
+                WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
+                layoutParams.copyFrom(alert.getWindow().getAttributes());
+                int dialogWindowWidth = (int) (displayWidth * 0.4f);
+                layoutParams.width = dialogWindowWidth;
+                layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+                alert.getWindow().setAttributes(layoutParams);
 //
 //                AlertDialog.Builder adb = new AlertDialog.Builder(context);
 //                adb.setTitle("Other payment type");
@@ -2308,6 +2346,7 @@ public class MainActivity extends AppCompatActivity{
 
                            billPaymentedSum = 0;
                            paymentDialog.dismiss();
+                           btnPay.setEnabled(true);
 
                            if(drawer.isDrawerOpen(GravityCompat.END))
                                drawer.closeDrawer(GravityCompat.END);
@@ -2319,7 +2358,7 @@ public class MainActivity extends AppCompatActivity{
                    }
                }
                if(modeFiscalWork == BaseEnum.FISCAL_SERVICE){
-                   BaseApplication.getInstance().printReceiptFiscalService(billStrings, paymentType, inputSum, billPaymentTypes);
+                   BaseApplication.getInstance().printReceiptFiscalService(billStrings, paymentType, inputSum, billPaymentTypes,"1");
 
                    BillPaymentType billPaymentType= new BillPaymentType();
                    billPaymentType.setId(UUID.randomUUID().toString());
@@ -2346,7 +2385,7 @@ public class MainActivity extends AppCompatActivity{
 
                    billPaymentedSum = 0;
                    paymentDialog.dismiss();
-
+                   btnPay.setEnabled(true);
                    openedBillId = null;
                }
 
@@ -2376,6 +2415,7 @@ public class MainActivity extends AppCompatActivity{
 
                billPaymentedSum = 0;
                paymentDialog.dismiss();
+               btnPay.setEnabled(true);
                openedBillId = null;
            }
        }
@@ -2404,7 +2444,7 @@ public class MainActivity extends AppCompatActivity{
        }
    }
 
-    private void checkItem_Dialog(int dialog){
+    private void checkItem_Dialog(int dialog, MaterialButton button){
 
         final boolean[] isCloseFromEnter = {false};
         View dialogView = inflater.inflate(R.layout.dialog_check_assortment_item, null);
@@ -2514,6 +2554,8 @@ public class MainActivity extends AppCompatActivity{
 
                 btn_add.setOnClickListener(view -> {
                     dialogCheckItem.dismiss();
+                    button.setEnabled(true);
+
                     addItemsToOpenedBill(assortmentFind,1,tvInputBarcode.getText().toString(),true);
                 });
             }
@@ -2526,8 +2568,10 @@ public class MainActivity extends AppCompatActivity{
             }
         });
         btn_Cancel.setOnClickListener(v134 -> {
-            if(!isCloseFromEnter[0])
+            if(!isCloseFromEnter[0]){
                 dialogCheckItem.dismiss();
+                button.setEnabled(true);
+            }
             isCloseFromEnter[0] = false;
         });
 
@@ -2625,6 +2669,7 @@ public class MainActivity extends AppCompatActivity{
 
                                 btn_add.setOnClickListener(view -> {
                                     dialogCheckItem.dismiss();
+                                    button.setEnabled(true);
                                     Toast.makeText(MainActivity.this, "Нажат add position", Toast.LENGTH_SHORT).show();
                                     addItemsToOpenedBill(assortmentFind, 1, tvInputBarcode.getText().toString(), true);
                                 });
@@ -2849,7 +2894,7 @@ public class MainActivity extends AppCompatActivity{
                     pgH.dismiss();
 
                     viewPager.setAdapter(null);
-                    adapterRightMenu = new ViewPageAdapterRightMenu(context, getSupportFragmentManager());
+                    adapterRightMenu = new TabQuickMenuAdapter(context, getSupportFragmentManager());
                     viewPager.setAdapter(adapterRightMenu);
                     viewPager.setOffscreenPageLimit(4);
 
@@ -2913,6 +2958,7 @@ public class MainActivity extends AppCompatActivity{
             super.onPreExecute();
             pgH.setTitle("Synchronization");
             pgH.setMessage("loading assortment list...");
+            pgH.setCancelable(false);
             pgH.setProgressStyle(ProgressDialog.STYLE_SPINNER);
             pgH.show();
         }
@@ -2933,6 +2979,7 @@ public class MainActivity extends AppCompatActivity{
             super.onPreExecute();
             pgH.dismiss();
             pgH.setTitle("Synchronization");
+            pgH.setCancelable(false);
             pgH.setMessage("loading user list...");
             pgH.setIndeterminate(true);
             pgH.show();
@@ -2998,5 +3045,24 @@ public class MainActivity extends AppCompatActivity{
 
             }
         }
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(@NonNull MotionEvent event) {
+
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            View v = getCurrentFocus();
+            if (v instanceof EditText) {
+                v.clearFocus();
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+                    imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                    hideSystemUI();
+                }
+
+            }
+        }
+
+        return super.dispatchTouchEvent(event);
     }
 }

@@ -14,28 +14,22 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.badge.BadgeDrawable;
-
 import java.text.SimpleDateFormat;
 import java.util.Random;
 import java.util.TimeZone;
 
-import edi.md.androidcash.MainActivity;
 import edi.md.androidcash.R;
-import edi.md.androidcash.RealmHelper.Bill;
 import edi.md.androidcash.RealmHelper.History;
 import edi.md.androidcash.Utils.BaseEnum;
 import io.realm.OrderedRealmCollection;
 import io.realm.Realm;
-import io.realm.RealmChangeListener;
 import io.realm.RealmRecyclerViewAdapter;
-import io.realm.RealmResults;
 
 /**
  * Created by Igor on 09.03.2020
  */
 
-public class CustomRCHistoryRealmAdapter extends RealmRecyclerViewAdapter<History, CustomRCHistoryRealmAdapter.ViewHolderString> {
+public class HistoryRealmRCAdapter extends RealmRecyclerViewAdapter<History, HistoryRealmRCAdapter.ViewHolderString> {
 
     Realm mRealm;
     SimpleDateFormat simpleDateFormatMD;
@@ -53,7 +47,7 @@ public class CustomRCHistoryRealmAdapter extends RealmRecyclerViewAdapter<Histor
         notifyItemRangeRemoved(0, size);
     }
 
-    public CustomRCHistoryRealmAdapter(@Nullable OrderedRealmCollection<History> data, boolean autoUpdate) {
+    public HistoryRealmRCAdapter(@Nullable OrderedRealmCollection<History> data, boolean autoUpdate) {
         super(data, autoUpdate);
         mRealm = Realm.getDefaultInstance();
 

@@ -1,10 +1,13 @@
 package edi.md.androidcash.adapters;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -13,14 +16,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 
-import org.w3c.dom.Text;
-
-import java.util.Date;
-
-import edi.md.androidcash.BaseApplication;
 import edi.md.androidcash.MainActivity;
 import edi.md.androidcash.R;
-import edi.md.androidcash.RealmHelper.Bill;
 import edi.md.androidcash.RealmHelper.BillString;
 import io.realm.OrderedRealmCollection;
 import io.realm.Realm;
@@ -30,10 +27,11 @@ import io.realm.RealmRecyclerViewAdapter;
  * Created by Igor on 10.02.2020
  */
 
-public class CustomRCBillStringRealmAdapter extends RealmRecyclerViewAdapter<BillString, CustomRCBillStringRealmAdapter.ViewHolderString> {
+public class NewBillStringsRealmRCAdapter extends RealmRecyclerViewAdapter<BillString, NewBillStringsRealmRCAdapter.ViewHolderString> {
 
     Realm mRealm;
     TextView value;
+    DisplayMetrics displayMetrics;
 
     @Override
     public int getItemCount() {
@@ -45,9 +43,11 @@ public class CustomRCBillStringRealmAdapter extends RealmRecyclerViewAdapter<Bil
         notifyItemRangeRemoved(0, size);
     }
 
-    public CustomRCBillStringRealmAdapter(@Nullable OrderedRealmCollection<BillString> data, boolean autoUpdate) {
+    public NewBillStringsRealmRCAdapter(@Nullable OrderedRealmCollection<BillString> data, boolean autoUpdate) {
         super(data, autoUpdate);
         mRealm = Realm.getDefaultInstance();
+        displayMetrics = MainActivity.displayMetrics;
+
     }
 
     @NonNull
@@ -115,7 +115,7 @@ public class CustomRCBillStringRealmAdapter extends RealmRecyclerViewAdapter<Bil
 
         holder.quantity.setOnClickListener(v->{
             LayoutInflater inflater = MainActivity.inflater;
-            View dialogView = inflater.inflate(R.layout.dialog_calculator, null);
+            View dialogView = inflater.inflate(R.layout.dialog_change_count_assortment_item, null);
 
             AlertDialog changeCount = new AlertDialog.Builder(MainActivity.getContext(),R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
             changeCount.setView(dialogView);
@@ -123,8 +123,8 @@ public class CustomRCBillStringRealmAdapter extends RealmRecyclerViewAdapter<Bil
             TextView assortmentName = dialogView.findViewById(R.id.txt_assortmentname);
             value = dialogView.findViewById(R.id.calculator_value);
             MaterialButton oky = dialogView.findViewById(R.id.btn_okey);
+            ImageButton btn_cancel =  dialogView.findViewById(R.id.btnClose_dialog);
             MaterialButton dot= dialogView.findViewById(R.id.calculator_dot);
-            MaterialButton ce = dialogView.findViewById(R.id.calculator_ce);
             ImageButton delete = dialogView.findViewById(R.id.calculator_backspace);
 
             TextView calc1 = dialogView.findViewById(R.id.calculator_1);
@@ -154,7 +154,7 @@ public class CustomRCBillStringRealmAdapter extends RealmRecyclerViewAdapter<Bil
             oky.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if(!value.getText().toString().equals("")){
+                    if(!value.getText().toString().equals("") && !value.getText().toString().equals("0")){
                         double quantity = 0;
                         try{
                             quantity = Double.parseDouble(value.getText().toString());
@@ -168,33 +168,34 @@ public class CustomRCBillStringRealmAdapter extends RealmRecyclerViewAdapter<Bil
                         changeCount.dismiss();
                         notifyItemChanged(position);
                     }
-                }
-            });
-
-            ce.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    value.setText("");
+                    else
+                        MainActivity.postToastMessage("Enter quantity greater than 0!");
                 }
             });
 
             dot.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    String test = value.getText().toString();
-                    boolean contains = false;
-                    for (int i = 0; i < test.length(); i++) {
-                        String chars = String.valueOf(test.charAt(i));
-                        if (chars.equals(".")) {
-                            contains = true;
+                    if(string.isAllowNonInteger()){
+                        String test = value.getText().toString();
+                        boolean contains = false;
+                        for (int i = 0; i < test.length(); i++) {
+                            String chars = String.valueOf(test.charAt(i));
+                            if (chars.equals(".")) {
+                                contains = true;
+                            }
+                        }
+                        if (!contains) {
+                            if(value.getText().toString().equals(""))
+                                value.append("0.");
+                            else
+                                value.append(".");
                         }
                     }
-                    if (!contains) {
-                        if(value.getText().toString().equals(""))
-                            value.append("0.");
-                        else
-                            value.append(".");
-                }
+                    else{
+                        MainActivity.postToastMessage("Only integer quantity!");
+                    }
+
                 }
             });
 
@@ -205,23 +206,35 @@ public class CustomRCBillStringRealmAdapter extends RealmRecyclerViewAdapter<Bil
                 }
             });
 
+            btn_cancel.setOnClickListener(view -> {
+                changeCount.dismiss();
+            });
+
             changeCount.show();
+
+            int displayWidth = displayMetrics.widthPixels;
+            WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
+            layoutParams.copyFrom(changeCount.getWindow().getAttributes());
+            int dialogWindowWidth = (int) (displayWidth * 0.4f);
+            layoutParams.width = dialogWindowWidth;
+            layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+            changeCount.getWindow().setAttributes(layoutParams);
         });
     }
     View.OnClickListener btn = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
             switch (view.getId()){
-                case R.id.calculator_1 : value.append("1");break;
-                case R.id.calculator_2 : value.append("2");break;
-                case R.id.calculator_3 : value.append("3");break;
-                case R.id.calculator_4 : value.append("4");break;
-                case R.id.calculator_5 : value.append("5");break;
-                case R.id.calculator_6 : value.append("6");break;
-                case R.id.calculator_7 : value.append("7");break;
-                case R.id.calculator_8 : value.append("8");break;
-                case R.id.calculator_9 : value.append("9");break;
-                case R.id.calculator_0 : value.append("0");break;
+                case R.id.calculator_1 : addNumberToQuantityItem("1");break;
+                case R.id.calculator_2 : addNumberToQuantityItem("2");break;
+                case R.id.calculator_3 : addNumberToQuantityItem("3");break;
+                case R.id.calculator_4 : addNumberToQuantityItem("4");break;
+                case R.id.calculator_5 : addNumberToQuantityItem("5");break;
+                case R.id.calculator_6 : addNumberToQuantityItem("6");break;
+                case R.id.calculator_7 : addNumberToQuantityItem("7");break;
+                case R.id.calculator_8 : addNumberToQuantityItem("8");break;
+                case R.id.calculator_9 : addNumberToQuantityItem("9");break;
+                case R.id.calculator_0 : addNumberToQuantityItem("0");break;
             }
         }
     };
@@ -285,5 +298,21 @@ public class CustomRCBillStringRealmAdapter extends RealmRecyclerViewAdapter<Bil
                 }
             }
         }
+
+
     }
+
+    public void addNumberToQuantityItem(String number){
+        String text = value.getText().toString();
+        if(text.contains(".")){
+            int index = text.indexOf(".");
+            if(text.length() - 1 <= index || text.length() - 2 == index){
+                value.append(number);
+            }
+        }
+        else{
+            value.append(number);
+        }
+    }
+
 }

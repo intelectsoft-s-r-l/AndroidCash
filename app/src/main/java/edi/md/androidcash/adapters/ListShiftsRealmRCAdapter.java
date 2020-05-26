@@ -19,9 +19,7 @@ import java.util.Random;
 import java.util.TimeZone;
 
 import edi.md.androidcash.R;
-import edi.md.androidcash.RealmHelper.History;
 import edi.md.androidcash.RealmHelper.Shift;
-import edi.md.androidcash.Utils.BaseEnum;
 import io.realm.OrderedRealmCollection;
 import io.realm.Realm;
 import io.realm.RealmRecyclerViewAdapter;
@@ -30,7 +28,7 @@ import io.realm.RealmRecyclerViewAdapter;
  * Created by Igor on 09.03.2020
  */
 
-public class CustomRCShiftsRealmAdapter extends RealmRecyclerViewAdapter<Shift, CustomRCShiftsRealmAdapter.ViewHolderString> {
+public class ListShiftsRealmRCAdapter extends RealmRecyclerViewAdapter<Shift, ListShiftsRealmRCAdapter.ViewHolderString> {
 
     Realm mRealm;
     SimpleDateFormat simpleDateFormatMD;
@@ -48,7 +46,7 @@ public class CustomRCShiftsRealmAdapter extends RealmRecyclerViewAdapter<Shift, 
         notifyItemRangeRemoved(0, size);
     }
 
-    public CustomRCShiftsRealmAdapter(@Nullable OrderedRealmCollection<Shift> data, boolean autoUpdate) {
+    public ListShiftsRealmRCAdapter(@Nullable OrderedRealmCollection<Shift> data, boolean autoUpdate) {
         super(data, autoUpdate);
         mRealm = Realm.getDefaultInstance();
 
@@ -115,19 +113,19 @@ public class CustomRCShiftsRealmAdapter extends RealmRecyclerViewAdapter<Shift, 
 
                 if (background instanceof ShapeDrawable) {
                     Random rnd = new Random();
-                    int color = Color.rgb(204,20,0);
+                    int color = Color.rgb(0,204,92);
                     ((ShapeDrawable)background).getPaint().setColor(color);
                     colors.setBackground(background);
                 }
                 else if (background instanceof GradientDrawable) {
                     Random rnd = new Random();
-                    int color = Color.rgb(204,20,0);
+                    int color = Color.rgb(0,204,92);
                     ((GradientDrawable)background).setColor(color);
                     colors.setBackground(background);
                 }
                 else if (background instanceof ColorDrawable) {
                     Random rnd = new Random();
-                    int color = Color.rgb(204,20,0);
+                    int color = Color.rgb(0,204,92);
                     ((ColorDrawable)background).setColor(color);
                     colors.setBackground(background);
                 }
@@ -137,41 +135,42 @@ public class CustomRCShiftsRealmAdapter extends RealmRecyclerViewAdapter<Shift, 
 
                 if (background instanceof ShapeDrawable) {
                     Random rnd = new Random();
-                    int color = Color.rgb(0,204,92);
+                    int color = Color.rgb(204,20,0);
                     ((ShapeDrawable)background).getPaint().setColor(color);
                     colors.setBackground(background);
                 }
                 else if (background instanceof GradientDrawable) {
                     Random rnd = new Random();
-                    int color = Color.rgb(0,204,92);
+                    int color = Color.rgb(204,20,0);
                     ((GradientDrawable)background).setColor(color);
                     colors.setBackground(background);
                 }
                 else if (background instanceof ColorDrawable) {
                     Random rnd = new Random();
-                    int color = Color.rgb(0,204,92);
+                    int color = Color.rgb(204,20,0);
                     ((ColorDrawable)background).setColor(color);
                     colors.setBackground(background);
                 }
+
             }
             if(shift.isSended()){
                 Drawable background = sended.getBackground();
 
                 if (background instanceof ShapeDrawable) {
                     Random rnd = new Random();
-                    int color = Color.rgb(204,20,0);
+                    int color = Color.rgb(0,204,92);
                     ((ShapeDrawable)background).getPaint().setColor(color);
                     sended.setBackground(background);
                 }
                 else if (background instanceof GradientDrawable) {
                     Random rnd = new Random();
-                    int color = Color.rgb(204,20,0);
+                    int color = Color.rgb(0,204,92);
                     ((GradientDrawable)background).setColor(color);
                     sended.setBackground(background);
                 }
                 else if (background instanceof ColorDrawable) {
                     Random rnd = new Random();
-                    int color = Color.rgb(204,20,0);
+                    int color = Color.rgb(0,204,92);
                     ((ColorDrawable)background).setColor(color);
                     sended.setBackground(background);
                 }
@@ -181,19 +180,19 @@ public class CustomRCShiftsRealmAdapter extends RealmRecyclerViewAdapter<Shift, 
 
                 if (background instanceof ShapeDrawable) {
                     Random rnd = new Random();
-                    int color = Color.rgb(0,204,92);
+                    int color = Color.rgb(204,20,0);
                     ((ShapeDrawable)background).getPaint().setColor(color);
                     sended.setBackground(background);
                 }
                 else if (background instanceof GradientDrawable) {
                     Random rnd = new Random();
-                    int color = Color.rgb(0,204,92);
+                    int color = Color.rgb(204,20,0);
                     ((GradientDrawable)background).setColor(color);
                     sended.setBackground(background);
                 }
                 else if (background instanceof ColorDrawable) {
                     Random rnd = new Random();
-                    int color = Color.rgb(0,204,92);
+                    int color = Color.rgb(204,20,0);
                     ((ColorDrawable)background).setColor(color);
                     sended.setBackground(background);
                 }

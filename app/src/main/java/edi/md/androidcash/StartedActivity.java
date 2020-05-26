@@ -2,7 +2,9 @@ package edi.md.androidcash;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.app.DownloadManager;
 import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -10,12 +12,14 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import android.net.Uri;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.MifareClassic;
 import android.nfc.tech.MifareUltralight;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.StrictMode;
 import android.provider.Settings;
 import android.util.Base64;
@@ -34,11 +38,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 
 import com.acs.smartcard.Reader;
 import com.acs.smartcard.ReaderException;
 import com.google.android.material.button.MaterialButton;
 
+import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -66,6 +72,7 @@ import edi.md.androidcash.NetworkUtils.User;
 import edi.md.androidcash.Utils.BaseEnum;
 import edi.md.androidcash.Utils.Rfc2898DerivesBytes;
 import edi.md.androidcash.Utils.UpdateHelper;
+import edi.md.androidcash.Utils.UpdateInformation;
 import edi.md.androidcash.connectors.AbstractConnector;
 import edi.md.androidcash.connectors.UsbDeviceConnector;
 import io.realm.Realm;
@@ -108,21 +115,106 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
     //format date and time zone
     SimpleDateFormat simpleDateFormat;
     TimeZone timeZone;
+
+    private ProgressDialog pgH;
 //
     @Override
-    public void onUpdateCheckListener(String uri) {
-        Log.d("TAG", "onUpdateCheckListener." + uri);
-        android.app.AlertDialog alertDialog = new android.app.AlertDialog.Builder(this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme)
-                .setTitle("New version available")
-                .setMessage("Please update to new version to continue use")
-                .setPositiveButton("UPDATE",(dialogInterface, i) -> {
-                    Toast.makeText(this, "" + uri, Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("No,thanks", (dialogInterface, i) -> {
-                    dialogInterface.dismiss();
-                })
-                .create();
-        alertDialog.show();
+    public void onUpdateCheckListener(UpdateInformation information) {
+        boolean update = information.isUpdate();
+        boolean updateTrial = information.isUpdateTrial();
+
+        boolean autoUpDate = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getBoolean("autoUpdate",false);
+        boolean autoUpDateTrial = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getBoolean("autoUpdateTrial",false);
+
+        if(autoUpDateTrial){
+            if(updateTrial && !information.getNewVersionTrial().equals(information.getCurrentVersion())){
+                android.app.AlertDialog alertDialog = new android.app.AlertDialog.Builder(this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme)
+                        .setTitle("New trial version " + information.getNewVersionTrial() + " available")
+                        .setMessage("Please update to new trial version to continue use.Current version: " + information.getCurrentVersion())
+                        .setPositiveButton("UPDATE",(dialogInterface, i) -> {
+                            pgH.setMessage("download new trial version...");
+                            pgH.setIndeterminate(true);
+                            pgH.show();
+                            downloadAndInstallApk(information.getUrlTrial());
+                        })
+                        .setNegativeButton("No,thanks", (dialogInterface, i) -> {
+                            dialogInterface.dismiss();
+                        })
+                        .create();
+                alertDialog.show();
+            }
+        }
+        else{
+            if(autoUpDate){
+                if(update && !information.getNewVerion().equals(information.getCurrentVersion())){
+                    android.app.AlertDialog alertDialog = new android.app.AlertDialog.Builder(this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme)
+                            .setTitle("New version " + information.getNewVerion() + " available")
+                            .setMessage("Please update to new version to continue use.Current version: " + information.getCurrentVersion() + "\n"+ information.getChanges())
+                            .setPositiveButton("UPDATE",(dialogInterface, i) -> {
+                                pgH.setMessage("download new trial version...");
+                                pgH.setIndeterminate(true);
+                                pgH.show();
+                                downloadAndInstallApk(information.getUrl());
+                            })
+                            .setNegativeButton("No,thanks", (dialogInterface, i) -> {
+                                dialogInterface.dismiss();
+                            })
+                            .create();
+                    alertDialog.show();
+                }
+            }
+        }
+    }
+
+    private void downloadAndInstallApk(String url){
+        //get destination to update file and set Uri
+        //TODO: First I wanted to store my update .apk file on internal storage for my app but apparently android does not allow you to open and install
+        //aplication with existing package from there. So for me, alternative solution is Download directory in external storage. If there is better
+
+        String destination = Environment.getExternalStorageDirectory()+ "/IntelectSoft";
+        String fileName = "/cash_trial.apk";
+        destination += fileName;
+        final Uri uri = Uri.parse("file://" + destination);
+
+        //Delete update file if exists
+        File file = new File(destination);
+        if (file.exists())
+            //file.delete() - test this, I think sometimes it doesnt work
+            file.delete();
+
+        //set download manager
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+        request.setDescription("Download trial version...");
+        request.setTitle("Android cash");
+
+        //set destination
+        request.setDestinationUri(uri);
+
+        // get download service and enqueue file
+        final DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+        final long downloadId = manager.enqueue(request);
+
+        //set BroadcastReceiver to install app when .apk is downloaded
+        BroadcastReceiver onComplete = new BroadcastReceiver() {
+            public void onReceive(Context ctxt, Intent intent) {
+                pgH.dismiss();
+                File file = new File(Environment.getExternalStorageDirectory()+ "/IntelectSoft","/cash_trial.apk"); // mention apk file path here
+
+                Uri uri = FileProvider.getUriForFile(StartedActivity.this, BuildConfig.APPLICATION_ID + ".provider",file);
+                if(file.exists()){
+                    Intent install = new Intent(Intent.ACTION_VIEW);
+                    install.setDataAndType(uri, "application/vnd.android.package-archive");
+                    install.putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true);
+                    install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(install);
+                }
+                unregisterReceiver(this);
+                finish();
+
+            }
+        };
+        //register receiver for when .apk download is compete
+        registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
     }
 
     private class OpenTask extends AsyncTask<UsbDevice, Void, Exception> {
@@ -346,7 +438,12 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
         btnLogin = findViewById(R.id.btn_login_user_form);
 
         //--------------------------------------- check update app version ------------------
-        UpdateHelper.with(this).onUpdateCheck(this).check();
+        boolean autoUpDate = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getBoolean("autoUpdate",false);
+        boolean autoUpDateTrial = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getBoolean("autoUpdateTrial",false);
+        if(autoUpDateTrial || autoUpDate)
+            UpdateHelper.with(this).onUpdateCheck(this).check();
+
+        pgH = new ProgressDialog(this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme);
 
         //check if it device support NFC
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
@@ -524,6 +621,11 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
                     authenticateUser(userName,userPass,true);
                 else {
                     Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                    User user = new User();
+                    user.setUserName(userName);
+                    user.setPassword(passGenerate);
+                    BaseApplication.getInstance().setUserPasswordsNotHashed(userPass);
+                    BaseApplication.getInstance().setUser(user);
                     startActivity(main);
                     finish();
                 }
@@ -578,7 +680,7 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
                             Intent main = new Intent(StartedActivity.this,MainActivity.class);
                             User user = new User();
                             user.setUserName(userName);
-                            user.setPassword(getMD5HashCardCode(passUser));
+                            user.setPassword(GetSHA1HashUserPassword("This is the code for UserPass",passUser).replace("\n",""));
                             BaseApplication.getInstance().setUserPasswordsNotHashed(passUser);
                             BaseApplication.getInstance().setUser(user);
                             startActivity(main);
@@ -1149,7 +1251,6 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
                 if (imm != null) {
                     imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
                 }
-
             }
         }
 

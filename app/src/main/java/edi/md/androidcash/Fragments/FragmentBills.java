@@ -18,7 +18,7 @@ import edi.md.androidcash.MainActivity;
 import edi.md.androidcash.R;
 import edi.md.androidcash.RealmHelper.Bill;
 import edi.md.androidcash.RealmHelper.Shift;
-import edi.md.androidcash.adapters.CustomRCBillListRealmAdapter;
+import edi.md.androidcash.adapters.BillListRealmRCAdapter;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
@@ -62,7 +62,7 @@ public class FragmentBills extends Fragment {
                 results[0] = realm.where(Bill.class).equalTo("shiftId", finalId).and().equalTo("state", 0).findAll();
             });
 
-        CustomRCBillListRealmAdapter adapterBillList = new CustomRCBillListRealmAdapter(results[0],true);
+        BillListRealmRCAdapter adapterBillList = new BillListRealmRCAdapter(results[0],true);
 
         int count = MainActivity.tabLayout.getTabCount();
 

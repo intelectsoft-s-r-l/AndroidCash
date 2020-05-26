@@ -11,9 +11,9 @@ import edi.md.androidcash.Fragments.FragmentAssortmentList;
 import edi.md.androidcash.Fragments.FragmentBills;
 import edi.md.androidcash.Fragments.FragmentQuickButtons;
 
-public class ViewPageAdapterRightMenu extends FragmentStatePagerAdapter {
+public class TabQuickMenuAdapter extends FragmentStatePagerAdapter {
     Context context;
-    public ViewPageAdapterRightMenu(Context context, FragmentManager fm) {
+    public TabQuickMenuAdapter(Context context, FragmentManager fm) {
         super(fm);
         context = context;
     }

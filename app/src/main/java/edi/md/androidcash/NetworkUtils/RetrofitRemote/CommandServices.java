@@ -14,8 +14,6 @@ import edi.md.androidcash.NetworkUtils.EposResult.ResultEposSimple;
 import edi.md.androidcash.NetworkUtils.EposResult.UserListServiceResult;
 import edi.md.androidcash.NetworkUtils.EposResult.WorkPlaceSettings;
 import edi.md.androidcash.NetworkUtils.FiscalServiceResult.SimpleResult;
-import edi.md.androidcash.NetworkUtils.FiscalServiceResult.XResponse;
-import edi.md.androidcash.NetworkUtils.FiscalServiceResult.ZResponse;
 import edi.md.androidcash.NetworkUtils.SendBillsToServer;
 import edi.md.androidcash.NetworkUtils.SendShiftToServer;
 import retrofit2.Call;
@@ -45,10 +43,10 @@ public interface CommandServices {
     Call<SimpleResult> printBill (@Body PrintBillFiscalService bill);
 
     @GET("/fpservice/json/PrintReportX")
-    Call<XResponse> printXReport ();
+    Call<SimpleResult> printXReport (@Query("prn") int param);
 
     @GET("/fpservice/json/PrintReportZ")
-    Call<ZResponse> printZReport();
+    Call<SimpleResult> printZReport(@Query("prn") int param);
 
     @GET("/fpservice/json/GetState")
     Call<SimpleResult> getState ();

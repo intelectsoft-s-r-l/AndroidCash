@@ -21,11 +21,11 @@ import edi.md.androidcash.RealmHelper.AssortmentRealm;
  * Created by Igor on 10.02.2020
  */
 
-public class GridAssortmentListAdapter extends ArrayAdapter<AssortmentRealm> {
+public class AssortmentListGridAdapter extends ArrayAdapter<AssortmentRealm> {
 
     int heightView;
 
-    public GridAssortmentListAdapter(@NonNull Context context, int resource, @NonNull List<AssortmentRealm> objects, int heightButton) {
+    public AssortmentListGridAdapter(@NonNull Context context, int resource, @NonNull List<AssortmentRealm> objects, int heightButton) {
         super(context, resource, objects);
         this.heightView = heightButton;
     }

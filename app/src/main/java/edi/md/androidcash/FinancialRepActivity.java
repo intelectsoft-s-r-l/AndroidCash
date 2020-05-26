@@ -24,6 +24,8 @@ import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReceipt;
 import edi.md.androidcash.RealmHelper.Shift;
 import edi.md.androidcash.Utils.BaseEnum;
 
+import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
+
 public class FinancialRepActivity extends AppCompatActivity {
     private DrawerLayout drawer;
     private ConstraintLayout drawerConstraint;
@@ -149,17 +151,27 @@ public class FinancialRepActivity extends AppCompatActivity {
 
                 btn_clear.setOnClickListener(v1 -> amount.setText(""));
                 btn_ok.setOnClickListener(v14 -> {
+
                     addPosition.dismiss();
-                    if(myFiscalDevice != null && myFiscalDevice.isConnectedDeviceV2()){
-                        try {
-                            Double newAmount = Double.valueOf(amount.getText().toString());
-                            cash_IN_OUT(String.format("%.2f", newAmount));
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                    int fiscalManager = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork", BaseEnum.NONE_SELECTED_FISCAL_MODE);
+
+                    if(fiscalManager == BaseEnum.FISCAL_DEVICE){
+                        if(myFiscalDevice != null && myFiscalDevice.isConnectedDeviceV2()){
+                            try {
+                                Double newAmount = Double.valueOf(amount.getText().toString());
+                                cash_IN_OUT(String.format("%.2f", newAmount));
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
+                        else
+                            postMessage("Фискальный апарат не доступен!");
                     }
-                    else
-                        postMessage("Фискальный апарат не доступен!");
+                    else if(fiscalManager == BaseEnum.FISCAL_SERVICE){
+                        //TODO service create method
+
+                    }
+
 
                 });
 

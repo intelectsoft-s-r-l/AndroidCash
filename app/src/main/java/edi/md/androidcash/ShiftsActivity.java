@@ -1,6 +1,5 @@
 package edi.md.androidcash;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -11,12 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.CountDownTimer;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 
 import com.google.android.material.button.MaterialButton;
@@ -27,18 +21,15 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.UUID;
 
-import edi.md.androidcash.Fragments.FragmentBills;
 import edi.md.androidcash.RealmHelper.Bill;
 import edi.md.androidcash.RealmHelper.History;
 import edi.md.androidcash.RealmHelper.Shift;
 import edi.md.androidcash.Utils.BaseEnum;
-import edi.md.androidcash.adapters.CustomRCHistoryRealmAdapter;
-import edi.md.androidcash.adapters.CustomRCShiftsRealmAdapter;
+import edi.md.androidcash.adapters.ListShiftsRealmRCAdapter;
 import io.realm.Realm;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
-import static edi.md.androidcash.BaseApplication.SharedPrefFiscalService;
 import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
 import static edi.md.androidcash.BaseApplication.SharedPrefWorkPlaceSettings;
 import static edi.md.androidcash.MainActivity.datecsFiscalDevice;
@@ -60,7 +51,7 @@ public class ShiftsActivity extends AppCompatActivity {
 
     private Realm mRealm;
 
-    CustomRCShiftsRealmAdapter shiftsRealmAdapter;
+    ListShiftsRealmRCAdapter shiftsRealmAdapter;
 
     TextView openedShift,openedShiftBy , countBillShift, closedShiftBy,closedShift , shiftName;
     MaterialButton btnActionShift;
@@ -221,7 +212,7 @@ public class ShiftsActivity extends AppCompatActivity {
 
     private void showShiftList(){
         RealmResults<Shift> result = mRealm.where(Shift.class).sort("startDate", Sort.DESCENDING).findAll();
-        shiftsRealmAdapter = new CustomRCShiftsRealmAdapter(result,true);
+        shiftsRealmAdapter = new ListShiftsRealmRCAdapter(result,true);
         recyclerView.setAdapter(shiftsRealmAdapter);
 
         if(!result.isEmpty()){
@@ -310,7 +301,7 @@ public class ShiftsActivity extends AppCompatActivity {
             history.setType(BaseEnum.History_ClosedShift);
             mRealm.executeTransaction(realm -> realm.insert(history));
 
-            int workFisc = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork",0);
+            int workFisc = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork",BaseEnum.FISCAL_SERVICE);
 
             if(workFisc == BaseEnum.FISCAL_DEVICE) {
                 if (datecsFiscalDevice != null && datecsFiscalDevice.isConnectedDeviceV2())
