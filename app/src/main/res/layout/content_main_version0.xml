@@ -36,7 +36,7 @@
             android:layout_marginTop="0dp"
             android:layout_marginBottom="0dp"
             android:fontFamily="@font/roboto_medium"
-            android:text="Add client"
+            android:text="@string/btn_add_client"
             android:textAllCaps="false"
             android:textColor="@color/colorPrimary"
             android:textSize="18sp"
@@ -52,7 +52,7 @@
             android:layout_height="0dp"
             android:layout_marginStart="4dp"
             android:fontFamily="@font/roboto_medium"
-            android:text="Add item"
+            android:text="@string/btn_add_item"
             android:textAllCaps="false"
             android:textColor="@color/colorPrimary"
             android:textSize="18sp"
@@ -70,7 +70,7 @@
             android:layout_marginStart="8dp"
             android:layout_marginEnd="4dp"
             android:fontFamily="@font/roboto_medium"
-            android:text="Check price"
+            android:text="@string/btn_check_price"
             android:textAllCaps="false"
             android:textColor="@color/colorPrimary"
             android:textSize="18sp"
@@ -100,7 +100,7 @@
             android:layout_marginTop="4dp"
             android:layout_marginEnd="60dp"
             android:fontFamily="@font/roboto"
-            android:text="Discount"
+            android:text="@string/text_discount"
             android:textColor="@android:color/black"
             android:textSize="18sp"
             app:layout_constraintEnd_toStartOf="@+id/textView10"
@@ -124,7 +124,7 @@
             android:layout_marginTop="4dp"
             android:layout_marginEnd="16dp"
             android:fontFamily="@font/roboto"
-            android:text="Client:"
+            android:text="@string/text_client"
             android:textColor="@android:color/black"
             android:textSize="18sp"
             app:layout_constraintEnd_toStartOf="@+id/textView70"
@@ -136,7 +136,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="@font/roboto"
-            android:text="Andrei Cucerean"
+            android:text="-"
             android:textSize="18sp"
             app:layout_constraintStart_toStartOf="@+id/textView76"
             app:layout_constraintTop_toBottomOf="@+id/textView76" />
@@ -170,7 +170,7 @@
             android:layout_marginEnd="2dp"
             android:layout_marginBottom="4dp"
             android:fontFamily="@font/roboto_medium"
-            android:text="New bill"
+            android:text="@string/btn_new_bill"
             android:textAllCaps="false"
             android:textColor="@android:color/white"
             android:textSize="24sp"
@@ -185,7 +185,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="4dp"
-            android:text="Subtotal"
+            android:text="@string/text_subtotal"
             android:textColor="@android:color/black"
             android:textSize="18sp"
             app:layout_constraintEnd_toEndOf="parent"
@@ -244,17 +244,17 @@
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Quick Buttons" />
+            android:text="@string/group_quick_buttons" />
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Assortment" />
+            android:text="@string/group_assortment" />
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Bills" />
+            android:text="@string/group_bills" />
     </com.google.android.material.tabs.TabLayout>
 
     <androidx.viewpager.widget.ViewPager

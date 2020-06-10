@@ -18,8 +18,10 @@ import java.text.SimpleDateFormat;
 import java.util.Random;
 import java.util.TimeZone;
 
+import edi.md.androidcash.Fragments.FragmentInformationShift;
 import edi.md.androidcash.R;
 import edi.md.androidcash.RealmHelper.Shift;
+import edi.md.androidcash.ShiftsActivity;
 import io.realm.OrderedRealmCollection;
 import io.realm.Realm;
 import io.realm.RealmRecyclerViewAdapter;
@@ -53,6 +55,7 @@ public class ListShiftsRealmRCAdapter extends RealmRecyclerViewAdapter<Shift, Li
         simpleDateFormatMD = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss");
         timeZoneMD = TimeZone.getTimeZone("Europe/Chisinau");
         simpleDateFormatMD.setTimeZone(timeZoneMD);
+
         this.adapterData = data;
     }
 
@@ -68,47 +71,44 @@ public class ListShiftsRealmRCAdapter extends RealmRecyclerViewAdapter<Shift, Li
     @Override
     public void onBindViewHolder(ViewHolderString holder, int position) {
 
-        Shift string  = getItem(position);
+        Shift item  = getItem(position);
 
-        holder.bind(string);
+        holder.bind(item);
+
+        holder.itemView.setOnClickListener(view -> {
+            ShiftsActivity.setViewPagerVisibility(true);
+            FragmentInformationShift.updateShift(item);
+        });
+
+
     }
 
 
     class ViewHolderString extends RecyclerView.ViewHolder{
-        private TextView name;
-        private TextView nr_bill;
-        private TextView opened_by;
-        private TextView closed_by;
+//        private TextView name;
+//        private TextView nr_bill;
+//        private TextView opened_by;
+//        private TextView closed_by;
         private TextView openDate;
-        private TextView closeDate;
+//        private TextView closeDate;
         private TextView colors;
-        private TextView sended;
+        private TextView isClosed;
+        private TextView isSync;
 
         ViewHolderString(View itemView) {
             super(itemView);
-
-            name = itemView.findViewById(R.id.txt_name_shift);
             colors = itemView.findViewById(R.id.textView_colors_shift);
-            nr_bill = itemView.findViewById(R.id.txt_count_bill);
-            opened_by = itemView.findViewById(R.id.txt_shift_list_opened_by);
-            closed_by = itemView.findViewById(R.id.txt_shift_list_closed_by);
+            isClosed = itemView.findViewById(R.id.txt_state_shift);
+            isSync = itemView.findViewById(R.id.txt_state_sync_shift);
             openDate = itemView.findViewById(R.id.txt_shift_list_open_date);
-            closeDate = itemView.findViewById(R.id.txt_shift_list_closed_date);
-            sended = itemView.findViewById(R.id.txt_shift_list_sended);
         }
 
         private void bind(Shift shift) {
-            name.setText(shift.getName());
             openDate.setText(simpleDateFormatMD.format(shift.getStartDate()));
-            if(shift.getEndDate() == 0)
-                closeDate.setText("-");
-            else
-                closeDate.setText(simpleDateFormatMD.format(shift.getEndDate()));
-            opened_by.setText(shift.getAuthorName());
-            closed_by.setText(shift.getClosedByName());
-            nr_bill.setText(String.valueOf(shift.getBillCounter()));
 
             if(shift.isClosed()){
+                isClosed.setText("CLOSED");
+                isClosed.setTextColor( Color.rgb(0,204,92));
                 Drawable background = colors.getBackground();
 
                 if (background instanceof ShapeDrawable) {
@@ -131,6 +131,8 @@ public class ListShiftsRealmRCAdapter extends RealmRecyclerViewAdapter<Shift, Li
                 }
             }
             else{
+                isClosed.setText("OPENED");
+                isClosed.setTextColor( Color.rgb(204,20,0));
                 Drawable background = colors.getBackground();
 
                 if (background instanceof ShapeDrawable) {
@@ -154,48 +156,12 @@ public class ListShiftsRealmRCAdapter extends RealmRecyclerViewAdapter<Shift, Li
 
             }
             if(shift.isSended()){
-                Drawable background = sended.getBackground();
-
-                if (background instanceof ShapeDrawable) {
-                    Random rnd = new Random();
-                    int color = Color.rgb(0,204,92);
-                    ((ShapeDrawable)background).getPaint().setColor(color);
-                    sended.setBackground(background);
-                }
-                else if (background instanceof GradientDrawable) {
-                    Random rnd = new Random();
-                    int color = Color.rgb(0,204,92);
-                    ((GradientDrawable)background).setColor(color);
-                    sended.setBackground(background);
-                }
-                else if (background instanceof ColorDrawable) {
-                    Random rnd = new Random();
-                    int color = Color.rgb(0,204,92);
-                    ((ColorDrawable)background).setColor(color);
-                    sended.setBackground(background);
-                }
+                isSync.setText("SYNCHED");
+                isSync.setTextColor( Color.rgb(0,204,92));
             }
             else{
-                Drawable background = sended.getBackground();
-
-                if (background instanceof ShapeDrawable) {
-                    Random rnd = new Random();
-                    int color = Color.rgb(204,20,0);
-                    ((ShapeDrawable)background).getPaint().setColor(color);
-                    sended.setBackground(background);
-                }
-                else if (background instanceof GradientDrawable) {
-                    Random rnd = new Random();
-                    int color = Color.rgb(204,20,0);
-                    ((GradientDrawable)background).setColor(color);
-                    sended.setBackground(background);
-                }
-                else if (background instanceof ColorDrawable) {
-                    Random rnd = new Random();
-                    int color = Color.rgb(204,20,0);
-                    ((ColorDrawable)background).setColor(color);
-                    sended.setBackground(background);
-                }
+                isSync.setText("NOT SYNC");
+                isSync.setTextColor( Color.rgb(204,20,0));
             }
 
         }

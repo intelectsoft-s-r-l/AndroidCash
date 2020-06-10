@@ -16,6 +16,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.DisplayMetrics;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -25,6 +26,7 @@ import android.widget.TextView;
 
 import com.datecs.fiscalprinter.SDK.model.DatecsFiscalDevice;
 import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReport;
+import com.google.android.material.button.MaterialButton;
 
 import edi.md.androidcash.NetworkUtils.FiscalServiceResult.SimpleResult;
 import edi.md.androidcash.NetworkUtils.RetrofitRemote.ApiUtils;
@@ -59,6 +61,9 @@ public class ReportsActivity extends AppCompatActivity {
     int fiscalManager = 0;
     TextView tvUserNameNav;
     TextView tvUserEmailNav;
+    LayoutInflater layoutInflater;
+
+    AlertDialog dialog_summary;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +93,8 @@ public class ReportsActivity extends AppCompatActivity {
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
+        layoutInflater = getLayoutInflater();
+
         fiscalManager = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork", BaseEnum.FISCAL_SERVICE);
 
         csl_sales.setOnClickListener(view -> {
@@ -116,8 +123,7 @@ public class ReportsActivity extends AppCompatActivity {
         X_report.setOnClickListener(v -> {
             if(fiscalManager == BaseEnum.FISCAL_DEVICE){
                 x_errore.setText("");
-                progress = new ProgressDialog(ReportsActivity.this);
-                progress.setCancelable(true);
+                progress = new ProgressDialog(ReportsActivity.this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme);
                 progress.setTitle("X report is starting !!!");
                 progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
                 progress.setCancelable(false);
@@ -148,22 +154,21 @@ public class ReportsActivity extends AppCompatActivity {
                             public void run() {
                                 if (reportNummber[0] != -1) {
                                     foundMessage.obtainMessage(111,reportNummber[0]).sendToTarget();
-                                    View dialogView = getLayoutInflater().inflate(R.layout.dialog_x_z_total,null);
+                                    View dialogView = layoutInflater.inflate(R.layout.dialog_x_z_total,null);
 
-                                    final AlertDialog dialog_summary = new AlertDialog.Builder(ReportsActivity.this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
+                                    dialog_summary = new AlertDialog.Builder(ReportsActivity.this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
                                     dialog_summary.setCancelable(false);
                                     dialog_summary.setView(dialogView);
-                                    dialog_summary.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 
-                                    TextView tvTaxA = dialog_summary.findViewById(R.id.tvTaxA);
-                                    TextView tvTaxB = dialog_summary.findViewById(R.id.tvTaxB);
-                                    TextView tvTaxC = dialog_summary.findViewById(R.id.tvTaxC);
-                                    TextView tvTaxD = dialog_summary.findViewById(R.id.tvTaxD);
-                                    TextView tvTaxE = dialog_summary.findViewById(R.id.tvTaxE);
-                                    TextView tvTaxF = dialog_summary.findViewById(R.id.tvTaxF);
-                                    TextView tvTaxG = dialog_summary.findViewById(R.id.tvTaxG);
-                                    TextView tvTaxH = dialog_summary.findViewById(R.id.tvTaxH);
-                                    Button btnOk = dialog_summary.findViewById(R.id.btn_tax_total_reports);
+                                    TextView TaxA = dialogView.findViewById(R.id.tvTaxA);
+                                    TextView TaxB = dialogView.findViewById(R.id.tvTaxB);
+                                    TextView TaxC = dialogView.findViewById(R.id.tvTaxC);
+                                    TextView TaxD = dialogView.findViewById(R.id.tvTaxD);
+                                    TextView TaxE = dialogView.findViewById(R.id.tvTaxE);
+                                    TextView TaxF = dialogView.findViewById(R.id.tvTaxF);
+                                    TextView TaxG = dialogView.findViewById(R.id.tvTaxG);
+                                    TextView TaxH = dialogView.findViewById(R.id.tvTaxH);
+                                    MaterialButton btnOk = dialogView.findViewById(R.id.btn_total_reports);
 
                                     btnOk.setOnClickListener(new View.OnClickListener() {
                                         @Override
@@ -172,15 +177,16 @@ public class ReportsActivity extends AppCompatActivity {
                                         }
                                     });
 
-                                    tvTaxA.setText(String.valueOf(reportSummary.totalA));
-                                    tvTaxB.setText(String.valueOf(reportSummary.totalB));
-                                    tvTaxC.setText(String.valueOf(reportSummary.totalC));
-                                    tvTaxD.setText(String.valueOf(reportSummary.totalD));
-                                    tvTaxE.setText(String.valueOf(reportSummary.totalE));
-                                    tvTaxF.setText(String.valueOf(reportSummary.totalF));
-                                    tvTaxG.setText(String.valueOf(reportSummary.totalG));
-                                    tvTaxH.setText(String.valueOf(reportSummary.totalH));
+                                    TaxA.setText(String.valueOf(reportSummary.totalA));
+                                    TaxB.setText(String.valueOf(reportSummary.totalB));
+                                    TaxC.setText(String.valueOf(reportSummary.totalC));
+                                    TaxD.setText(String.valueOf(reportSummary.totalD));
+                                    TaxE.setText(String.valueOf(reportSummary.totalE));
+                                    TaxF.setText(String.valueOf(reportSummary.totalF));
+                                    TaxG.setText(String.valueOf(reportSummary.totalG));
+                                    TaxH.setText(String.valueOf(reportSummary.totalH));
 
+                                    dialog_summary.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
                                     dialog_summary.show();
 
                                     DisplayMetrics metrics = new DisplayMetrics(); //get metrics of screen
@@ -222,8 +228,7 @@ public class ReportsActivity extends AppCompatActivity {
         Z_report.setOnClickListener(v -> {
             if(fiscalManager == BaseEnum.FISCAL_DEVICE){
                 z_errore.setText("");
-                progress = new ProgressDialog(ReportsActivity.this);
-                progress.setCancelable(true);
+                progress = new ProgressDialog(ReportsActivity.this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme);
                 progress.setTitle("Z report is working !!!");
                 progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
                 progress.setCancelable(false);
@@ -254,20 +259,19 @@ public class ReportsActivity extends AppCompatActivity {
                                     foundMessage.obtainMessage(222,reportNumber[0]).sendToTarget();
                                     View dialogView = getLayoutInflater().inflate(R.layout.dialog_x_z_total,null);
 
-                                    final AlertDialog dialog_summary = new AlertDialog.Builder(ReportsActivity.this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
+                                    dialog_summary = new AlertDialog.Builder(ReportsActivity.this,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
                                     dialog_summary.setCancelable(false);
                                     dialog_summary.setView(dialogView);
-                                    dialog_summary.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 
-                                    TextView tvTaxA = dialog_summary.findViewById(R.id.tvTaxA);
-                                    TextView tvTaxB = dialog_summary.findViewById(R.id.tvTaxB);
-                                    TextView tvTaxC = dialog_summary.findViewById(R.id.tvTaxC);
-                                    TextView tvTaxD = dialog_summary.findViewById(R.id.tvTaxD);
-                                    TextView tvTaxE = dialog_summary.findViewById(R.id.tvTaxE);
-                                    TextView tvTaxF = dialog_summary.findViewById(R.id.tvTaxF);
-                                    TextView tvTaxG = dialog_summary.findViewById(R.id.tvTaxG);
-                                    TextView tvTaxH = dialog_summary.findViewById(R.id.tvTaxH);
-                                    Button btnOk = dialog_summary.findViewById(R.id.btn_tax_total_reports);
+                                    TextView tvTaxA = dialogView.findViewById(R.id.tvTaxA);
+                                    TextView tvTaxB = dialogView.findViewById(R.id.tvTaxB);
+                                    TextView tvTaxC = dialogView.findViewById(R.id.tvTaxC);
+                                    TextView tvTaxD = dialogView.findViewById(R.id.tvTaxD);
+                                    TextView tvTaxE = dialogView.findViewById(R.id.tvTaxE);
+                                    TextView tvTaxF = dialogView.findViewById(R.id.tvTaxF);
+                                    TextView tvTaxG = dialogView.findViewById(R.id.tvTaxG);
+                                    TextView tvTaxH = dialogView.findViewById(R.id.tvTaxH);
+                                    MaterialButton btnOk = dialogView.findViewById(R.id.btn_total_reports);
 
                                     btnOk.setOnClickListener(new View.OnClickListener() {
                                         @Override
@@ -275,7 +279,6 @@ public class ReportsActivity extends AppCompatActivity {
                                             dialog_summary.dismiss();
                                         }
                                     });
-
                                     tvTaxA.setText(String.valueOf(reportSummary.totalA));
                                     tvTaxB.setText(String.valueOf(reportSummary.totalB));
                                     tvTaxC.setText(String.valueOf(reportSummary.totalC));
@@ -285,6 +288,7 @@ public class ReportsActivity extends AppCompatActivity {
                                     tvTaxG.setText(String.valueOf(reportSummary.totalG));
                                     tvTaxH.setText(String.valueOf(reportSummary.totalH));
 
+                                    dialog_summary.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
                                     dialog_summary.show();
 
                                     DisplayMetrics metrics = new DisplayMetrics(); //get metrics of screen

@@ -1,68 +1,69 @@
 package edi.md.androidcash;
 
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.TextView;
+
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.FragmentManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager.widget.ViewPager;
 
-import android.content.Intent;
-import android.os.Bundle;
-import android.view.View;
-import android.widget.TextView;
-
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.tabs.TabLayout;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.UUID;
 
-import edi.md.androidcash.RealmHelper.Bill;
 import edi.md.androidcash.RealmHelper.History;
 import edi.md.androidcash.RealmHelper.Shift;
 import edi.md.androidcash.Utils.BaseEnum;
 import edi.md.androidcash.adapters.ListShiftsRealmRCAdapter;
+import edi.md.androidcash.adapters.TabShiftInfoTicketsAdapter;
 import io.realm.Realm;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
-import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
 import static edi.md.androidcash.BaseApplication.SharedPrefWorkPlaceSettings;
-import static edi.md.androidcash.MainActivity.datecsFiscalDevice;
-import static edi.md.androidcash.MainActivity.printZReport;
 
 public class ShiftsActivity extends AppCompatActivity {
     private DrawerLayout drawer;
-    private ConstraintLayout drawerConstraint;
     private RecyclerView recyclerView;
-    private TextView totalEntriesLog;
-
+    private ConstraintLayout drawerConstraint;
     private ConstraintLayout csl_sales;
     private ConstraintLayout csl_shifts;
-    private ConstraintLayout csl_tickets;
     private ConstraintLayout csl_reports;
     private ConstraintLayout csl_finReport;
     private ConstraintLayout csl_history;
     private ConstraintLayout csl_settings;
 
+    private static ViewPager viewPager;
+    private static TabLayout tabLayout;
+    static TabShiftInfoTicketsAdapter shiftInfoTicketsAdapter;
+
     private Realm mRealm;
 
     ListShiftsRealmRCAdapter shiftsRealmAdapter;
 
-    TextView openedShift,openedShiftBy , countBillShift, closedShiftBy,closedShift , shiftName;
-    MaterialButton btnActionShift;
+    static TextView btnActionShift;
 
     SimpleDateFormat simpleDateFormatMD;
     TimeZone timeZoneMD;
 
-    boolean shiftIsClosed = true;
-    Shift lastShift;
+    static Shift lastShift;
     TextView tvUserNameNav;
     TextView tvUserEmailNav;
+    static TextView textInfo,textInfo2;
+
+    static FragmentManager fManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,7 +76,7 @@ public class ShiftsActivity extends AppCompatActivity {
         drawer = findViewById(R.id.drawer_layout_shifts);
         drawerConstraint = findViewById(R.id.nav_view_menu_shifts);
         recyclerView = findViewById(R.id.rc_list_shifts);
-        totalEntriesLog = findViewById(R.id.tv_total_shifts_entries);
+//        totalEntriesLog = findViewById(R.id.tv_total_shifts_entries);
 
         csl_sales = findViewById(R.id.csl_sales);
         csl_shifts = findViewById(R.id.csl_shift);
@@ -83,22 +84,21 @@ public class ShiftsActivity extends AppCompatActivity {
         csl_finReport = findViewById(R.id.csl_fin_reports);
         csl_history = findViewById(R.id.csl_history);
         csl_settings = findViewById(R.id.csl_setting_nav);
-
-        openedShift = findViewById(R.id.tv_opened_shift);
-        openedShiftBy = findViewById(R.id.tv_current_shift_opened_by);
-        countBillShift = findViewById(R.id.tv_current_shift_bills_counter);
-        closedShiftBy = findViewById(R.id.tv_current_shift_closed_by);
-        closedShift = findViewById(R.id.tv_closed_shift_entry);
-        shiftName = findViewById(R.id.tv_current_shift_name);
-        btnActionShift = findViewById(R.id.btn_open_closed_current_shift);
+        viewPager = findViewById(R.id.shift_container);
+        tabLayout = findViewById(R.id.tab_information_tickets_shift);
+        btnActionShift = findViewById(R.id.tv_open_shift);
         tvUserNameNav = findViewById(R.id.tv_user_name_nav);
         tvUserEmailNav = findViewById(R.id.tv_email_auth_user);
+        textInfo = findViewById(R.id.textView58);
+        textInfo2 = findViewById(R.id.textView31);
 
         mRealm = Realm.getDefaultInstance();
 
         simpleDateFormatMD = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy");
         timeZoneMD = TimeZone.getTimeZone("Europe/Chisinau");
         simpleDateFormatMD.setTimeZone(timeZoneMD);
+
+        fManager = getSupportFragmentManager();
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
@@ -130,84 +130,53 @@ public class ShiftsActivity extends AppCompatActivity {
         showShiftList();
 
         btnActionShift.setOnClickListener(view -> {
-            if(shiftIsClosed){
-                new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
-                        .setTitle("Attention!")
-                        .setMessage("Do you want open shift?")
-                        .setCancelable(false)
-                        .setPositiveButton("Yes", (dialogInterface, i) -> {
-                            long opened_new_shift = new Date().getTime();
-                            long need_close = opened_new_shift + 28800000;
+            new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
+                    .setTitle("Attention!")
+                    .setMessage("Do you want open shift?")
+                    .setCancelable(false)
+                    .setPositiveButton("Yes", (dialogInterface, i) -> {
+                        long opened_new_shift = new Date().getTime();
+                        long need_close = opened_new_shift + 28800000;
 
-                            Shift shiftEntry = new Shift();
-                            shiftEntry.setName("SHF " + simpleDateFormatMD.format(opened_new_shift));
-                            shiftEntry.setWorkPlaceId(getSharedPreferences(SharedPrefWorkPlaceSettings, MODE_PRIVATE).getString("WorkPlaceID", "null"));
-                            shiftEntry.setWorkPlaceName(getSharedPreferences(SharedPrefWorkPlaceSettings, MODE_PRIVATE).getString("WorkPlaceName", "null"));
-                            shiftEntry.setAuthor(BaseApplication.getInstance().getUserId());
-                            shiftEntry.setAuthorName(BaseApplication.getInstance().getUser().getFullName());
-                            shiftEntry.setStartDate(new Date().getTime());
-                            shiftEntry.setClosed(false);
-                            shiftEntry.setNeedClose(need_close);
-                            shiftEntry.setId(UUID.randomUUID().toString());
+                        Shift shiftEntry = new Shift();
+                        shiftEntry.setName("SHF " + simpleDateFormatMD.format(opened_new_shift));
+                        shiftEntry.setWorkPlaceId(getSharedPreferences(SharedPrefWorkPlaceSettings, MODE_PRIVATE).getString("WorkPlaceID", "null"));
+                        shiftEntry.setWorkPlaceName(getSharedPreferences(SharedPrefWorkPlaceSettings, MODE_PRIVATE).getString("WorkPlaceName", "null"));
+                        shiftEntry.setAuthor(BaseApplication.getInstance().getUserId());
+                        shiftEntry.setAuthorName(BaseApplication.getInstance().getUser().getFullName());
+                        shiftEntry.setStartDate(new Date().getTime());
+                        shiftEntry.setClosed(false);
+                        shiftEntry.setNeedClose(need_close);
+                        shiftEntry.setId(UUID.randomUUID().toString());
 
-                            lastShift = shiftEntry;
-                            showLastShiftInfo(lastShift);
+                        lastShift = shiftEntry;
 
-                            mRealm.executeTransaction(realm -> realm.insert(shiftEntry));
+                        if(lastShift.isClosed()) {
+                            setViewPagerVisibility(false);
+                        }
+                        else{
+                            setViewPagerVisibility(true);
+                        }
 
-                            History history = new History();
-                            history.setDate(new Date().getTime());
-                            history.setMsg("Shift: " + shiftEntry.getName());
-                            history.setType(BaseEnum.History_OpenShift);
-                            mRealm.executeTransaction(realm -> realm.insert(history));
+                        mRealm.executeTransaction(realm -> realm.insert(shiftEntry));
+
+                        History history = new History();
+                        history.setDate(new Date().getTime());
+                        history.setMsg("Shift: " + shiftEntry.getName());
+                        history.setType(BaseEnum.History_OpenShift);
+                        mRealm.executeTransaction(realm -> realm.insert(history));
 
 
-                            BaseApplication.getInstance().setShift(shiftEntry);
-                            shiftIsClosed = false;
-                            btnActionShift.setText("Close this shift");
-                        })
-                        .setNegativeButton("No",((dialogInterface, i) -> {
-                            dialogInterface.dismiss();
-                        }))
 
-                        .show();
-            }
-            else{
-                new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
-                        .setTitle("Attention!")
-                        .setMessage("Do you want close this shift?")
-                        .setCancelable(false)
-                        .setPositiveButton("Yes", (dialogInterface, i) -> {
-                            closeShift();
-                        })
-                        .setNegativeButton("No",((dialogInterface, i) -> {
-                            dialogInterface.dismiss();
-                        }))
-                        .show();
-            }
+                        BaseApplication.getInstance().setShift(shiftEntry);
+                        setViewPagerVisibility(true);
+                    })
+                    .setNegativeButton("No",((dialogInterface, i) -> {
+                        dialogInterface.dismiss();
+                    }))
+
+                    .show();
         });
-    }
-
-    private void showLastShiftInfo(Shift shift){
-        openedShift.setText(simpleDateFormatMD.format(shift.getStartDate()));
-        openedShiftBy.setText(lastShift.getAuthorName());
-        if(lastShift.getEndDate() == 0){
-            closedShift.setText("");
-        }
-        else{
-            closedShift.setText(simpleDateFormatMD.format(shift.getEndDate()));
-        }
-        shiftName.setText(shift.getName());
-        closedShiftBy.setText(shift.getClosedByName());
-        countBillShift.setText(String.valueOf(shift.getBillCounter()));
-        if(shift.isClosed()) {
-            shiftIsClosed = true;
-            btnActionShift.setText("Open new shift");
-        }
-        else{
-            shiftIsClosed = false;
-            btnActionShift.setText("Closed this shift");
-        }
     }
 
     private void showShiftList(){
@@ -216,12 +185,41 @@ public class ShiftsActivity extends AppCompatActivity {
         recyclerView.setAdapter(shiftsRealmAdapter);
 
         if(!result.isEmpty()){
-
             recyclerView.setAdapter(shiftsRealmAdapter);
-            totalEntriesLog.setText(String.valueOf(result.size()));
 
             lastShift = result.first();
-            showLastShiftInfo(lastShift);
+            if(lastShift != null){
+                if(lastShift.isClosed()) {
+                    setViewPagerVisibility(false);
+                }
+                else{
+                    setViewPagerVisibility(true);
+                }
+            }
+            else
+                setViewPagerVisibility(false);
+
+        }
+    }
+
+    public static void setViewPagerVisibility(boolean visible){
+        if(visible){
+            btnActionShift.setVisibility(View.GONE);
+            textInfo.setVisibility(View.GONE);
+            textInfo2.setVisibility(View.GONE);
+            viewPager.setVisibility(View.VISIBLE);
+            tabLayout.setVisibility(View.VISIBLE);
+            shiftInfoTicketsAdapter = new TabShiftInfoTicketsAdapter(fManager,lastShift);
+            viewPager.setAdapter(shiftInfoTicketsAdapter);
+            tabLayout.setupWithViewPager(viewPager);
+        }
+        else{
+            viewPager.setVisibility(View.GONE);
+            tabLayout.setVisibility(View.GONE);
+
+            btnActionShift.setVisibility(View.VISIBLE);
+            textInfo.setVisibility(View.VISIBLE);
+            textInfo2.setVisibility(View.VISIBLE);
         }
     }
 
@@ -260,59 +258,5 @@ public class ShiftsActivity extends AppCompatActivity {
                         | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                         | View.SYSTEM_UI_FLAG_FULLSCREEN);
 
-    }
-
-    private void closeShift(){
-        RealmResults<Bill> billEntryResult = mRealm.where(Bill.class)
-                .equalTo("shiftId",lastShift.getId())
-                .and()
-                .equalTo("state",0)
-                .findAll();
-        if(!billEntryResult.isEmpty()){
-            new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
-                    .setTitle("Attention!")
-                    .setMessage("You cannot close a shift while there are open bills!\nYou have left " + billEntryResult.size() + " open bills.")
-                    .setCancelable(false)
-                    .setPositiveButton("OKAY", (dialogInterface, i) -> {
-                        dialogInterface.dismiss();
-                    })
-                    .show();
-        }
-        else{
-            long close = new Date().getTime();
-
-            mRealm.executeTransaction(realm -> {
-                Shift shift = realm.where(Shift.class).equalTo("id",lastShift.getId()).findFirst();
-                if(shift != null){
-                    shift.setClosedBy(BaseApplication.getInstance().getUserId());
-                    shift.setEndDate(close);
-                    shift.setClosed(true);
-                    shift.setClosedByName(BaseApplication.getInstance().getUser().getFullName());
-                    shift.setSended(false);
-                    showLastShiftInfo(shift);
-                }
-            });
-
-            BaseApplication.getInstance().setShift(null);
-
-            History history = new History();
-            history.setDate(new Date().getTime());
-            history.setMsg("Shift: " + lastShift.getName());
-            history.setType(BaseEnum.History_ClosedShift);
-            mRealm.executeTransaction(realm -> realm.insert(history));
-
-            int workFisc = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork",BaseEnum.FISCAL_SERVICE);
-
-            if(workFisc == BaseEnum.FISCAL_DEVICE) {
-                if (datecsFiscalDevice != null && datecsFiscalDevice.isConnectedDeviceV2())
-                    printZReport();
-            }
-            if(workFisc == BaseEnum.FISCAL_SERVICE){
-                String uri = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getString("FiscalServiceAddress","0.0.0.0:1111");
-                MainActivity.printZReportFiscalService(uri);
-            }
-            shiftIsClosed = true;
-            btnActionShift.setText("Open new shift");
-        }
     }
 }

@@ -12,7 +12,7 @@ public class BillPaymentType extends RealmObject {
     private long CreateDate;
     private String PaymentTypeID;
     private String Name;
-    private int PaymentCode; // 404 - кода нет
+    private int PaymentCode; //404 - кода нет
     private double Sum;
 
     public String getId() {

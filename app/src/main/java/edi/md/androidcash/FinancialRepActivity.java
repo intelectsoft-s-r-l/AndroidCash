@@ -11,18 +11,23 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.datecs.fiscalprinter.SDK.model.DatecsFiscalDevice;
 import com.datecs.fiscalprinter.SDK.model.UserLayerV2.cmdReceipt;
+import com.google.android.material.button.MaterialButton;
 
 import edi.md.androidcash.RealmHelper.Shift;
 import edi.md.androidcash.Utils.BaseEnum;
+import io.realm.Realm;
 
 import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
 
@@ -108,21 +113,21 @@ public class FinancialRepActivity extends AppCompatActivity {
                 addPosition.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 
                 final TextView amount = dialogView.findViewById(R.id.et_input_data);
-                Button btn_Cancel = dialogView.findViewById(R.id.btn_cancel_cashin);
-                Button btn_ok = dialogView.findViewById(R.id.btn_ok_cashin);
-                Button btn_clear = dialogView.findViewById(R.id.btn_cashin_clear);
-                Button btn_point = dialogView.findViewById(R.id.btn_add_point);
+                ImageButton btn_Cancel = dialogView.findViewById(R.id.btn_cancel_cashin);
+                MaterialButton btn_ok = dialogView.findViewById(R.id.btn_ok_cashin);
+                MaterialButton btn_clear = dialogView.findViewById(R.id.btn_cashin_clear);
+                MaterialButton btn_point = dialogView.findViewById(R.id.btn_add_point);
 
-                Button number_1 = dialogView.findViewById(R.id.btn_cashin_1);
-                Button number_2 = dialogView.findViewById(R.id.btn_cashin_2);
-                Button number_3 = dialogView.findViewById(R.id.btn_cashin_3);
-                Button number_4 = dialogView.findViewById(R.id.btn_cashin_4);
-                Button number_5 = dialogView.findViewById(R.id.btn_cashin_5);
-                Button number_6 = dialogView.findViewById(R.id.btn_cashin_6);
-                Button number_7 = dialogView.findViewById(R.id.btn_cashin_7);
-                Button number_8 = dialogView.findViewById(R.id.btn_cashin_8);
-                Button number_9 = dialogView.findViewById(R.id.btn_cashin_9);
-                Button number_0 = dialogView.findViewById(R.id.btn_cashin_0);
+                MaterialButton number_1 = dialogView.findViewById(R.id.btn_cashin_1);
+                MaterialButton number_2 = dialogView.findViewById(R.id.btn_cashin_2);
+                MaterialButton number_3 = dialogView.findViewById(R.id.btn_cashin_3);
+                MaterialButton number_4 = dialogView.findViewById(R.id.btn_cashin_4);
+                MaterialButton number_5 = dialogView.findViewById(R.id.btn_cashin_5);
+                MaterialButton number_6 = dialogView.findViewById(R.id.btn_cashin_6);
+                MaterialButton number_7 = dialogView.findViewById(R.id.btn_cashin_7);
+                MaterialButton number_8 = dialogView.findViewById(R.id.btn_cashin_8);
+                MaterialButton number_9 = dialogView.findViewById(R.id.btn_cashin_9);
+                MaterialButton number_0 = dialogView.findViewById(R.id.btn_cashin_0);
 
                 number_1.setOnClickListener(v113 -> amount.append("1"));
                 number_2.setOnClickListener(v112 -> amount.append("2"));
@@ -153,13 +158,13 @@ public class FinancialRepActivity extends AppCompatActivity {
                 btn_ok.setOnClickListener(v14 -> {
 
                     addPosition.dismiss();
-                    int fiscalManager = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork", BaseEnum.NONE_SELECTED_FISCAL_MODE);
+                    int fiscalManager = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork", BaseEnum.FISCAL_SERVICE);
 
                     if(fiscalManager == BaseEnum.FISCAL_DEVICE){
                         if(myFiscalDevice != null && myFiscalDevice.isConnectedDeviceV2()){
                             try {
                                 Double newAmount = Double.valueOf(amount.getText().toString());
-                                cash_IN_OUT(String.format("%.2f", newAmount));
+                                cash_IN_OUT(String.format("%.2f", newAmount),newAmount);
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -181,7 +186,22 @@ public class FinancialRepActivity extends AppCompatActivity {
                         addPosition.dismiss();
                     }
                 });
+
+                addPosition.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
                 addPosition.show();
+
+                DisplayMetrics displayMetrics = new DisplayMetrics();
+                getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+                int displayWidth = displayMetrics.widthPixels;
+//        int displayHeight = displayMetrics.heightPixels;
+                WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
+                layoutParams.copyFrom(addPosition.getWindow().getAttributes());
+                int dialogWindowWidth = (int) (displayWidth * 0.4f);
+//        int dialogWindowHeight = (int) (displayHeight * 0.5f);
+                layoutParams.width = dialogWindowWidth;
+                layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+                addPosition.getWindow().setAttributes(layoutParams);
+
             }
             else
                 postMessage("Смена закрыта или не действительна!");
@@ -199,21 +219,21 @@ public class FinancialRepActivity extends AppCompatActivity {
                 addPosition.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 
                 final TextView amount = dialogView.findViewById(R.id.et_input_data);
-                Button btn_Cancel = dialogView.findViewById(R.id.btn_cancel_cashout);
-                Button btn_ok = dialogView.findViewById(R.id.btn_ok_cashout);
-                Button btn_clear = dialogView.findViewById(R.id.btn_cashout_clear);
-                Button btn_point = dialogView.findViewById(R.id.btn_add_point);
+                ImageButton btn_Cancel = dialogView.findViewById(R.id.btn_cancel_cashout);
+                MaterialButton btn_ok = dialogView.findViewById(R.id.btn_ok_cashout);
+                MaterialButton btn_clear = dialogView.findViewById(R.id.btn_cashout_clear);
+                MaterialButton btn_point = dialogView.findViewById(R.id.btn_add_point);
 
-                Button number_1 = dialogView.findViewById(R.id.btn_cashout_1);
-                Button number_2 = dialogView.findViewById(R.id.btn_cashout_2);
-                Button number_3 = dialogView.findViewById(R.id.btn_cashout_3);
-                Button number_4 = dialogView.findViewById(R.id.btn_cashout_4);
-                Button number_5 = dialogView.findViewById(R.id.btn_cashout_5);
-                Button number_6 = dialogView.findViewById(R.id.btn_cashout_6);
-                Button number_7 = dialogView.findViewById(R.id.btn_cashout_7);
-                Button number_8 = dialogView.findViewById(R.id.btn_cashout_8);
-                Button number_9 = dialogView.findViewById(R.id.btn_cashout_9);
-                Button number_0 = dialogView.findViewById(R.id.btn_cashout_0);
+                MaterialButton number_1 = dialogView.findViewById(R.id.btn_cashout_1);
+                MaterialButton number_2 = dialogView.findViewById(R.id.btn_cashout_2);
+                MaterialButton number_3 = dialogView.findViewById(R.id.btn_cashout_3);
+                MaterialButton number_4 = dialogView.findViewById(R.id.btn_cashout_4);
+                MaterialButton number_5 = dialogView.findViewById(R.id.btn_cashout_5);
+                MaterialButton number_6 = dialogView.findViewById(R.id.btn_cashout_6);
+                MaterialButton number_7 = dialogView.findViewById(R.id.btn_cashout_7);
+                MaterialButton number_8 = dialogView.findViewById(R.id.btn_cashout_8);
+                MaterialButton number_9 = dialogView.findViewById(R.id.btn_cashout_9);
+                MaterialButton number_0 = dialogView.findViewById(R.id.btn_cashout_0);
 
                 number_1.setOnClickListener(v114 -> amount.append("1"));
                 number_2.setOnClickListener(v115 -> amount.append("2"));
@@ -245,11 +265,7 @@ public class FinancialRepActivity extends AppCompatActivity {
                     if(myFiscalDevice != null && myFiscalDevice.isConnectedDeviceV2()){
                         try {
                             Double newAmount = -1 * Double.valueOf(amount.getText().toString());
-                            if(cash_IN_OUT(String.format("%.2f", newAmount))){
-
-//                                        mRealm.executeTransaction(realm -> {
-//                                             realm.insert();
-//                                         });
+                            if(cash_IN_OUT(String.format("%.2f", newAmount),newAmount)){
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -262,7 +278,20 @@ public class FinancialRepActivity extends AppCompatActivity {
                 });
 
                 btn_Cancel.setOnClickListener(v127 -> addPosition.dismiss());
+                addPosition.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
                 addPosition.show();
+
+                DisplayMetrics displayMetrics = new DisplayMetrics();
+                getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+                int displayWidth = displayMetrics.widthPixels;
+//        int displayHeight = displayMetrics.heightPixels;
+                WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
+                layoutParams.copyFrom(addPosition.getWindow().getAttributes());
+                int dialogWindowWidth = (int) (displayWidth * 0.4f);
+//        int dialogWindowHeight = (int) (displayHeight * 0.5f);
+                layoutParams.width = dialogWindowWidth;
+                layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+                addPosition.getWindow().setAttributes(layoutParams);
             }
             else
                 postMessage("Смена закрыта или не действительна!");
@@ -279,7 +308,7 @@ public class FinancialRepActivity extends AppCompatActivity {
         Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
     }
     //Cash in / cash out
-    private boolean cash_IN_OUT(String valueOfCurrency) {
+    private boolean cash_IN_OUT(String valueOfCurrency,double value) {
         try {
             // cashInSafe Holds result of operation:
             //0-cashSum
@@ -287,7 +316,7 @@ public class FinancialRepActivity extends AppCompatActivity {
             //2-cashOut
             Double[] cashInSafe = new Double[3];
 
-            valueOfCurrency=valueOfCurrency.replace(",",".");
+            valueOfCurrency = valueOfCurrency.replace(",",".");
             cashInSafe = new cmdReceipt().cashInCashOut(Double.valueOf(valueOfCurrency), false);
 
 //            AlertDialog.Builder builder1 = new AlertDialog.Builder(getContext());
@@ -303,8 +332,25 @@ public class FinancialRepActivity extends AppCompatActivity {
 //            AlertDialog alert11 = builder1.create();
 //            alert11.show();
 
-            if (cashInSafe[0] != null)
+            if (cashInSafe[0] != null){
+                Realm.getDefaultInstance().executeTransaction(realm -> {
+                    Shift shift = realm.where(Shift.class).equalTo("id",BaseApplication.getInstance().getShift().getId()).findFirst();
+                    if(shift != null){
+                        if(value > 0){
+                            shift.setCashIn(shift.getCashIn() + value);
+                            BaseApplication.getInstance().getShift().setCashIn(shift.getCashIn());
+
+                        }
+                        else {
+                            double absValue = Math.abs(value);
+                            shift.setCashOut(shift.getCashOut() + absValue);
+                            BaseApplication.getInstance().getShift().setCashOut(shift.getCashOut());
+                        }
+                    }
+                });
+
                 return true;
+            }
             else
                 return false;
         } catch (Exception e) {

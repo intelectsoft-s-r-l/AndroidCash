@@ -19,12 +19,14 @@ public class Bill extends RealmObject {
     private int state;  // 0 - opened , 1 - closed , 2 - deleted
     private String currentSoftwareVersion;
     private String author;   //user id
+    private String authorName;   //user id
     private double sumWithDiscount;
     private double sum;
-    private boolean isSinchronized;
+    private boolean isSynchronized;
     private RealmList<BillString> billStrings;
     private RealmList<BillPaymentType> billPaymentTypes;
     private String closedBy;
+    private String closedByName;
     private String lastEditAuthor;
     private long lastEditDate;
     private int inProcessOfSync;    //0 - este finisat cu succes , 1- e in proces , 2 - nu este in proces
@@ -142,12 +144,12 @@ public class Bill extends RealmObject {
         this.sum = sum;
     }
 
-    public boolean isSinchronized() {
-        return isSinchronized;
+    public boolean isSynchronized() {
+        return isSynchronized;
     }
 
-    public void setSinchronized(boolean sinchronized) {
-        isSinchronized = sinchronized;
+    public void setSynchronized(boolean aSynchronized) {
+        isSynchronized = aSynchronized;
     }
 
     public RealmList<BillString> getBillStrings() {
@@ -204,5 +206,21 @@ public class Bill extends RealmObject {
 
     public void setExpanded(boolean expanded) {
         this.expanded = expanded;
+    }
+
+    public String getAuthorName() {
+        return authorName;
+    }
+
+    public void setAuthorName(String authorName) {
+        this.authorName = authorName;
+    }
+
+    public String getClosedByName() {
+        return closedByName;
+    }
+
+    public void setClosedByName(String closedByName) {
+        this.closedByName = closedByName;
     }
 }

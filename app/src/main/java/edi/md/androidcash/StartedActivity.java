@@ -448,7 +448,7 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
         //check if it device support NFC
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
         if (nfcAdapter == null)
-            Toast.makeText(this, "This device doesn't support NFC.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.message_device_not_support_NFC, Toast.LENGTH_LONG).show();
 
         //ask necessary permisions
         AskForPermissions();
