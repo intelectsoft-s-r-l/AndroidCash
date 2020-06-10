@@ -25,6 +25,8 @@ public class Shift extends RealmObject {
     private boolean isSended;
     private long needClose;
     private int billCounter;
+    private double cashIn;
+    private double cashOut;
 
     public String getId() {
         return id;
@@ -136,5 +138,21 @@ public class Shift extends RealmObject {
 
     public void setClosedByName(String closedByName) {
         this.closedByName = closedByName;
+    }
+
+    public double getCashIn() {
+        return cashIn;
+    }
+
+    public void setCashIn(double cashIn) {
+        this.cashIn = cashIn;
+    }
+
+    public double getCashOut() {
+        return cashOut;
+    }
+
+    public void setCashOut(double cashOut) {
+        this.cashOut = cashOut;
     }
 }

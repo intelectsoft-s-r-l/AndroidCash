@@ -24,8 +24,6 @@ import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 
 import edi.md.androidcash.NetworkUtils.RetrofitRemote.CommandServices;
-import edi.md.androidcash.RealmHelper.History;
-import edi.md.androidcash.Utils.BaseEnum;
 import edi.md.androidcash.Utils.UpdateHelper;
 import io.fabric.sdk.android.Fabric;
 
@@ -297,7 +295,7 @@ public class BaseApplication extends Application {
 
                     resCloseBill = resCloseBill.trim();
 
-                    postToast("resCloseBill after trim and replace: '" + resCloseBill + "'");
+                    postToast("Receipt number: " + resCloseBill + " was printed");
 
                     return Integer.valueOf(resCloseBill);
                 }
@@ -311,22 +309,22 @@ public class BaseApplication extends Application {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            switch (e.getMessage()) {
-                case "-111024":
+            if(e.getMessage() != null){
+                if(e.getMessage().contains("-111024")){
                     postToast("Registration mode error: End of 24 hour blocking");
-                    break;
-                case "-111003":
+                }
+                else if(e.getMessage().contains("-111003")){
                     postToast("Registration mode error: Cannot do operation");
-                    break;
-                case "-111018":
+                }
+                else if(e.getMessage().contains("-111018")){
                     postToast("Registration mode error: Payment is initiated");
-                    break;
-                case "-112001":
+                }
+                else if(e.getMessage().contains("-112001")){
                     postToast("Fiscal printer error: Fiscal printer command invalid syntax");
-                    break;
-                default:
+                }
+                else {
                     postToast(e.getMessage() + " print fiscal check");
-                    break;
+                }
             }
             return Integer.valueOf(resCloseBill);
         }
@@ -394,7 +392,7 @@ public class BaseApplication extends Application {
 
         String uri = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getString("FiscalServiceAddress","0.0.0.0:1111");
 
-        int[] result = {101};
+
 
         CommandServices commandServices = ApiUtils.commandFPService(uri);
         Call<SimpleResult> call = commandServices.printBill(printBillFiscalService);
@@ -404,15 +402,19 @@ public class BaseApplication extends Application {
             public void onResponse(Call<SimpleResult> call, Response<SimpleResult> response) {
                 SimpleResult result1 = response.body();
                 if(result1 != null){
-                    result[0] = result1.getErrorCode();
+                    if(result1.getErrorCode() == 0){
+                        MainActivity.doAfterCloseBill();
+                    }
+                    else{
+                        postToast("Error code: " + result1.getErrorCode());
+                    }
                 }
             }
 
             @Override
             public void onFailure(Call<SimpleResult> call, Throwable t) {
-                result[0] = 111;
+                postToast("Error service: " + t.getMessage());
             }
-
         });
     }
 
@@ -479,13 +481,16 @@ public class BaseApplication extends Application {
     }
 
     private void cancelSale(final cmdReceipt.FiscalReceipt fiscalReceipt) {
+        postToast(" eu is canncel sales");
         try {
             if (fiscalReceipt.isOpen()) {
+                postToast("fiscal is open");
                 fiscalReceipt.closeFiscalReceipt();
                 return;
             }
 
             if (fiscalReceipt.isOpen()) {
+                postToast("fiscal is open a doua oara");
                 final Double owedSum = new cmdReceipt.FiscalTransaction().getNotPaid();//owedSum=Amount-Tender
                 Double payedSum = new cmdReceipt.FiscalTransaction().getPaid();
                 //If a TOTAL in the opened receipt has not been set, it will be canceled
@@ -500,7 +505,7 @@ public class BaseApplication extends Application {
                     AlertDialog.Builder dialog = new AlertDialog.Builder(this);
                     dialog.setTitle("Cancel opened receipt.");
                     String sQuestion = String.format("Cannot cancel receipt, payment has already started.\n\r" +
-                            "Do you want to pay the owed sum: %2.2f -and close it?", owedSum);
+                            "Doц you want to pay the owed sum: %2.2f -and close it?", owedSum);
                     dialog.setMessage(sQuestion);
                     dialog.setPositiveButton("yes", new DialogInterface.OnClickListener() {
                         @Override
@@ -513,7 +518,7 @@ public class BaseApplication extends Application {
                                 );
                                 fiscalReceipt.closeFiscalReceipt();
                             } catch (Exception e) {
-                                if(e.getMessage().equals("-111018"))
+                                if(e.getMessage().contains("-111018"))
                                     postToast("Cancel sales! Registration mode error: Payment is initiated");
                                 else
                                     postToast(e.getMessage());
@@ -699,7 +704,7 @@ public class BaseApplication extends Application {
                             mRealm.executeTransaction(realm -> {
                                 Bill bilRealm = realm.where(Bill.class).equalTo("id",bilId).findFirst();
                                 if(bilRealm != null){
-                                    bilRealm.setSinchronized(true);
+                                    bilRealm.setSynchronized(true);
                                 }
                             });
                         }
@@ -709,7 +714,7 @@ public class BaseApplication extends Application {
                             mRealm.executeTransaction(realm -> {
                                 Bill bilRealm = realm.where(Bill.class).equalTo("id",bilId).findFirst();
                                 if(bilRealm != null){
-                                    bilRealm.setSinchronized(false);
+                                    bilRealm.setSynchronized(false);
                                     bilRealm.setInProcessOfSync(2);
                                 }
 
@@ -740,7 +745,7 @@ public class BaseApplication extends Application {
                     RealmResults<Bill> resultBills = realm.where(Bill.class)
                             .equalTo("state",1)
                             .and()
-                            .equalTo("isSinchronized",false)
+                            .equalTo("isSynchronized",false)
                             .findAll();
 
                     if(!resultBills.isEmpty())

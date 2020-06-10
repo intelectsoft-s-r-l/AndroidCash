@@ -445,7 +445,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/divider14"
             app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/baseline_search_black_48dp" />
+            app:srcCompat="@drawable/search_black_36dp" />
 
         <ImageButton
             android:id="@+id/btn_add_item_to_bill"
@@ -461,7 +461,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/divider14"
             app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/home_black_36dp" />
+            app:srcCompat="@drawable/add_shopping_cart_black_36dp" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

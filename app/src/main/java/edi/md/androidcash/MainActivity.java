@@ -1,7 +1,7 @@
 package edi.md.androidcash;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.Dialog;
 import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
@@ -36,7 +36,6 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
@@ -60,7 +59,6 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.view.GravityCompat;
 import androidx.core.view.MenuItemCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
 import androidx.viewpager.widget.ViewPager;
@@ -207,13 +205,14 @@ public class MainActivity extends AppCompatActivity{
     private ConstraintLayout csl_finReport;
     private ConstraintLayout csl_history;
     private ConstraintLayout csl_settings;
-    private ConstraintLayout csl_finOper;
 
     public static DisplayMetrics displayMetrics;
 
     private ProgressDialog pgH;
     private List<WorkplaceEntry> workplaceEntryList = new ArrayList<>();
     private SharedPreferences sharedPreferenceSettings, sharedPreferenceWorkPlace;
+
+    private static boolean finalBillPay = true;
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
 
@@ -360,7 +359,8 @@ public class MainActivity extends AppCompatActivity{
         workPlaceID = getSharedPreferences(SharedPrefWorkPlaceSettings,MODE_PRIVATE).getString("WorkPlaceID",null);
         if (workPlaceID != null) {
             viewPager.setAdapter(null);
-            adapterRightMenu = new TabQuickMenuAdapter(this, getSupportFragmentManager());
+            //адаптер вкладок с права
+            adapterRightMenu = new TabQuickMenuAdapter(getSupportFragmentManager());
             viewPager.setAdapter(adapterRightMenu);
             viewPager.setOffscreenPageLimit(4);
 
@@ -376,14 +376,14 @@ public class MainActivity extends AppCompatActivity{
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
 
         if (nfcAdapter == null)
-            Toast.makeText(this, "This device doesn't support NFC.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.message_device_not_support_NFC, Toast.LENGTH_LONG).show();
 
         simpleDateFormatMD = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy");
         timeZoneMD = TimeZone.getTimeZone("Europe/Chisinau");
         simpleDateFormatMD.setTimeZone(timeZoneMD);
 
         datecsFiscalDevice = ((BaseApplication)getApplication()).getMyFiscalDevice();
-        // Initialize reader ACR
+        // Initialize reader ACRw
         mReader = new Reader(mUSBManager);
 
         mReader.setOnStateChangeListener((slotNum, prevState, currState) -> {
@@ -423,7 +423,7 @@ public class MainActivity extends AppCompatActivity{
                     initRecyclerView();
                 }
                 else{
-                    Toast.makeText(MainActivity.this, "Item not found!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, R.string.message_item_not_found, Toast.LENGTH_SHORT).show();
                     tvScanBarcode.setText("");
                 }
             }
@@ -453,19 +453,37 @@ public class MainActivity extends AppCompatActivity{
             drawer.closeDrawer(GravityCompat.START);
         });
 
+
+
         btnNewBill.setOnClickListener(v->{
             if(openedBillId != null){
                 openedBillId = null;
                 initRecyclerView();
             }
+//            pgH.setTitle("Generate bills");
+//            pgH.setIndeterminate(true);
+//            pgH.show();
+//            generateBills(800,"test");
+
+
         });
         btnAddItem.setOnClickListener(v->{
-            btnAddItem.setEnabled(false);
-            checkItem_Dialog(BaseEnum.Dialog_AddItem,btnAddItem);
+            if(!shiftOpenButtonPay){
+                btnAddItem.setEnabled(false);
+                checkItem_Dialog(BaseEnum.Dialog_AddItem,btnAddItem);
+            }
+            else
+                postToastMessage(getString(R.string.message_shift_not_active));
+
         });
         btnCheckPrice.setOnClickListener(view -> {
-            btnCheckPrice.setEnabled(false);
-            checkItem_Dialog(BaseEnum.Dialog_CheckPrice,btnCheckPrice);
+            if(!shiftOpenButtonPay){
+                btnCheckPrice.setEnabled(false);
+                checkItem_Dialog(BaseEnum.Dialog_CheckPrice,btnCheckPrice);
+            }
+            else
+                postToastMessage(getString(R.string.message_shift_not_active));
+
         });
         btnAddClient.setOnClickListener(view -> {
             View dialogView = inflater.inflate(R.layout.dialog_add_client, null);
@@ -503,11 +521,12 @@ public class MainActivity extends AppCompatActivity{
         });
         btnPay.setOnClickListener(v->{
             if(shiftOpenButtonPay){
+                btnPay.setEnabled(false);
                 new MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
-                        .setTitle("Attention!")
-                        .setMessage("Do you want open shift?")
+                        .setTitle(R.string.message_attention)
+                        .setMessage(R.string.message_open_shift)
                         .setCancelable(false)
-                        .setPositiveButton("Yes", (dialogInterface, i) -> {
+                        .setPositiveButton(R.string.btn_yes, (dialogInterface, i) -> {
                             long opened_new_shift = new Date().getTime();
                             long need_close = opened_new_shift + 28800000;
 
@@ -534,38 +553,104 @@ public class MainActivity extends AppCompatActivity{
                             startTimer(need_close - new Date().getTime());
                             functionOpenedShift();
                         })
-                        .setNegativeButton("No",((dialogInterface, i) -> {
+                        .setNegativeButton(R.string.btn_no,((dialogInterface, i) -> {
                             dialogInterface.dismiss();
+                            btnPay.setEnabled(true);
                         }))
 
                 .show();
             }
             else if(shiftClosedButtonPay){
+                btnPay.setEnabled(false);
                 new MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
-                        .setTitle("Attention!")
-                        .setMessage("Do you want close this shift?")
+                        .setTitle(R.string.message_attention)
+                        .setMessage(R.string.message_close_shift)
                         .setCancelable(false)
-                        .setPositiveButton("Yes", (dialogInterface, i) -> {
+                        .setPositiveButton(R.string.btn_yes, (dialogInterface, i) -> {
                             closeShift();
                         })
-                        .setNegativeButton("No",((dialogInterface, i) -> {
+                        .setNegativeButton(R.string.btn_no,((dialogInterface, i) -> {
                             dialogInterface.dismiss();
+                            btnPay.setEnabled(true);
                         }))
                         .show();
             }
             else if(openedBillId != null){
                 btnPay.setEnabled(false);
-                paymentBill(Double.valueOf(btnPay.getText().toString().replace("MDL ","")));
+                paymentBill(Double.parseDouble(btnPay.getText().toString().replace("MDL ","")));
             }
         });
+    }
+
+    private void generateBills(int counter, String param2) {
+        for (int j =0; j<counter; j++){
+            Bill testBill = new Bill();
+            String id =  UUID.randomUUID().toString();
+
+            BillPaymentType billPaymentType1 = new BillPaymentType();
+            String id1 =  UUID.randomUUID().toString();
+            billPaymentType1.setId(id1);
+            billPaymentType1.setBillID(id);
+            double sum1 = 10 + counter;
+            billPaymentType1.setSum(sum1);
+            billPaymentType1.setName("Cash");
+            billPaymentType1.setPaymentCode(0);
+            billPaymentType1.setPaymentTypeID("be45afb9-3719-43fe-b227-cafc2ae6b709");
+            billPaymentType1.setAuthor("84688567-9812-48cd-9194-66af184e8246");
+
+            BillPaymentType billPaymentType2 = new BillPaymentType();
+            String id2 =  UUID.randomUUID().toString();
+            billPaymentType2.setId(id2);
+            billPaymentType2.setBillID(id);
+            double sum2 = 1 + counter;
+            billPaymentType2.setSum(sum2);
+            billPaymentType2.setName("Card");
+            billPaymentType2.setPaymentCode(1);
+            billPaymentType2.setPaymentTypeID("1a6c0350-9b6c-418a-a484-701ff0174f50");
+            billPaymentType2.setAuthor("84688567-9812-48cd-9194-66af184e8246");
+
+            BillPaymentType billPaymentType3 = new BillPaymentType();
+            String id3 =  UUID.randomUUID().toString();
+            billPaymentType3.setId(id3);
+            billPaymentType3.setBillID(id);
+            double sum3 = -3000 + counter;
+            billPaymentType3.setSum(sum3);
+            billPaymentType3.setName("Cupon");
+            billPaymentType3.setPaymentCode(2);
+            billPaymentType3.setPaymentTypeID("1a6c0350-9b6c-418a-a121-701ff0174f50");
+            billPaymentType3.setAuthor("84688567-9812-48cd-9194-66af184e8246");
+
+            RealmList<BillPaymentType> listType = new RealmList<>();
+            listType.add(billPaymentType1);
+            listType.add(billPaymentType2);
+            listType.add(billPaymentType3);
+
+            testBill.setId(id);
+            testBill.setBillPaymentTypes(listType);
+            testBill.setShiftId(BaseApplication.getInstance().getShift().getId());
+            testBill.setAuthor("84688567-9812-48cd-9194-66af184e8246");
+            testBill.setSumWithDiscount(0.0);
+            testBill.setSum(0.0);
+            testBill.setState(0);
+            testBill.setSynchronized(true);
+            testBill.setState(1);
+            testBill.setCloseDate(new Date().getTime());
+            testBill.setClosedBy(BaseApplication.getInstance().getUser().getId());
+
+            mRealm.executeTransaction(realm -> {
+                realm.insert(testBill);
+            });
+
+        }
+        pgH.dismiss();
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == BaseEnum.Activity_Shifts){
-            Shift shift = BaseApplication.getInstance().getShift();
-            checkShift(shift);
+//            Shift shift = BaseApplication.getInstance().getShift();
+//            checkShift(shift);
             FragmentBills.showBillList();
         }
     }
@@ -580,10 +665,6 @@ public class MainActivity extends AppCompatActivity{
         if (!( adapterRightMenu== null)) {
             adapterRightMenu.notifyDataSetChanged();
         }
-        //check fiscal mode work is selected in settings
-//        if(getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt(ModeFiscalWork, BaseEnum.NONE_SELECTED_FISCAL_MODE) == BaseEnum.FISCAL_SERVICE){
-////            initFiscalService();
-//        }
 
         //check nfc adapter from device
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
@@ -592,16 +673,12 @@ public class MainActivity extends AppCompatActivity{
             nfcAdapter.enableForegroundDispatch(this, pendingIntent, writeTagFilters, null);
         }
 
-//        if(myFiscalDevice == null || !myFiscalDevice.isConnectedDeviceV2()){
-//            fiscal_printer.setImageDrawable(getResources().getDrawable(R.drawable.fiscal_off));
-//        }
-
         Shift shift = BaseApplication.getInstance().getShift();
         checkShift(shift);
 
         workPlaceID = getSharedPreferences(SharedPrefWorkPlaceSettings,MODE_PRIVATE).getString("WorkPlaceID",null);
         if (workPlaceID == null) {
-            pgH.setMessage("loading workplace...");
+            pgH.setMessage(getString(R.string.message_loading_workplace));
             pgH.setIndeterminate(true);
             pgH.show();
 
@@ -610,12 +687,12 @@ public class MainActivity extends AppCompatActivity{
             getSyncWorkplace(uri,tokenId);
         }
         else{
-            tvUserNameNav.setText(BaseApplication.getInstance().getUser().getFirstName() + " " +  BaseApplication.getInstance().getUser().getLastName());
+            tvUserNameNav.setText(String.format("%s %s", BaseApplication.getInstance().getUser().getFirstName(), BaseApplication.getInstance().getUser().getLastName()));
             tvUserEmailNav.setText(BaseApplication.getInstance().getUser().getEmail());
         }
     }
 
-    private void checkShift( Shift shift){
+    private void checkShift(Shift shift){
 
         if(shift != null){
             boolean shiftOpened = shift.isClosed();
@@ -626,7 +703,7 @@ public class MainActivity extends AppCompatActivity{
                 //if shift is opened and time to close is smaller current time, when shift is valid
                 shiftOpenButtonPay = false;
 //                FragmentBills.showBillList();
-                btnPay.setText("MDL 0.00");
+                btnPay.setText(R.string.text_mdl_0);
 
             }
             else if(!shiftOpened && currentTime > shiftNeedClose && shiftNeedClose != 0){
@@ -636,17 +713,17 @@ public class MainActivity extends AppCompatActivity{
 
                 //TODO set other function when shift is not valid
 
-                btnPay.setText("Close shift");
+                btnPay.setText(R.string.text_close_shift);
                 shiftClosedButtonPay = true;
 
                 new MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
-                        .setTitle("Attention!")
-                        .setMessage("Shift has expired, want to close?")
+                        .setTitle(R.string.message_attention)
+                        .setMessage(R.string.message_shift_expired_want_close)
                         .setCancelable(false)
-                        .setPositiveButton("Yes", (dialogInterface, i) -> {
+                        .setPositiveButton(R.string.btn_yes, (dialogInterface, i) -> {
                             closeShift();
                         })
-                        .setNegativeButton("No",((dialogInterface, i) -> {
+                        .setNegativeButton(R.string.btn_no,((dialogInterface, i) -> {
                             dialogInterface.dismiss();
                         }))
                         .show();
@@ -658,7 +735,7 @@ public class MainActivity extends AppCompatActivity{
             cancelTimer();
 
             //TODO set other function when shift is not opened
-            btnPay.setText("Open shift");
+            btnPay.setText(R.string.text_open_shift);
             shiftOpenButtonPay = true;
         }
     }
@@ -709,7 +786,7 @@ public class MainActivity extends AppCompatActivity{
                         pgH.dismiss();
 
                         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                        builder.setTitle("Select workplace item");
+                        builder.setTitle(R.string.text_select_workplace);
                         builder.setCancelable(false);
                         builder.setAdapter(adapterDialog, (dialog, position) -> {
                             sharedPreferenceWorkPlace.edit().putString("WorkPlaceID", workplaceEntryList.get(position).getID()).apply();
@@ -738,8 +815,8 @@ public class MainActivity extends AppCompatActivity{
                     pgH.dismiss();
                     // не прав на просмотр рабочих мест
                         new MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
-                                .setTitle("Attention!")
-                                .setMessage("No rights to view workplace! You want to enter other login?")
+                                .setTitle(R.string.message_attention)
+                                .setMessage(R.string.message_no_right_to_read_workplace)
                                 .setCancelable(false)
                                 .setPositiveButton("YES", (dialogInterface, i) -> {
                                     View dialogView = inflater.inflate(R.layout.dialog_login_user, null);
@@ -753,7 +830,7 @@ public class MainActivity extends AppCompatActivity{
                                     MaterialButton btnLogin = dialogView.findViewById(R.id.btn_login_user_form);
 
                                     btnLogin.setOnClickListener(view -> {
-                                        pgH.setMessage("loading...");
+                                        pgH.setMessage(getString(R.string.text_loading));
                                         pgH.setIndeterminate(true);
                                         pgH.show();
 
@@ -763,7 +840,7 @@ public class MainActivity extends AppCompatActivity{
 
                                     dialogInterface.dismiss();
                                 })
-                                .setNegativeButton("NO",(dialogInterface, i) -> {
+                                .setNegativeButton(R.string.btn_no,(dialogInterface, i) -> {
 
                                 })
                                 .show();
@@ -778,7 +855,7 @@ public class MainActivity extends AppCompatActivity{
                 }
                 else{
                     pgH.dismiss();
-                    Toast.makeText(MainActivity.this, "Errore" + errorecode, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, getString(R.string.message_error) + errorecode, Toast.LENGTH_SHORT).show();
                 }
             }
             @Override
@@ -817,26 +894,20 @@ public class MainActivity extends AppCompatActivity{
                     }
                     else{
                         AlertDialog.Builder dialog_user = new AlertDialog.Builder(context);
-                        dialog_user.setTitle("Atentie!");
-                        dialog_user.setMessage("Eroare!Codul: " + token.getErrorCode());
-                        dialog_user.setPositiveButton("Ok", (dialog, which) -> {
+                        dialog_user.setTitle(R.string.message_attention);
+                        dialog_user.setMessage(getString(R.string.message_error_code)+ token.getErrorCode());
+                        dialog_user.setPositiveButton(R.string.btn_ok, (dialog, which) -> {
                             dialog.dismiss();
-                        });
-                        dialog_user.setNeutralButton("Oricum intra",(dialog,which) -> {
-
                         });
                         dialog_user.show();
                     }
                 }
                 else{
                     AlertDialog.Builder dialog_user = new AlertDialog.Builder(context);
-                    dialog_user.setTitle("Atentie!");
-                    dialog_user.setMessage("Nu este raspuns de la serviciu!");
-                    dialog_user.setPositiveButton("Ok", (dialog, which) -> {
+                    dialog_user.setTitle(R.string.message_attention);
+                    dialog_user.setMessage(R.string.message_doesn_response_from_service);
+                    dialog_user.setPositiveButton(R.string.btn_ok, (dialog, which) -> {
                         dialog.dismiss();
-                    });
-                    dialog_user.setNeutralButton("Oricum intra",(dialog,which) -> {
-
                     });
                     dialog_user.show();
                 }
@@ -882,6 +953,7 @@ public class MainActivity extends AppCompatActivity{
                         | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
     }
 
+    @SuppressLint("DefaultLocale")
     public static void draweOpen(Bill bill){
         drawer.openDrawer(GravityCompat.END);
 
@@ -898,10 +970,10 @@ public class MainActivity extends AppCompatActivity{
 
         btnDeleteBill.setOnClickListener(view -> {
             new MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
-                    .setTitle("Attention deleting bill!")
-                    .setMessage("Do you want delete it bill?")
+                    .setTitle(R.string.message_attention_delete_bill)
+                    .setMessage(R.string.message_want_delete_bill)
                     .setCancelable(false)
-                    .setPositiveButton("Yes", (dialogInterface, i) -> {
+                    .setPositiveButton(R.string.btn_yes, (dialogInterface, i) -> {
                         mRealm.executeTransaction(realm -> {
                            Bill bils =  realm.where(Bill.class).equalTo("id", bill.getId()).findFirst();
                            if(bils != null){
@@ -911,16 +983,23 @@ public class MainActivity extends AppCompatActivity{
 
                                History history = new History();
                                history.setDate(new Date().getTime());
-                               history.setMsg("Bill deleted: " + bill.getShiftReceiptNumSoftware());
+                               history.setMsg(context.getString(R.string.message_bill_deleted) + bill.getShiftReceiptNumSoftware());
                                history.setType(BaseEnum.History_DeletedBill);
                                realm.insert(history);
+
+
                            }
 
                         });
+
+                        if(bill.getId().equals(openedBillId)){
+                            openedBillId = null;
+                            initRecyclerView();
+                        }
                         drawer.closeDrawer(GravityCompat.END);
 
-                        Snackbar.make(view, "Bill " + bill.getShiftReceiptNumSoftware() + " is deleted!", Snackbar.LENGTH_LONG)
-                                .setAction("UNDO", new View.OnClickListener() {
+                        Snackbar.make(view, context.getString(R.string.text_bill) + bill.getShiftReceiptNumSoftware() + context.getString(R.string.message_is_deleted), Snackbar.LENGTH_LONG)
+                                .setAction(R.string.text_undo, new View.OnClickListener() {
                                     @Override
                                     public void onClick(View view) {
                                         mRealm.executeTransaction(realm -> {
@@ -932,7 +1011,7 @@ public class MainActivity extends AppCompatActivity{
 
                                                 History history = new History();
                                                 history.setDate(new Date().getTime());
-                                                history.setMsg("Bill returned state open: " + bill.getShiftReceiptNumSoftware());
+                                                history.setMsg(context.getString(R.string.message_bill_returned_open) + bill.getShiftReceiptNumSoftware());
                                                 history.setType(BaseEnum.History_RecreatBill);
                                                 realm.insert(history);
                                             }
@@ -943,7 +1022,7 @@ public class MainActivity extends AppCompatActivity{
 
 
                     })
-                    .setNegativeButton("No",((dialogInterface, i) -> {
+                    .setNegativeButton(R.string.btn_no,((dialogInterface, i) -> {
                         dialogInterface.dismiss();
                     }))
                     .show();
@@ -955,7 +1034,7 @@ public class MainActivity extends AppCompatActivity{
             long currentTime = new Date().getTime();
 
             if(!shiftOpened && currentTime > shiftNeedClose && shiftNeedClose != 0){
-                Snackbar.make(view, "Shift has expired!", Snackbar.LENGTH_SHORT).show();
+                Snackbar.make(view, R.string.message_shift_expired, Snackbar.LENGTH_SHORT).show();
             }
             else{
                 openedBillId = bill.getId();
@@ -999,7 +1078,7 @@ public class MainActivity extends AppCompatActivity{
         searchView.setOnSearchClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Toast.makeText(MainActivity.this, "click setOnSearchClickListener", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(MainActivity.this, "click setOnSearchClickListener", Toast.LENGTH_SHORT).show();
                 TabLayout.Tab tabs = tabLayout.getTabAt(1);
                 tabLayout.selectTab(tabs);
                 hideSystemUI();
@@ -1034,6 +1113,7 @@ public class MainActivity extends AppCompatActivity{
     }
 
     static View.OnClickListener clickListenerDynamicPayButton = new View.OnClickListener() {
+        @SuppressLint("DefaultLocale")
         @Override
         public void onClick(View v) {
             PaymentType paymentType = (PaymentType) v.getTag();
@@ -1070,12 +1150,14 @@ public class MainActivity extends AppCompatActivity{
 
             double inputSum = 0;
             try {
-                inputSum = Double.valueOf(tvInputSumBillForPayment.getText().toString());
-            } catch (Exception e) {
-                inputSum = Double.valueOf(tvInputSumBillForPayment.getText().toString().replace(",", "."));
+                inputSum = Double.parseDouble(tvInputSumBillForPayment.getText().toString());
+            }
+            catch (Exception e) {
+                inputSum = Double.parseDouble(tvInputSumBillForPayment.getText().toString().replace(",", "."));
             }
 
             if ((billPaymentedSum + inputSum) >= sumBillToPay) {
+
                 int modeFiscalWork = context.getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork",BaseEnum.FISCAL_SERVICE);
 
                 if (printFiscalCheck) {
@@ -1087,6 +1169,7 @@ public class MainActivity extends AppCompatActivity{
                         if(fiscalDevice != null && fiscalDevice.isConnectedDeviceV2()){
                             resultCloseReceip = BaseApplication.getInstance().printFiscalReceipt(fiscalReceipt, billStrings, paymentType, inputSum, billPaymentTypes,bilNumber);
                             if (resultCloseReceip != 0) {
+                                finalBillPay = true;
                                 BillPaymentType billPaymentType= new BillPaymentType();
                                 billPaymentType.setId(UUID.randomUUID().toString());
                                 billPaymentType.setBillID(openedBillId);
@@ -1105,6 +1188,7 @@ public class MainActivity extends AppCompatActivity{
                                         bill.setState(1);
                                         bill.setCloseDate(new Date().getTime());
                                         bill.setClosedBy(BaseApplication.getInstance().getUser().getId());
+                                        bill.setClosedByName(BaseApplication.getInstance().getUser().getFullName());
                                         bill.getBillPaymentTypes().add(billPaymentType);
 
                                     }
@@ -1122,7 +1206,7 @@ public class MainActivity extends AppCompatActivity{
                             }
                         }
                         else{
-                            Toast.makeText(context, "Aparatul fiscal nu este conectat!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(context, R.string.message_fiscal_device_not_connected, Toast.LENGTH_SHORT).show();
                         }
                     }
                     if(modeFiscalWork == BaseEnum.FISCAL_SERVICE){
@@ -1145,16 +1229,11 @@ public class MainActivity extends AppCompatActivity{
                                 bill.setState(1);
                                 bill.setCloseDate(new Date().getTime());
                                 bill.setClosedBy(BaseApplication.getInstance().getUser().getId());
+                                bill.setClosedByName(BaseApplication.getInstance().getUser().getFullName());
                                 bill.getBillPaymentTypes().add(billPaymentType);
 
                             }
                         });
-                        initRecyclerView();
-
-                        billPaymentedSum = 0;
-                        paymentDialog.dismiss();
-                        btnPay.setEnabled(true);
-                        openedBillId = null;
                     }
 
                 }
@@ -1165,7 +1244,7 @@ public class MainActivity extends AppCompatActivity{
                     billPaymentType.setName(paymentType.getName());
                     billPaymentType.setPaymentCode(Integer.valueOf(code));
                     billPaymentType.setPaymentTypeID(paymentType.getExternalId());
-                    billPaymentType.setSum(sumBillToPay - billPaymentedSum);
+                    billPaymentType.setSum(inputSum);
                     billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
                     billPaymentType.setCreateDate(new Date().getTime());
 
@@ -1176,18 +1255,15 @@ public class MainActivity extends AppCompatActivity{
                             bill.setState(1);
                             bill.setCloseDate(new Date().getTime());
                             bill.setClosedBy(BaseApplication.getInstance().getUser().getId());
+                            bill.setClosedByName(BaseApplication.getInstance().getUser().getFullName());
                             bill.getBillPaymentTypes().add(billPaymentType);
                         }
                     });
-                    initRecyclerView();
-
-                    billPaymentedSum = 0;
-                    paymentDialog.dismiss();
-                    btnPay.setEnabled(true);
-                    openedBillId = null;
+                    doAfterCloseBill();
                 }
             }
             else if ((billPaymentedSum + inputSum) < sumBillToPay) {
+                finalBillPay = false;
                 BillPaymentType billPaymentType = new BillPaymentType();
                 billPaymentType.setId(UUID.randomUUID().toString());
                 billPaymentType.setBillID(openedBillId);
@@ -1212,6 +1288,19 @@ public class MainActivity extends AppCompatActivity{
         }
     };
 
+    public static void doAfterCloseBill(){
+        initRecyclerView();
+
+        billPaymentedSum = 0;
+        paymentDialog.dismiss();
+        if(drawer.isDrawerOpen(GravityCompat.END))
+            drawer.closeDrawer(GravityCompat.END);
+        btnPay.setEnabled(true);
+        openedBillId = null;
+        finalBillPay = true;
+    }
+
+    @SuppressLint({"DefaultLocale", "SetTextI18n"})
     public static void deleteBillString(BillString billString){
         mRealm.executeTransaction(realm -> {
 
@@ -1228,12 +1317,13 @@ public class MainActivity extends AppCompatActivity{
             }
             History history = new History();
             history.setDate(new Date().getTime());
-            history.setMsg("Deleted from bill item" + billString.getAssortmentFullName() + " - " + billString.getSumWithDiscount());
+            history.setMsg(context.getString(R.string.message_delete_bill_string) + billString.getAssortmentFullName() + " - " + billString.getSumWithDiscount());
             history.setType(BaseEnum.History_DeletedFromBill);
             realm.insert(history);
         });
     }
 
+    @SuppressLint({"SetTextI18n", "DefaultLocale"})
     public static void editLineCount(BillString billString, double sumWithDiscount, double sum, double quantity){
         mRealm.executeTransaction(realm -> {
             billString.setQuantity(quantity);
@@ -1242,7 +1332,7 @@ public class MainActivity extends AppCompatActivity{
 
             History history = new History();
             history.setDate(new Date().getTime());
-            history.setMsg("Change count for item: " + billString.getAssortmentFullName() + " + " + quantity );
+            history.setMsg(context.getString(R.string.message_change_count_bill_string) + billString.getAssortmentFullName() + " + " + quantity );
             history.setType(BaseEnum.History_ChangeItemCount);
             realm.insert(history);
 
@@ -1300,12 +1390,13 @@ public class MainActivity extends AppCompatActivity{
             bill.setId(uid);
             bill.setCreateDate(new Date().getTime());
             bill.setShiftReceiptNumSoftware(shift.getBillCounter() + 1);
-            bill.setAuthor( BaseApplication.getInstance().getUser().getId());
+            bill.setAuthor(BaseApplication.getInstance().getUser().getId());
+            bill.setAuthorName(BaseApplication.getInstance().getUser().getFullName());
             bill.setSumWithDiscount(0.0);
             bill.setSum(0.0);
             bill.setState(0);
             bill.setShiftId(shift.getId());
-            bill.setSinchronized(false);
+            bill.setSynchronized(false);
             String version ="0.0";
             try {
                 PackageInfo pInfo = BaseApplication.getInstance().getPackageManager().getPackageInfo(BaseApplication.getInstance().getPackageName(), 0);
@@ -1324,7 +1415,7 @@ public class MainActivity extends AppCompatActivity{
 
                 History createdBill = new History();
                 createdBill.setDate(bill.getCreateDate());
-                createdBill.setMsg("Bill created No:" + bill.getShiftReceiptNumSoftware());
+                createdBill.setMsg(context.getString(R.string.message_bill_created_nr) + bill.getShiftReceiptNumSoftware());
                 createdBill.setType(BaseEnum.History_CreateBill);
                 realm.insert(createdBill);
 
@@ -1332,7 +1423,7 @@ public class MainActivity extends AppCompatActivity{
             });
         }
         else{
-            Toast.makeText(MainActivity.getContext(), "Tura nu este activa", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.getContext(), R.string.message_shift_not_active, Toast.LENGTH_SHORT).show();
         }
 
         return onSucces[0];
@@ -1424,12 +1515,11 @@ public class MainActivity extends AppCompatActivity{
                 if(createBillString[0]){
                     History history = new History();
                     history.setDate(new Date().getTime());
-                    history.setMsg("Added to bil item: " + billString.getAssortmentFullName() + " + " + count  + " = " + billString.getSumWithDiscount());
+                    history.setMsg(context.getString(R.string.messaeg_added_to_bill_item) + billString.getAssortmentFullName() + " + " + count  + " = " + billString.getSumWithDiscount());
                     history.setType(BaseEnum.History_AddedToBill);
                     mRealm.executeTransaction(realm -> realm.insert(history));
                 }
             }
-
             if(updateInterface)
                 initRecyclerView();
         }
@@ -1439,63 +1529,71 @@ public class MainActivity extends AppCompatActivity{
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         //Log.d("myLogs", "KeyEvent DOWN" + event);
-        switch (event.getAction()){
-            case KeyEvent.ACTION_DOWN :{
-                switch (event.getKeyCode()) {
-                    case KeyEvent.KEYCODE_1 : {
-                        tvScanBarcode.append("1");
-                        tvScanBarcode.requestFocus();
-                        tvScanBarcode.requestFocusFromTouch();
-                    }break;
-                    case KeyEvent.KEYCODE_2 : {
-                        tvScanBarcode.append("2");
-                        tvScanBarcode.requestFocus();
-                        tvScanBarcode.requestFocusFromTouch();
-                    }break;
-                    case KeyEvent.KEYCODE_3 : {
-                        tvScanBarcode.append("3");
-                        tvScanBarcode.requestFocus();
-                        tvScanBarcode.requestFocusFromTouch();
-                    }break;
-                    case KeyEvent.KEYCODE_4 : {
-                        tvScanBarcode.append("4");
-                        tvScanBarcode.requestFocus();
-                        tvScanBarcode.requestFocusFromTouch();
-                    }break;
-                    case KeyEvent.KEYCODE_5 : {
-                        tvScanBarcode.append("5");
-                        tvScanBarcode.requestFocus();
-                        tvScanBarcode.requestFocusFromTouch();
-                    }break;
-                    case KeyEvent.KEYCODE_6 : {
-                        tvScanBarcode.append("6");
-                        tvScanBarcode.requestFocus();
-                        tvScanBarcode.requestFocusFromTouch();
-                    }break;
-                    case KeyEvent.KEYCODE_7 : {
-                        tvScanBarcode.append("7");
-                        tvScanBarcode.requestFocus();
-                        tvScanBarcode.requestFocusFromTouch();
-                    }break;
-                    case KeyEvent.KEYCODE_8 : {
-                        tvScanBarcode.append("8");
-                        tvScanBarcode.requestFocus();
-                        tvScanBarcode.requestFocusFromTouch();
-                    }break;
-                    case KeyEvent.KEYCODE_9 : {
-                        tvScanBarcode.append("9");
-                        tvScanBarcode.requestFocus();
-                        tvScanBarcode.requestFocusFromTouch();
-                    }break;
-                    case KeyEvent.KEYCODE_0 : {
-                        tvScanBarcode.append("0");
-                        tvScanBarcode.requestFocus();
-                        tvScanBarcode.requestFocusFromTouch();
-                    }break;
-                    default:break;
+        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            switch (event.getKeyCode()) {
+                case KeyEvent.KEYCODE_1: {
+                    tvScanBarcode.append("1");
+                    tvScanBarcode.requestFocus();
+                    tvScanBarcode.requestFocusFromTouch();
                 }
-            }break;
-            default:break;
+                break;
+                case KeyEvent.KEYCODE_2: {
+                    tvScanBarcode.append("2");
+                    tvScanBarcode.requestFocus();
+                    tvScanBarcode.requestFocusFromTouch();
+                }
+                break;
+                case KeyEvent.KEYCODE_3: {
+                    tvScanBarcode.append("3");
+                    tvScanBarcode.requestFocus();
+                    tvScanBarcode.requestFocusFromTouch();
+                }
+                break;
+                case KeyEvent.KEYCODE_4: {
+                    tvScanBarcode.append("4");
+                    tvScanBarcode.requestFocus();
+                    tvScanBarcode.requestFocusFromTouch();
+                }
+                break;
+                case KeyEvent.KEYCODE_5: {
+                    tvScanBarcode.append("5");
+                    tvScanBarcode.requestFocus();
+                    tvScanBarcode.requestFocusFromTouch();
+                }
+                break;
+                case KeyEvent.KEYCODE_6: {
+                    tvScanBarcode.append("6");
+                    tvScanBarcode.requestFocus();
+                    tvScanBarcode.requestFocusFromTouch();
+                }
+                break;
+                case KeyEvent.KEYCODE_7: {
+                    tvScanBarcode.append("7");
+                    tvScanBarcode.requestFocus();
+                    tvScanBarcode.requestFocusFromTouch();
+                }
+                break;
+                case KeyEvent.KEYCODE_8: {
+                    tvScanBarcode.append("8");
+                    tvScanBarcode.requestFocus();
+                    tvScanBarcode.requestFocusFromTouch();
+                }
+                break;
+                case KeyEvent.KEYCODE_9: {
+                    tvScanBarcode.append("9");
+                    tvScanBarcode.requestFocus();
+                    tvScanBarcode.requestFocusFromTouch();
+                }
+                break;
+                case KeyEvent.KEYCODE_0: {
+                    tvScanBarcode.append("0");
+                    tvScanBarcode.requestFocus();
+                    tvScanBarcode.requestFocusFromTouch();
+                }
+                break;
+                default:
+                    break;
+            }
         }
         return super.onKeyDown(keyCode, event);
     }
@@ -1629,6 +1727,7 @@ public class MainActivity extends AppCompatActivity{
 //    }
 //
 
+    @SuppressLint({"DefaultLocale", "SetTextI18n"})
     private static void initRecyclerView(){
         final RealmResults<BillString>[] results = new RealmResults[]{null};
         final Bill[] bill = new Bill[1];
@@ -1653,7 +1752,7 @@ public class MainActivity extends AppCompatActivity{
                 tvSubTotalBill.setText(String.format("%.2f", bill[0].getSum()).replace(",","."));
             }
             else{
-                btnPay.setText("MDL 0.00");
+                btnPay.setText(context.getString(R.string.text_mdl_0));
                 tvDiscountBill.setText("0.00");
                 tvSubTotalBill.setText("0.00");
             }
@@ -1661,11 +1760,13 @@ public class MainActivity extends AppCompatActivity{
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private void functionOpenedShift(){
-        postToastMessage("Shift is opened!");
+        postToastMessage(getString(R.string.message_shift_is_opened));
         shiftOpenButtonPay = false;
+        btnPay.setEnabled(true);
         FragmentBills.showBillList();
-        btnPay.setText("MDL 0.00");
+        btnPay.setText(context.getString(R.string.text_mdl_0));
     }
 
     private void findOpenedShift(){
@@ -1687,11 +1788,12 @@ public class MainActivity extends AppCompatActivity{
                 .findAll();
         if(!billEntryResult.isEmpty()){
             new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
-                    .setTitle("Attention!")
-                    .setMessage("You cannot close a shift while there are open bills!\nYou have left " + billEntryResult.size() + " open bills.")
+                    .setTitle(R.string.message_attention)
+                    .setMessage(getString(R.string.message_cannot_close_shift_bill_active) + billEntryResult.size() + getString(R.string.message_open_bills))
                     .setCancelable(false)
-                    .setPositiveButton("OKAY", (dialogInterface, i) -> {
+                    .setPositiveButton(R.string.btn_ok, (dialogInterface, i) -> {
                         dialogInterface.dismiss();
+                        btnPay.setEnabled(true);
                     })
                     .show();
         }
@@ -1727,7 +1829,8 @@ public class MainActivity extends AppCompatActivity{
             }
             shiftClosedButtonPay = false;
             shiftOpenButtonPay = true;
-            btnPay.setText("Open shift");
+            btnPay.setEnabled(true);
+            btnPay.setText(context.getString(R.string.text_open_shift));
         }
     }
 
@@ -1744,10 +1847,10 @@ public class MainActivity extends AppCompatActivity{
 
                 if(millisUntilFinished == 600000){
                     new MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
-                            .setTitle("Attention!")
+                            .setTitle(R.string.message_attention)
                             .setMessage("10 minutes are left before the shift closes.")
                             .setCancelable(false)
-                            .setPositiveButton("OKAY", (dialogInterface, i) -> {
+                            .setPositiveButton(R.string.btn_ok , (dialogInterface, i) -> {
                                 dialogInterface.dismiss();
                             })
                             .show();
@@ -1780,7 +1883,7 @@ public class MainActivity extends AppCompatActivity{
                     try {
                         item.connect();
                     } catch (Exception e) {
-                        postToastMessage("Connection error: " + e.getMessage());
+                        postToastMessage(context.getString(R.string.message_connection_error_fiscal_device) + e.getMessage());
                         return;
                     }
 
@@ -1792,7 +1895,7 @@ public class MainActivity extends AppCompatActivity{
                         } catch (IOException e1) {
                             e1.printStackTrace();
                         }
-                        postToastMessage("Error: " + e.getMessage());
+                        postToastMessage(context.getString(R.string.message_error) + e.getMessage());
                         return;
                     }
                 } finally {
@@ -1904,7 +2007,7 @@ public class MainActivity extends AppCompatActivity{
 
     public static void printZReport(){
         progressDialogPrintReport = new ProgressDialog(context,R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog);
-        progressDialogPrintReport.setTitle("Z report is in processing !!!");
+        progressDialogPrintReport.setTitle(context.getString(R.string.message_z_report_starting));
         progressDialogPrintReport.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         progressDialogPrintReport.setCancelable(false);
         progressDialogPrintReport.show();
@@ -1921,7 +2024,7 @@ public class MainActivity extends AppCompatActivity{
 
                     History history = new History();
                     history.setDate(new Date().getTime());
-                    history.setMsg("Z report: " + reportNumber[0]);
+                    history.setMsg(context.getString(R.string.message_z_report) + reportNumber[0]);
                     history.setType(BaseEnum.History_Printed_Z);
                     mRealm.executeTransaction(realm -> realm.insert(history));
                 } catch (Exception e) {
@@ -1940,15 +2043,15 @@ public class MainActivity extends AppCompatActivity{
                         dialog_summary.setView(dialogView);
                         dialog_summary.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 
-                        TextView tvTaxA = dialog_summary.findViewById(R.id.tvTaxA);
-                        TextView tvTaxB = dialog_summary.findViewById(R.id.tvTaxB);
-                        TextView tvTaxC = dialog_summary.findViewById(R.id.tvTaxC);
-                        TextView tvTaxD = dialog_summary.findViewById(R.id.tvTaxD);
-                        TextView tvTaxE = dialog_summary.findViewById(R.id.tvTaxE);
-                        TextView tvTaxF = dialog_summary.findViewById(R.id.tvTaxF);
-                        TextView tvTaxG = dialog_summary.findViewById(R.id.tvTaxG);
-                        TextView tvTaxH = dialog_summary.findViewById(R.id.tvTaxH);
-                        Button btnOk = dialog_summary.findViewById(R.id.btn_tax_total_reports);
+                        TextView tvTaxA = dialogView.findViewById(R.id.tvTaxA);
+                        TextView tvTaxB = dialogView.findViewById(R.id.tvTaxB);
+                        TextView tvTaxC = dialogView.findViewById(R.id.tvTaxC);
+                        TextView tvTaxD = dialogView.findViewById(R.id.tvTaxD);
+                        TextView tvTaxE = dialogView.findViewById(R.id.tvTaxE);
+                        TextView tvTaxF = dialogView.findViewById(R.id.tvTaxF);
+                        TextView tvTaxG = dialogView.findViewById(R.id.tvTaxG);
+                        TextView tvTaxH = dialogView.findViewById(R.id.tvTaxH);
+                        Button btnOk = dialogView.findViewById(R.id.btn_total_reports);
 
                         btnOk.setOnClickListener(new View.OnClickListener() {
                             @Override
@@ -1980,9 +2083,8 @@ public class MainActivity extends AppCompatActivity{
         }).start();
     }
     public static void printZReportFiscalService(String uri) {
-        progressDialogPrintReport = new ProgressDialog(activity);
-        progressDialogPrintReport.setCancelable(true);
-        progressDialogPrintReport.setTitle("Z report is working !!!");
+        progressDialogPrintReport = new ProgressDialog(activity,R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog);
+        progressDialogPrintReport.setTitle(context.getString(R.string.message_z_report_working));
         progressDialogPrintReport.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         progressDialogPrintReport.setCancelable(false);
         progressDialogPrintReport.show();
@@ -2000,7 +2102,7 @@ public class MainActivity extends AppCompatActivity{
                         progressDialogPrintReport.dismiss();
                         History history = new History();
                         history.setDate(new Date().getTime());
-                        history.setMsg("Z report printed to fiscal service.Task id: " + zResponse.getTaskId());
+                        history.setMsg(context.getString(R.string.message_report_z_printed_task_id) + zResponse.getTaskId());
                         history.setType(BaseEnum.History_Printed_Z);
                         mRealm.executeTransaction(realm -> realm.insert(history));
                     }
@@ -2016,6 +2118,7 @@ public class MainActivity extends AppCompatActivity{
         });
 
     }
+    @SuppressLint("DefaultLocale")
     private static void paymentBill(double summBill){
 //        sumBillToPay = Double.valueOf(btnPay.getText().toString().replace("MDL ",""));
         sumBillToPay = summBill;
@@ -2121,9 +2224,9 @@ public class MainActivity extends AppCompatActivity{
                 else{
                     double incasat = 0.0;
                     try{
-                        incasat = Double.valueOf(tvInputSumBillForPayment.getText().toString());
+                        incasat = Double.parseDouble(tvInputSumBillForPayment.getText().toString());
                     }catch (Exception e){
-                        incasat = Double.valueOf(tvInputSumBillForPayment.getText().toString().replace(",","."));
+                        incasat = Double.parseDouble(tvInputSumBillForPayment.getText().toString().replace(",","."));
                     }
 
                     if( (incasat + billPaymentedSum) <= sumBillToPay){
@@ -2160,7 +2263,16 @@ public class MainActivity extends AppCompatActivity{
 
         delete.setOnClickListener(v118 -> { if (!tvInputSumBillForPayment.getText().toString().equals("")) tvInputSumBillForPayment.setText(tvInputSumBillForPayment.getText().toString().substring(0, tvInputSumBillForPayment.getText().toString().length() - 1)); });
         clear.setOnClickListener(v119 -> tvInputSumBillForPayment.setText(""));
-        btn_Cancel.setOnClickListener(v120 -> { paymentDialog.dismiss(); billPaymentedSum = 0;  btnPay.setEnabled(true); });
+        btn_Cancel.setOnClickListener(v120 -> {
+            if(finalBillPay){
+                paymentDialog.dismiss();
+                billPaymentedSum = 0;
+                btnPay.setEnabled(true);
+                if(drawer.isDrawerOpen(GravityCompat.END))
+                    drawer.closeDrawer(GravityCompat.END);
+            }
+
+        });
         btnOtherPay.setOnClickListener(view -> {
             showOtherPaymentType();
         });
@@ -2238,7 +2350,7 @@ public class MainActivity extends AppCompatActivity{
                 };
 
                 AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                builder.setTitle("Select Other payment type");
+                builder.setTitle(R.string.message_select_other_pay_type);
                 builder.setAdapter(adapterDialog, (dialog, position) -> {
                     PaymentType paySelected = list.get(position);
                     setClickListenerOtherPay(paySelected);
@@ -2246,7 +2358,7 @@ public class MainActivity extends AppCompatActivity{
 
                     dialog.dismiss();
                 });
-                builder.setNegativeButton("Cancel",(dialogInterface, i) -> dialogInterface.dismiss());
+                builder.setNegativeButton(R.string.btn_cancel,(dialogInterface, i) -> dialogInterface.dismiss());
 
                 AlertDialog alert = builder.create();
                 alert.show();
@@ -2302,9 +2414,9 @@ public class MainActivity extends AppCompatActivity{
 
        double inputSum = 0;
        try {
-           inputSum = Double.valueOf(tvInputSumBillForPayment.getText().toString());
+           inputSum = Double.parseDouble(tvInputSumBillForPayment.getText().toString());
        } catch (Exception e) {
-           inputSum = Double.valueOf(tvInputSumBillForPayment.getText().toString().replace(",", "."));
+           inputSum = Double.parseDouble(tvInputSumBillForPayment.getText().toString().replace(",", "."));
        }
 
        if ((billPaymentedSum + inputSum) >= sumBillToPay) {
@@ -2351,10 +2463,11 @@ public class MainActivity extends AppCompatActivity{
                            if(drawer.isDrawerOpen(GravityCompat.END))
                                drawer.closeDrawer(GravityCompat.END);
                            openedBillId = null;
+                           finalBillPay = true;
                        }
                    }
                    else{
-                       Toast.makeText(context, "Aparatul fiscal nu este conectat!", Toast.LENGTH_SHORT).show();
+                       Toast.makeText(context, R.string.message_fiscal_device_not_connected, Toast.LENGTH_SHORT).show();
                    }
                }
                if(modeFiscalWork == BaseEnum.FISCAL_SERVICE){
@@ -2381,12 +2494,6 @@ public class MainActivity extends AppCompatActivity{
 
                        }
                    });
-                   initRecyclerView();
-
-                   billPaymentedSum = 0;
-                   paymentDialog.dismiss();
-                   btnPay.setEnabled(true);
-                   openedBillId = null;
                }
 
            }
@@ -2411,15 +2518,11 @@ public class MainActivity extends AppCompatActivity{
                        bill.getBillPaymentTypes().add(billPaymentType);
                    }
                });
-               initRecyclerView();
-
-               billPaymentedSum = 0;
-               paymentDialog.dismiss();
-               btnPay.setEnabled(true);
-               openedBillId = null;
+               doAfterCloseBill();
            }
        }
        else if ((billPaymentedSum + inputSum) < sumBillToPay) {
+           finalBillPay = false;
            BillPaymentType billPaymentType = new BillPaymentType();
            billPaymentType.setId(UUID.randomUUID().toString());
            billPaymentType.setBillID(openedBillId);
@@ -2489,9 +2592,9 @@ public class MainActivity extends AppCompatActivity{
         number_0.setOnClickListener(v130 -> tvInputBarcode.append("0"));
 
         if(dialog == BaseEnum.Dialog_CheckPrice)
-            tvDialogName.setText("Check price for item");
+            tvDialogName.setText(R.string.title_dialog_check_price);
         else if (dialog == BaseEnum.Dialog_AddItem)
-            tvDialogName.setText("Add item to bill");
+            tvDialogName.setText(R.string.title_dialog_add_item);
 
         btn_delete.setOnClickListener(v131 -> {
             if (!tvInputBarcode.getText().toString().equals("")) {
@@ -2514,8 +2617,8 @@ public class MainActivity extends AppCompatActivity{
                     tvBarcodeOrCodeText.setVisibility(View.GONE);
                     btn_add.setVisibility(View.GONE);
                     tvNameItem.setText("");
-                    tvPriceItem.setText("MDL 0.00");
-                    tvDiscountItem.setText("MDL 0.00");
+                    tvPriceItem.setText(context.getString(R.string.text_mdl_0));
+                    tvDiscountItem.setText(context.getString(R.string.text_mdl_0));
                 }
             }
 
@@ -2561,10 +2664,10 @@ public class MainActivity extends AppCompatActivity{
             }
             else{
                 tvNameItem.setText("");
-                tvPriceItem.setText("MDL 0.00");
-                tvDiscountItem.setText("MDL 0.00");
+                tvPriceItem.setText(context.getString(R.string.text_mdl_0));
+                tvDiscountItem.setText(context.getString(R.string.text_mdl_0));
 
-                Toast.makeText(MainActivity.this, "Item not found!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, R.string.message_item_not_found, Toast.LENGTH_SHORT).show();
             }
         });
         btn_Cancel.setOnClickListener(v134 -> {
@@ -2670,17 +2773,16 @@ public class MainActivity extends AppCompatActivity{
                                 btn_add.setOnClickListener(view -> {
                                     dialogCheckItem.dismiss();
                                     button.setEnabled(true);
-                                    Toast.makeText(MainActivity.this, "Нажат add position", Toast.LENGTH_SHORT).show();
                                     addItemsToOpenedBill(assortmentFind, 1, tvInputBarcode.getText().toString(), true);
                                 });
                                 isCloseFromEnter[0] = true;
                             }
                             else{
                                 tvNameItem.setText("");
-                                tvPriceItem.setText("MDL 0.00");
-                                tvDiscountItem.setText("MDL 0.00");
+                                tvPriceItem.setText(context.getString(R.string.text_mdl_0));
+                                tvDiscountItem.setText(context.getString(R.string.text_mdl_0));
 
-                                Toast.makeText(MainActivity.this, "Item not found!", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(MainActivity.this, R.string.message_item_not_found, Toast.LENGTH_SHORT).show();
                             }
                         }break;
                     }
@@ -2894,7 +2996,7 @@ public class MainActivity extends AppCompatActivity{
                     pgH.dismiss();
 
                     viewPager.setAdapter(null);
-                    adapterRightMenu = new TabQuickMenuAdapter(context, getSupportFragmentManager());
+                    adapterRightMenu = new TabQuickMenuAdapter(getSupportFragmentManager());
                     viewPager.setAdapter(adapterRightMenu);
                     viewPager.setOffscreenPageLimit(4);
 
@@ -2932,7 +3034,7 @@ public class MainActivity extends AppCompatActivity{
                             String pass = GetSHA1HashUserPassword("This is the code for UserPass",BaseApplication.getInstance().getUserPasswordsNotHashed()).replace("\n","");
                             if(user.getUserName().equals(login) && user.getPassword().equals(pass)) {
                                 BaseApplication.getInstance().setUser(user);
-                                tvUserNameNav.setText(user.getFirstName() + " " +  user.getLastName());
+                                tvUserNameNav.setText(String.format("%s %s", user.getFirstName(), user.getLastName()));
                             }
                             realm.insert(user);
                         }
@@ -2956,8 +3058,8 @@ public class MainActivity extends AppCompatActivity{
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            pgH.setTitle("Synchronization");
-            pgH.setMessage("loading assortment list...");
+            pgH.setTitle(getString(R.string.message_sync));
+            pgH.setMessage(getString(R.string.message_loading_assortment));
             pgH.setCancelable(false);
             pgH.setProgressStyle(ProgressDialog.STYLE_SPINNER);
             pgH.show();
@@ -2978,9 +3080,9 @@ public class MainActivity extends AppCompatActivity{
         protected void onPreExecute() {
             super.onPreExecute();
             pgH.dismiss();
-            pgH.setTitle("Synchronization");
+            pgH.setTitle(getString(R.string.message_sync));
             pgH.setCancelable(false);
-            pgH.setMessage("loading user list...");
+            pgH.setMessage(getString(R.string.message_loading_users));
             pgH.setIndeterminate(true);
             pgH.show();
         }
@@ -3000,8 +3102,8 @@ public class MainActivity extends AppCompatActivity{
         protected void onPreExecute() {
             super.onPreExecute();
             pgH.dismiss();
-            pgH.setTitle("Synchronization");
-            pgH.setMessage("loading workplace settings...");
+            pgH.setTitle(getString(R.string.message_sync));
+            pgH.setMessage(getString(R.string.message_loading_workplace_settings));
             pgH.setIndeterminate(true);
             pgH.show();
         }
@@ -3042,7 +3144,6 @@ public class MainActivity extends AppCompatActivity{
                         mUSBManager.requestPermission(device, mPermissionIntent);
                     }
                 }
-
             }
         }
     }

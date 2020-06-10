@@ -10,8 +10,7 @@ import javax.crypto.spec.SecretKeySpec;
 /**
  * RFC 2898 password derivation compatible with .NET Rfc2898DeriveBytes class.
  */
-public class Rfc2898DerivesBytes
-{
+public class Rfc2898DerivesBytes {
     public static void main(String[] args) throws Exception
     {
         Rfc2898DerivesBytes rfc2898 = new Rfc2898DerivesBytes("*^@K#K@!        ", "*^@K#K@!".getBytes());

@@ -210,6 +210,7 @@ public class NewBillStringsRealmRCAdapter extends RealmRecyclerViewAdapter<BillS
                 changeCount.dismiss();
             });
 
+            changeCount.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
             changeCount.show();
 
             int displayWidth = displayMetrics.widthPixels;

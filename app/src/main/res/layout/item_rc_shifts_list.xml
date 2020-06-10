@@ -6,21 +6,21 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
     android:background="@drawable/background_item_list_bills"
-    android:elevation="4dp">
+    android:elevation="8dp">
 
     <TextView
         android:id="@+id/txt_shift_list_open_date"
         android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginTop="4dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="4dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
         android:gravity="center"
         android:text="07 martie 2020"
-        android:textSize="14sp"
-        app:layout_constraintBottom_toTopOf="@+id/txt_shift_list_closed_date"
-        app:layout_constraintEnd_toStartOf="@+id/txt_shift_list_sended"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:textSize="16sp"
+        app:layout_constraintBottom_toTopOf="@+id/textView43"
+        app:layout_constraintStart_toEndOf="@+id/textView_colors_shift"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="spread_inside" />
 
     <TextView
         android:id="@+id/textView_colors_shift"
@@ -34,141 +34,53 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/txt_name_shift"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="4dp"
-        android:fontFamily="@font/roboto"
-        android:gravity="center"
-        android:text="Nume tura"
-        android:textColor="@android:color/black"
-        android:textSize="18sp"
-        app:layout_constraintStart_toEndOf="@+id/textView_colors_shift"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/text_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginBottom="4dp"
-        android:text="Conturi:"
-        android:textColor="@android:color/black"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/textView_colors_shift"
-        app:layout_constraintTop_toBottomOf="@+id/txt_name_shift" />
-
-    <TextView
-        android:id="@+id/txt_count_bill"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="3dp"
-        android:layout_marginBottom="4dp"
-        android:text="6"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@id/text_view"
-        app:layout_constraintTop_toBottomOf="@+id/txt_name_shift" />
-
-    <TextView
         android:id="@+id/textView30"
         android:layout_width="wrap_content"
         android:layout_height="0dp"
-        android:layout_marginStart="250dp"
+        android:layout_marginEnd="200dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@id/textView_colors_shift"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.343" />
 
     <TextView
-        android:id="@+id/textView35"
+        android:id="@+id/txt_state_shift"
         android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginTop="4dp"
-        android:layout_marginBottom="4dp"
-        android:text="Opened by:"
-        android:textColor="@android:color/black"
-        app:layout_constraintBottom_toTopOf="@+id/textView36"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="CLOSED"
+        android:textColor="#c2001a"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toTopOf="@+id/txt_state_sync_shift"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/textView30"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed" />
 
     <TextView
-        android:id="@+id/textView36"
+        android:id="@+id/txt_state_sync_shift"
         android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginBottom="4dp"
-        android:text="Closed by"
-        android:textColor="@android:color/black"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="SYNC"
+        android:textColor="#c2001a"
+        android:textSize="16sp"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/textView30"
-        app:layout_constraintTop_toBottomOf="@+id/textView35" />
-
-    <TextView
-        android:id="@+id/txt_shift_list_opened_by"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="4dp"
-        android:layout_marginBottom="4dp"
-        android:text="Test 1"
-        app:layout_constraintBottom_toTopOf="@+id/txt_shift_list_closed_by"
-        app:layout_constraintStart_toEndOf="@+id/textView35"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/txt_shift_list_closed_by"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginBottom="4dp"
-        android:text="Test 2"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/textView35"
-        app:layout_constraintTop_toBottomOf="@+id/txt_shift_list_opened_by" />
-
-    <TextView
-        android:id="@+id/txt_shift_list_closed_date"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="4dp"
-        android:text="08 martie 2020"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/txt_shift_list_sended"
-        app:layout_constraintTop_toBottomOf="@+id/txt_shift_list_open_date" />
+        app:layout_constraintTop_toBottomOf="@+id/txt_state_shift" />
 
     <TextView
         android:id="@+id/textView43"
         android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginTop="4dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="4dp"
-        android:text="Open:"
-        android:textColor="@android:color/black"
-        app:layout_constraintBottom_toTopOf="@+id/textView46"
-        app:layout_constraintEnd_toStartOf="@+id/txt_shift_list_open_date"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/textView46"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="4dp"
-        android:text="Closed:"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:text="MDL 0.00"
         android:textColor="@android:color/black"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/txt_shift_list_open_date"
-        app:layout_constraintTop_toBottomOf="@+id/textView43" />
-
-    <TextView
-        android:id="@+id/txt_shift_list_sended"
-        android:layout_width="10dp"
-        android:layout_height="0dp"
-        android:background="@drawable/round_left_item_list_bills"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintStart_toEndOf="@+id/textView_colors_shift"
+        app:layout_constraintTop_toBottomOf="@+id/txt_shift_list_open_date" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
