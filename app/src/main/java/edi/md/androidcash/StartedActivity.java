@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.net.Uri;
@@ -42,6 +43,7 @@ import androidx.core.content.FileProvider;
 
 import com.acs.smartcard.Reader;
 import com.acs.smartcard.ReaderException;
+import com.google.android.datatransport.BuildConfig;
 import com.google.android.material.button.MaterialButton;
 
 import java.io.File;
@@ -55,6 +57,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.TimeZone;
 
 import javax.crypto.Mac;
@@ -83,7 +86,7 @@ import retrofit2.Response;
 import static edi.md.androidcash.BaseApplication.SharedPrefSettings;
 import static edi.md.androidcash.BaseApplication.SharedPrefWorkPlaceSettings;
 
-public class StartedActivity extends AppCompatActivity implements UpdateHelper.OnUpdateCheckListener{ //
+public class StartedActivity extends AppCompatActivity implements UpdateHelper.OnUpdateCheckListener { //
     public static final int REQUEST_ID_MULTIPLE_PERMISSIONS = 1, DATECS_USB_VID = 65520, FTDI_USB_VID = 1027;
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
     private PendingIntent mPermissionIntent;
@@ -109,7 +112,7 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
     //views login user form
     EditText LetUserName, LetPassword;
     MaterialButton btnLogin;
-    TextView LtvOthersAuthMethods, LtvForgotPass;
+    TextView LtvForgotPass;
     ProgressBar Lpgbar;
 
     //format date and time zone
@@ -117,7 +120,7 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
     TimeZone timeZone;
 
     private ProgressDialog pgH;
-//
+
     @Override
     public void onUpdateCheckListener(UpdateInformation information) {
         boolean update = information.isUpdate();
@@ -185,7 +188,7 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
         //set download manager
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
         request.setDescription("Download trial version...");
-        request.setTitle("Android cash");
+        request.setTitle("SalesEPOS update");
 
         //set destination
         request.setDestinationUri(uri);
@@ -401,6 +404,17 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
         }
     };
 
+    public void changeLang(String lang) {
+        if (lang.equalsIgnoreCase(""))
+            return;
+        Locale myLocale = new Locale(lang);
+        Locale.setDefault(myLocale);
+        Configuration config = new Configuration();
+        config.locale = myLocale;
+        getBaseContext().getResources().updateConfiguration(config, getBaseContext().getResources().getDisplayMetrics());
+
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -417,6 +431,21 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
         filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
         registerReceiver(mReceiver, filter);
 //-------------------------------------------------------------------------------
+
+        int langInt = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("Language",2);
+
+        switch(langInt){
+            case 0:{
+                changeLang("en");
+            }break;
+            case 1:{
+                changeLang("ru");
+            }break;
+            case 2:{
+                changeLang("ro");
+            }break;
+        }
+
         setContentView(R.layout.activity_start);
         //init constraint layouts with authentificate form
         layoutRegister = findViewById(R.id.csl_register_form);
@@ -433,7 +462,6 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
         LetUserName = findViewById(R.id.et_login_user_form);
         LetPassword = findViewById(R.id.et_password_login_user);
         LtvForgotPass = findViewById(R.id.tv_forgot_pass_login_form);
-        LtvOthersAuthMethods = findViewById(R.id.txt_other_auth_methods);
         Lpgbar = findViewById(R.id.progressBar_login_form);
         btnLogin = findViewById(R.id.btn_login_user_form);
 
@@ -504,7 +532,6 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
 //                params.slotNum = 0;
 //                params.controlCode = 3500;
 //                params.command = comman;
-//
 //                new TransmitTask().execute(params);
             }
         });
@@ -516,11 +543,13 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
 
         //get instalation id from broker
         String brokerInstallationID = getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getString("InstallationID", null);
+        boolean firstStart = false;
 
         //check instalation id , if it's null set register form visibility and others "gone"
         if (brokerInstallationID == null) {
             layoutRegister.setVisibility(View.VISIBLE);
             layoutLogin.setVisibility(View.GONE);
+            firstStart = true;
         } else {
             layoutRegister.setVisibility(View.GONE);
             layoutLogin.setVisibility(View.VISIBLE);
@@ -570,66 +599,69 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
             doRegisterAppToBrokerServer(registerApp);
         });
 
+        boolean finalFirstStart = firstStart;
         btnLogin.setOnClickListener(v1 ->{
-            Lpgbar.setVisibility(View.VISIBLE);
+
+
 
             String userName = LetUserName.getText().toString();
             String userPass = LetPassword.getText().toString();
-
-            //save user password only app is runing
-            BaseApplication.getInstance().setUserPasswordsNotHashed(userPass);
-
-            //hash SHA1 password
-            String passGenerate = GetSHA1HashUserPassword("This is the code for UserPass",userPass).replace("\n","");
-
-            //search in local data base user with such data
-            Realm realm = Realm.getDefaultInstance();
-            User result = realm.where(User.class)
-                    .equalTo("userName",userName)
-                    .and()
-                    .equalTo("password",passGenerate)
-                    .findFirst();
-            if(result != null) {
-                //such user found,save this user while app is running
-                BaseApplication.getInstance().setUser(realm.copyFromRealm(result));
-
-                String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("Token",null);
-                long tokenValidDate = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getLong("TokenValidTo",0);
-                Date dateToken = new Date(tokenValidDate);
-                Date currDate = new Date();
-
-                if(token == null && tokenValidDate == 0){
-                    authenticateUser(userName,userPass,false);
-                }
-                if(currDate.after(dateToken))
-                    authenticateUser(userName,userPass,false);
-
-                Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                startActivity(main);
-                finish();
+            if(userName.equals("") || userPass.equals("")){
+                Toast.makeText(this, "Enter login or password", Toast.LENGTH_SHORT).show();
             }
             else{
-                String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("Token",null);
-                long tokenValidDate = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getLong("TokenValidTo",0);
-                Date dateToken = new Date(tokenValidDate);
-                Date currDate = new Date();
 
-                if(token == null && tokenValidDate == 0){
-                    authenticateUser(userName,userPass,true);
-                }
-                else if(currDate.after(dateToken))
-                    authenticateUser(userName,userPass,true);
-                else {
-                    Intent main = new Intent(StartedActivity.this,MainActivity.class);
-                    User user = new User();
-                    user.setUserName(userName);
-                    user.setPassword(passGenerate);
+                if(getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getBoolean("UserAuthentificate",false)){
+                    Lpgbar.setVisibility(View.VISIBLE);
+                    //save user password only app is runing
                     BaseApplication.getInstance().setUserPasswordsNotHashed(userPass);
-                    BaseApplication.getInstance().setUser(user);
-                    startActivity(main);
-                    finish();
+
+                    //hash SHA1 password
+                    String passGenerate = GetSHA1HashUserPassword("This is the code for UserPass",userPass).replace("\n","");
+
+                    //search in local data base user with such data
+                    Realm realm = Realm.getDefaultInstance();
+                    User result = realm.where(User.class)
+                            .equalTo("userName",userName)
+                            .and()
+                            .equalTo("password",passGenerate)
+                            .findFirst();
+                    if(result != null) {
+                        //such user found,save this user while app is running
+                        BaseApplication.getInstance().setUser(realm.copyFromRealm(result));
+
+                        String token = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getString("Token",null);
+                        long tokenValidDate = getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).getLong("TokenValidTo",0);
+                        Date dateToken = new Date(tokenValidDate);
+                        Date currDate = new Date();
+
+                        if(token == null && tokenValidDate == 0){
+                            authenticateUser(userName,userPass,false);
+                        }
+                        if(currDate.after(dateToken))
+                            authenticateUser(userName,userPass,false);
+
+                        Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                        startActivity(main);
+                        finish();
+                    }
+                    else{
+                        if(finalFirstStart){
+                            authenticateUser(userName,userPass,true);
+                        }
+                        else{
+                            Lpgbar.setVisibility(View.INVISIBLE);
+                            Toast.makeText(this, "User not found", Toast.LENGTH_SHORT).show();
+                        }
+                    }
                 }
+                else{
+                    Lpgbar.setVisibility(View.VISIBLE);
+                    authenticateUser(userName,userPass,true);
+                }
+
             }
+
 
         });
 
@@ -664,7 +696,7 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
                     //get information for token
                     TokenReceivedFromAutenficateUser token = authentificateUserResult.getAuthentificateUserResult();
                     if(token.getErrorCode() == 0){
-                        //save token in shared preferense
+                        //save token in shared preference
                         String date = token.getTokenValidTo();
                         date = date.replace("/Date(","");
                         date = date.replace("+0200)/","");
@@ -677,17 +709,19 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
                                 .putLong("TokenValidTo",dateLong)
                                 .apply();
                         if(initialStart){
-                            Intent main = new Intent(StartedActivity.this,MainActivity.class);
+                            Intent main = new Intent(StartedActivity.this, MainActivity.class);
                             User user = new User();
                             user.setUserName(userName);
                             user.setPassword(GetSHA1HashUserPassword("This is the code for UserPass",passUser).replace("\n",""));
                             BaseApplication.getInstance().setUserPasswordsNotHashed(passUser);
                             BaseApplication.getInstance().setUser(user);
+
                             startActivity(main);
                             finish();
                         }
                     }
                     else{
+                        Lpgbar.setVisibility(View.INVISIBLE);
                         Toast.makeText(StartedActivity.this, "Error to authenticate user to server! "+ token.getErrorCode(), Toast.LENGTH_SHORT).show();
                     }
                 }
@@ -1074,11 +1108,11 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
                         }
                     });
                 } finally {
-                    fail("finish");
-                    ((BaseApplication)getApplication()).setMyFiscalDevice(PrinterManager.instance.getFiscalDevice());
-                    String sTitle = getTitle() + "  " + PrinterManager.instance.getModelVendorName() + ":" + PrinterManager.getsConnectorType();
-                    fail(sTitle);
-                }
+                    BaseApplication.getInstance().setMyFiscalDevice(PrinterManager.instance.getFiscalDevice());
+//
+                } String sTitle = getTitle() + "  " + PrinterManager.instance.getModelVendorName() + ":" + PrinterManager.getsConnectorType();
+//                    if(!StartedActivity.this.isDestroyed())
+//                        fail(sTitle);
             }
         });
         thread.start();
@@ -1095,8 +1129,6 @@ public class StartedActivity extends AppCompatActivity implements UpdateHelper.O
         super.onDestroy();
 
         Lpgbar.setVisibility(View.INVISIBLE);
-//        unregisterReceiver(mUsbDeviceDetachedReceiver);
-//        unregisterReceiver(mUsbDeviceAttachedReceiver);
     }
     @Override
     public void onPause(){

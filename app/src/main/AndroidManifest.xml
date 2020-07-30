@@ -20,21 +20,33 @@
         android:name=".BaseApplication"
         android:allowBackup="true"
         android:icon="@drawable/ico"
+        android:label="@string/app_name"
         android:roundIcon="@drawable/ico"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
-        <activity android:name=".ShiftsActivity">
+
+        <activity android:name=".ShiftsActivity"
+            android:configChanges="orientation"
+            android:screenOrientation="landscape">
 
         </activity>
-        <activity android:name=".ReportsActivity" />
-        <activity android:name=".FinancialRepActivity" />
+        <activity android:name=".ReportsActivity"
+            android:configChanges="orientation"
+            android:screenOrientation="landscape" />
+        <activity android:name=".FinancialRepActivity"
+            android:configChanges="orientation"
+            android:screenOrientation="landscape" />
         <activity
             android:name=".HistoryActivity"
+            android:configChanges="orientation"
+            android:screenOrientation="landscape"
             android:label=""
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".StartedActivity"
+            android:configChanges="orientation"
+            android:screenOrientation="landscape"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar"
             android:windowSoftInputMode="stateHidden">
@@ -62,6 +74,8 @@
         </activity>
         <activity
             android:name=".SettingsActivity"
+            android:configChanges="orientation"
+            android:screenOrientation="landscape"
             android:label=""
             android:windowSoftInputMode="adjustPan"
             android:theme="@style/AppTheme.NoActionBar">
@@ -73,6 +87,8 @@
         </activity>
         <activity
             android:name=".MainActivity"
+            android:configChanges="orientation"
+            android:screenOrientation="landscape"
             android:label=" "
             android:theme="@style/AppTheme.NoActionBar"
             android:windowSoftInputMode="stateHidden">

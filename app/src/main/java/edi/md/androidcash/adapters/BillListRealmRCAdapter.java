@@ -131,23 +131,25 @@ public class BillListRealmRCAdapter extends RealmRecyclerViewAdapter<Bill, BillL
             numberBill.setText(String.valueOf(bill.getShiftReceiptNumSoftware()));
             hour.setText(simpleDateFormatHourMD.format(bill.getCreateDate()));
             date.setText(simpleDateFormatMD.format(bill.getCreateDate()));
+
             Drawable background = colors.getBackground();
 
             if (background instanceof ShapeDrawable) {
                 Random rnd = new Random();
-                int color = Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+                int color = Color.rgb(0,204,92);
                 ((ShapeDrawable)background).getPaint().setColor(color);
                 colors.setBackground(background);
             }
             else if (background instanceof GradientDrawable) {
                 Random rnd = new Random();
-                int color = Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+                int color = Color.rgb(0,204,92);
                 ((GradientDrawable)background).setColor(color);
                 colors.setBackground(background);
             }
             else if (background instanceof ColorDrawable) {
                 Random rnd = new Random();
-                int color = Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+//                int color = Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+                int color =  Color.rgb(0,204,92);
                 ((ColorDrawable)background).setColor(color);
                 colors.setBackground(background);
             }

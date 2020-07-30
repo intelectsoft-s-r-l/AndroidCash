@@ -31,6 +31,16 @@
         <item name="android:gravity">center_vertical|center_horizontal</item>
     </style>
 
+    <style name="CustomDialog" parent="@android:style/Theme.Dialog">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:windowIsFloating">true</item>
+    </style>
+
     <style name="Widget.MaterialComponents.CustomButton" parent="Widget.AppCompat.Button">
         <item name="enforceMaterialTheme">true</item>
         <item name="enforceTextAppearance">true</item>
@@ -44,9 +54,7 @@
         <item name="android:insetRight">0dp</item>
         <item name="android:insetTop">@dimen/mtrl_btn_inset</item>
         <item name="android:insetBottom">@dimen/mtrl_btn_inset</item>
-        <item name="android:stateListAnimator" ns2:ignore="NewApi">
-            @animator/mtrl_btn_state_list_anim
-        </item>
+        <item name="android:stateListAnimator" ns2:ignore="NewApi">@animator/mtrl_btn_state_list_anim</item>
         <item name="cornerRadius">0dp</item>
         <item name="elevation">0dp</item>
         <item name="iconPadding">@dimen/mtrl_btn_icon_padding</item>
@@ -69,9 +77,7 @@
         <item name="android:insetRight">0dp</item>
         <item name="android:insetTop">@dimen/mtrl_btn_inset</item>
         <item name="android:insetBottom">@dimen/mtrl_btn_inset</item>
-        <item name="android:stateListAnimator" ns2:ignore="NewApi">
-            @animator/mtrl_btn_state_list_anim
-        </item>
+        <item name="android:stateListAnimator" ns2:ignore="NewApi">@animator/mtrl_btn_state_list_anim</item>
         <item name="cornerRadius">@null</item>
         <item name="elevation">@dimen/mtrl_btn_elevation</item>
         <item name="iconPadding">@dimen/mtrl_btn_icon_padding</item>

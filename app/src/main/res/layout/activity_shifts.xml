@@ -27,8 +27,8 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/roboto"
-                android:text="Andoid cash: Shifts"
+                android:fontFamily="@font/nunito_sans"
+                android:text="@string/andoid_cash_shifts"
                 android:textColor="@android:color/white"
                 android:textSize="18sp" />
 
@@ -59,8 +59,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
-        android:fontFamily="@font/roboto"
-        android:text="Чтобы начать работу необходимо "
+        android:fontFamily="@font/nunito_sans"
+        android:text="@string/start_indicii_shift_fragment"
         android:textColor="@android:color/black"
         android:textSize="18sp"
         app:layout_constraintBottom_toTopOf="@+id/textView31"
@@ -115,22 +115,23 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
         android:clickable="true"
-        android:fontFamily="@font/roboto"
-        android:text="открыть смену"
+        android:focusable="true"
+        android:fontFamily="@font/nunito_sans"
+        android:text="@string/open_shift_shift_fragment"
         android:textColor="@color/colorPrimary"
         android:textSize="18sp"
         app:layout_constraintBottom_toTopOf="@+id/textView31"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/textView58"
         app:layout_constraintTop_toBottomOf="@+id/appbar_shifts"
-        app:layout_constraintVertical_bias="1.0"
-        android:focusable="true" />
+        app:layout_constraintVertical_bias="1.0" />
 
     <TextView
         android:id="@+id/textView31"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Для просмотра информаций по смене, выберите смену."
+        android:fontFamily="@font/nunito_sans"
+        android:text="@string/info_start_shift_fragment"
         android:textColor="@android:color/black"
         android:textSize="18sp"
         app:layout_constraintBottom_toBottomOf="parent"

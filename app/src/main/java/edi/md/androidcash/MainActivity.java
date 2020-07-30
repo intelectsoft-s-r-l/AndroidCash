@@ -2,6 +2,7 @@ package edi.md.androidcash;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Dialog;
 import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
@@ -28,6 +29,7 @@ import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -36,6 +38,8 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
+import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
@@ -179,7 +183,7 @@ public class MainActivity extends AppCompatActivity{
     //datecs variables
     public static DatecsFiscalDevice datecsFiscalDevice = null;
 
-    static AlertDialog paymentDialog;
+    static Dialog paymentDialog;
     private static cmdReceipt.FiscalReceipt fiscalReceipt;
 
     private static String openedBillId, workPlaceID, tokenId;
@@ -212,7 +216,7 @@ public class MainActivity extends AppCompatActivity{
     private List<WorkplaceEntry> workplaceEntryList = new ArrayList<>();
     private SharedPreferences sharedPreferenceSettings, sharedPreferenceWorkPlace;
 
-    private static boolean finalBillPay = true;
+    private static boolean onlyFiscalPay = false;
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
 
@@ -360,7 +364,7 @@ public class MainActivity extends AppCompatActivity{
         if (workPlaceID != null) {
             viewPager.setAdapter(null);
             //адаптер вкладок с права
-            adapterRightMenu = new TabQuickMenuAdapter(getSupportFragmentManager());
+            adapterRightMenu = new TabQuickMenuAdapter(context,getSupportFragmentManager());
             viewPager.setAdapter(adapterRightMenu);
             viewPager.setOffscreenPageLimit(4);
 
@@ -460,12 +464,6 @@ public class MainActivity extends AppCompatActivity{
                 openedBillId = null;
                 initRecyclerView();
             }
-//            pgH.setTitle("Generate bills");
-//            pgH.setIndeterminate(true);
-//            pgH.show();
-//            generateBills(800,"test");
-
-
         });
         btnAddItem.setOnClickListener(v->{
             if(!shiftOpenButtonPay){
@@ -582,75 +580,10 @@ public class MainActivity extends AppCompatActivity{
         });
     }
 
-    private void generateBills(int counter, String param2) {
-        for (int j =0; j<counter; j++){
-            Bill testBill = new Bill();
-            String id =  UUID.randomUUID().toString();
-
-            BillPaymentType billPaymentType1 = new BillPaymentType();
-            String id1 =  UUID.randomUUID().toString();
-            billPaymentType1.setId(id1);
-            billPaymentType1.setBillID(id);
-            double sum1 = 10 + counter;
-            billPaymentType1.setSum(sum1);
-            billPaymentType1.setName("Cash");
-            billPaymentType1.setPaymentCode(0);
-            billPaymentType1.setPaymentTypeID("be45afb9-3719-43fe-b227-cafc2ae6b709");
-            billPaymentType1.setAuthor("84688567-9812-48cd-9194-66af184e8246");
-
-            BillPaymentType billPaymentType2 = new BillPaymentType();
-            String id2 =  UUID.randomUUID().toString();
-            billPaymentType2.setId(id2);
-            billPaymentType2.setBillID(id);
-            double sum2 = 1 + counter;
-            billPaymentType2.setSum(sum2);
-            billPaymentType2.setName("Card");
-            billPaymentType2.setPaymentCode(1);
-            billPaymentType2.setPaymentTypeID("1a6c0350-9b6c-418a-a484-701ff0174f50");
-            billPaymentType2.setAuthor("84688567-9812-48cd-9194-66af184e8246");
-
-            BillPaymentType billPaymentType3 = new BillPaymentType();
-            String id3 =  UUID.randomUUID().toString();
-            billPaymentType3.setId(id3);
-            billPaymentType3.setBillID(id);
-            double sum3 = -3000 + counter;
-            billPaymentType3.setSum(sum3);
-            billPaymentType3.setName("Cupon");
-            billPaymentType3.setPaymentCode(2);
-            billPaymentType3.setPaymentTypeID("1a6c0350-9b6c-418a-a121-701ff0174f50");
-            billPaymentType3.setAuthor("84688567-9812-48cd-9194-66af184e8246");
-
-            RealmList<BillPaymentType> listType = new RealmList<>();
-            listType.add(billPaymentType1);
-            listType.add(billPaymentType2);
-            listType.add(billPaymentType3);
-
-            testBill.setId(id);
-            testBill.setBillPaymentTypes(listType);
-            testBill.setShiftId(BaseApplication.getInstance().getShift().getId());
-            testBill.setAuthor("84688567-9812-48cd-9194-66af184e8246");
-            testBill.setSumWithDiscount(0.0);
-            testBill.setSum(0.0);
-            testBill.setState(0);
-            testBill.setSynchronized(true);
-            testBill.setState(1);
-            testBill.setCloseDate(new Date().getTime());
-            testBill.setClosedBy(BaseApplication.getInstance().getUser().getId());
-
-            mRealm.executeTransaction(realm -> {
-                realm.insert(testBill);
-            });
-
-        }
-        pgH.dismiss();
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == BaseEnum.Activity_Shifts){
-//            Shift shift = BaseApplication.getInstance().getShift();
-//            checkShift(shift);
             FragmentBills.showBillList();
         }
     }
@@ -687,9 +620,20 @@ public class MainActivity extends AppCompatActivity{
             getSyncWorkplace(uri,tokenId);
         }
         else{
+            boolean syncToStart = sharedPreferenceSettings.getBoolean("SyncToStart",false);
+
+            if(syncToStart){
+                String uri = sharedPreferenceSettings.getString("URI",null);
+                tokenId = sharedPreferenceSettings.getString("Token",null);
+                new AssortmentTask().execute();
+            }
+        }
+
+        if (workPlaceID != null) {
             tvUserNameNav.setText(String.format("%s %s", BaseApplication.getInstance().getUser().getFirstName(), BaseApplication.getInstance().getUser().getLastName()));
             tvUserEmailNav.setText(BaseApplication.getInstance().getUser().getEmail());
         }
+
     }
 
     private void checkShift(Shift shift){
@@ -702,8 +646,8 @@ public class MainActivity extends AppCompatActivity{
             if(!shiftOpened && currentTime < shiftNeedClose){
                 //if shift is opened and time to close is smaller current time, when shift is valid
                 shiftOpenButtonPay = false;
-//                FragmentBills.showBillList();
-                btnPay.setText(R.string.text_mdl_0);
+
+                startTimer(shiftNeedClose - new Date().getTime());
 
             }
             else if(!shiftOpened && currentTime > shiftNeedClose && shiftNeedClose != 0){
@@ -714,6 +658,7 @@ public class MainActivity extends AppCompatActivity{
                 //TODO set other function when shift is not valid
 
                 btnPay.setText(R.string.text_close_shift);
+                btnPay.setBackgroundColor(getResources().getColor(R.color.btnPay));
                 shiftClosedButtonPay = true;
 
                 new MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
@@ -736,6 +681,7 @@ public class MainActivity extends AppCompatActivity{
 
             //TODO set other function when shift is not opened
             btnPay.setText(R.string.text_open_shift);
+            btnPay.setBackgroundColor(getResources().getColor(R.color.btnPay));
             shiftOpenButtonPay = true;
         }
     }
@@ -887,6 +833,7 @@ public class MainActivity extends AppCompatActivity{
                         String date = token.getTokenValidTo();
                         date = date.replace("/Date(","");
                         date = date.replace("+0200)/","");
+                        date = date.replace("+0300)/","");
                         long dateLong = Long.parseLong(date);
                         sharedPreferenceSettings.edit().putLong("TokenValidTo", dateLong).apply();
 
@@ -952,8 +899,6 @@ public class MainActivity extends AppCompatActivity{
                         | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                         | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
     }
-
-    @SuppressLint("DefaultLocale")
     public static void draweOpen(Bill bill){
         drawer.openDrawer(GravityCompat.END);
 
@@ -1113,7 +1058,6 @@ public class MainActivity extends AppCompatActivity{
     }
 
     static View.OnClickListener clickListenerDynamicPayButton = new View.OnClickListener() {
-        @SuppressLint("DefaultLocale")
         @Override
         public void onClick(View v) {
             PaymentType paymentType = (PaymentType) v.getTag();
@@ -1122,6 +1066,7 @@ public class MainActivity extends AppCompatActivity{
             if(code == null)
                 code = "404";
             int resultCloseReceip = 0;
+            int creditCardCode = 0;
 
             //primesc rindurile la cont
             RealmList<BillString> billStrings = new RealmList<>();
@@ -1153,7 +1098,10 @@ public class MainActivity extends AppCompatActivity{
                 inputSum = Double.parseDouble(tvInputSumBillForPayment.getText().toString());
             }
             catch (Exception e) {
-                inputSum = Double.parseDouble(tvInputSumBillForPayment.getText().toString().replace(",", "."));
+                if(tvInputSumBillForPayment.getText().toString().equals(""))
+                    inputSum = 0;
+                else
+                    inputSum = Double.parseDouble(tvInputSumBillForPayment.getText().toString().replace(",", "."));
             }
 
             if ((billPaymentedSum + inputSum) >= sumBillToPay) {
@@ -1161,15 +1109,86 @@ public class MainActivity extends AppCompatActivity{
                 int modeFiscalWork = context.getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork",BaseEnum.FISCAL_SERVICE);
 
                 if (printFiscalCheck) {
-                    if(modeFiscalWork == BaseEnum.FISCAL_DEVICE){
-                        DatecsFiscalDevice fiscalDevice = null;
-                        if(BaseApplication.getInstance().getMyFiscalDevice() != null){
-                            fiscalDevice = BaseApplication.getInstance().getMyFiscalDevice();
+
+                    if(paymentType.getName().toLowerCase().contains("credit")){
+                        if ((billPaymentedSum + inputSum) > sumBillToPay){
+                            tvInputSumBillForPayment.setText("");
+                            postToastMessage("Amount entered exceeds payment amount!");
                         }
-                        if(fiscalDevice != null && fiscalDevice.isConnectedDeviceV2()){
-                            resultCloseReceip = BaseApplication.getInstance().printFiscalReceipt(fiscalReceipt, billStrings, paymentType, inputSum, billPaymentTypes,bilNumber);
-                            if (resultCloseReceip != 0) {
-                                finalBillPay = true;
+                        else if ((billPaymentedSum + inputSum) < sumBillToPay) {
+                            BillPaymentType billPaymentType = new BillPaymentType();
+                            billPaymentType.setId(UUID.randomUUID().toString());
+                            billPaymentType.setBillID(openedBillId);
+                            billPaymentType.setName(paymentType.getName());
+                            billPaymentType.setPaymentCode(Integer.valueOf(code));
+                            billPaymentType.setPaymentTypeID(paymentType.getExternalId());
+                            billPaymentType.setSum(inputSum);
+                            billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
+                            billPaymentType.setCreateDate(new Date().getTime());
+
+                            mRealm.executeTransaction(realm ->{
+                                Bill bill = realm.where(Bill.class).equalTo("id",openedBillId).findFirst();
+                                if(bill != null){
+                                    bill.setState(0);
+                                    bill.getBillPaymentTypes().add(billPaymentType);
+                                }
+                            });
+                            billPaymentedSum = billPaymentedSum + inputSum;
+                            tvToPay.setText(String.format("%.2f", sumBillToPay - billPaymentedSum).replace(",","."));
+                            tvInputSumBillForPayment.setText(String.format("%.2f",sumBillToPay - billPaymentedSum).replace(",","."));
+                        }
+                        else if ((billPaymentedSum + inputSum) == sumBillToPay){
+                            if(modeFiscalWork == BaseEnum.FISCAL_DEVICE){
+                                DatecsFiscalDevice fiscalDevice = null;
+                                if(BaseApplication.getInstance().getMyFiscalDevice() != null){
+                                    fiscalDevice = BaseApplication.getInstance().getMyFiscalDevice();
+                                }
+                                if(fiscalDevice != null && fiscalDevice.isConnectedDeviceV2()){
+
+                                    resultCloseReceip = BaseApplication.getInstance().printFiscalReceipt(fiscalReceipt, billStrings, paymentType, inputSum, billPaymentTypes,bilNumber);
+                                    if (resultCloseReceip != 0) {
+                                        BillPaymentType billPaymentType= new BillPaymentType();
+                                        billPaymentType.setId(UUID.randomUUID().toString());
+                                        billPaymentType.setBillID(openedBillId);
+                                        billPaymentType.setName(paymentType.getName());
+                                        billPaymentType.setPaymentCode(Integer.valueOf(code));
+                                        billPaymentType.setPaymentTypeID(paymentType.getExternalId());
+                                        billPaymentType.setSum(inputSum);
+                                        billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
+                                        billPaymentType.setCreateDate(new Date().getTime());
+
+                                        int finalResultCloseReceip = resultCloseReceip;
+                                        mRealm.executeTransaction(realm ->{
+                                            Bill bill = realm.where(Bill.class).equalTo("id",openedBillId).findFirst();
+                                            if(bill != null){
+                                                bill.setReceiptNumFiscalMemory(finalResultCloseReceip);
+                                                bill.setState(1);
+                                                bill.setCloseDate(new Date().getTime());
+                                                bill.setClosedBy(BaseApplication.getInstance().getUser().getId());
+                                                bill.setClosedByName(BaseApplication.getInstance().getUser().getFullName());
+                                                bill.getBillPaymentTypes().add(billPaymentType);
+
+                                            }
+                                        });
+
+                                        initRecyclerView();
+
+                                        billPaymentedSum = 0;
+                                        paymentDialog.dismiss();
+                                        btnPay.setEnabled(true);
+
+                                        if(drawer.isDrawerOpen(GravityCompat.END))
+                                            drawer.closeDrawer(GravityCompat.END);
+                                        openedBillId = null;
+                                    }
+                                }
+                                else{
+                                    Toast.makeText(context, R.string.message_fiscal_device_not_connected, Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                            if(modeFiscalWork == BaseEnum.FISCAL_SERVICE){
+                                BaseApplication.getInstance().printReceiptFiscalService(billStrings, paymentType, inputSum, billPaymentTypes,"1");
+
                                 BillPaymentType billPaymentType= new BillPaymentType();
                                 billPaymentType.setId(UUID.randomUUID().toString());
                                 billPaymentType.setBillID(openedBillId);
@@ -1180,11 +1199,10 @@ public class MainActivity extends AppCompatActivity{
                                 billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
                                 billPaymentType.setCreateDate(new Date().getTime());
 
-                                int finalResultCloseReceip = resultCloseReceip;
                                 mRealm.executeTransaction(realm ->{
                                     Bill bill = realm.where(Bill.class).equalTo("id",openedBillId).findFirst();
                                     if(bill != null){
-                                        bill.setReceiptNumFiscalMemory(finalResultCloseReceip);
+                                        bill.setReceiptNumFiscalMemory(0);
                                         bill.setState(1);
                                         bill.setCloseDate(new Date().getTime());
                                         bill.setClosedBy(BaseApplication.getInstance().getUser().getId());
@@ -1193,49 +1211,88 @@ public class MainActivity extends AppCompatActivity{
 
                                     }
                                 });
-
-                                initRecyclerView();
-
-                                billPaymentedSum = 0;
-                                paymentDialog.dismiss();
-                                btnPay.setEnabled(true);
-
-                                if(drawer.isDrawerOpen(GravityCompat.END))
-                                    drawer.closeDrawer(GravityCompat.END);
-                                openedBillId = null;
                             }
+                        }
+                    }
+                    else{
+                        if(modeFiscalWork == BaseEnum.FISCAL_DEVICE){
+                            DatecsFiscalDevice fiscalDevice = null;
+                            if(BaseApplication.getInstance().getMyFiscalDevice() != null){
+                                fiscalDevice = BaseApplication.getInstance().getMyFiscalDevice();
+                            }
+                            if(fiscalDevice != null && fiscalDevice.isConnectedDeviceV2()){
+
+                                resultCloseReceip = BaseApplication.getInstance().printFiscalReceipt(fiscalReceipt, billStrings, paymentType, inputSum, billPaymentTypes,bilNumber);
+                                if (resultCloseReceip != 0) {
+                                    BillPaymentType billPaymentType= new BillPaymentType();
+                                    billPaymentType.setId(UUID.randomUUID().toString());
+                                    billPaymentType.setBillID(openedBillId);
+                                    billPaymentType.setName(paymentType.getName());
+                                    billPaymentType.setPaymentCode(Integer.valueOf(code));
+                                    billPaymentType.setPaymentTypeID(paymentType.getExternalId());
+                                    billPaymentType.setSum(inputSum);
+                                    billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
+                                    billPaymentType.setCreateDate(new Date().getTime());
+
+                                    int finalResultCloseReceip = resultCloseReceip;
+                                    mRealm.executeTransaction(realm ->{
+                                        Bill bill = realm.where(Bill.class).equalTo("id",openedBillId).findFirst();
+                                        if(bill != null){
+                                            bill.setReceiptNumFiscalMemory(finalResultCloseReceip);
+                                            bill.setState(1);
+                                            bill.setCloseDate(new Date().getTime());
+                                            bill.setClosedBy(BaseApplication.getInstance().getUser().getId());
+                                            bill.setClosedByName(BaseApplication.getInstance().getUser().getFullName());
+                                            bill.getBillPaymentTypes().add(billPaymentType);
+
+                                        }
+                                    });
+
+                                    initRecyclerView();
+
+                                    billPaymentedSum = 0;
+                                    paymentDialog.dismiss();
+                                    btnPay.setEnabled(true);
+
+                                    if(drawer.isDrawerOpen(GravityCompat.END))
+                                        drawer.closeDrawer(GravityCompat.END);
+                                    openedBillId = null;
+                                }
+                            }
+                            else{
+                                Toast.makeText(context, R.string.message_fiscal_device_not_connected, Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                        else if(modeFiscalWork == BaseEnum.FISCAL_SERVICE){
+                            BaseApplication.getInstance().printReceiptFiscalService(billStrings, paymentType, inputSum, billPaymentTypes,"1");
+
+                            BillPaymentType billPaymentType= new BillPaymentType();
+                            billPaymentType.setId(UUID.randomUUID().toString());
+                            billPaymentType.setBillID(openedBillId);
+                            billPaymentType.setName(paymentType.getName());
+                            billPaymentType.setPaymentCode(Integer.valueOf(code));
+                            billPaymentType.setPaymentTypeID(paymentType.getExternalId());
+                            billPaymentType.setSum(inputSum);
+                            billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
+                            billPaymentType.setCreateDate(new Date().getTime());
+
+                            mRealm.executeTransaction(realm ->{
+                                Bill bill = realm.where(Bill.class).equalTo("id",openedBillId).findFirst();
+                                if(bill != null){
+                                    bill.setReceiptNumFiscalMemory(0);
+                                    bill.setState(1);
+                                    bill.setCloseDate(new Date().getTime());
+                                    bill.setClosedBy(BaseApplication.getInstance().getUser().getId());
+                                    bill.setClosedByName(BaseApplication.getInstance().getUser().getFullName());
+                                    bill.getBillPaymentTypes().add(billPaymentType);
+
+                                }
+                            });
                         }
                         else{
-                            Toast.makeText(context, R.string.message_fiscal_device_not_connected, Toast.LENGTH_SHORT).show();
+                            postToastMessage("Not selected fiscal mode work");
                         }
                     }
-                    if(modeFiscalWork == BaseEnum.FISCAL_SERVICE){
-                        BaseApplication.getInstance().printReceiptFiscalService(billStrings, paymentType, inputSum, billPaymentTypes,"1");
-
-                        BillPaymentType billPaymentType= new BillPaymentType();
-                        billPaymentType.setId(UUID.randomUUID().toString());
-                        billPaymentType.setBillID(openedBillId);
-                        billPaymentType.setName(paymentType.getName());
-                        billPaymentType.setPaymentCode(Integer.valueOf(code));
-                        billPaymentType.setPaymentTypeID(paymentType.getExternalId());
-                        billPaymentType.setSum(inputSum);
-                        billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
-                        billPaymentType.setCreateDate(new Date().getTime());
-
-                        mRealm.executeTransaction(realm ->{
-                            Bill bill = realm.where(Bill.class).equalTo("id",openedBillId).findFirst();
-                            if(bill != null){
-                                bill.setReceiptNumFiscalMemory(0);
-                                bill.setState(1);
-                                bill.setCloseDate(new Date().getTime());
-                                bill.setClosedBy(BaseApplication.getInstance().getUser().getId());
-                                bill.setClosedByName(BaseApplication.getInstance().getUser().getFullName());
-                                bill.getBillPaymentTypes().add(billPaymentType);
-
-                            }
-                        });
-                    }
-
                 }
                 else {
                     BillPaymentType billPaymentType= new BillPaymentType();
@@ -1263,7 +1320,6 @@ public class MainActivity extends AppCompatActivity{
                 }
             }
             else if ((billPaymentedSum + inputSum) < sumBillToPay) {
-                finalBillPay = false;
                 BillPaymentType billPaymentType = new BillPaymentType();
                 billPaymentType.setId(UUID.randomUUID().toString());
                 billPaymentType.setBillID(openedBillId);
@@ -1297,7 +1353,6 @@ public class MainActivity extends AppCompatActivity{
             drawer.closeDrawer(GravityCompat.END);
         btnPay.setEnabled(true);
         openedBillId = null;
-        finalBillPay = true;
     }
 
     @SuppressLint({"DefaultLocale", "SetTextI18n"})
@@ -1765,6 +1820,7 @@ public class MainActivity extends AppCompatActivity{
         postToastMessage(getString(R.string.message_shift_is_opened));
         shiftOpenButtonPay = false;
         btnPay.setEnabled(true);
+        btnPay.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
         FragmentBills.showBillList();
         btnPay.setText(context.getString(R.string.text_mdl_0));
     }
@@ -1836,42 +1892,62 @@ public class MainActivity extends AppCompatActivity{
 
     //start timer function
     void startTimer(long time) {
-        countDownShiftTimer = new CountDownTimer(time, 1000) {
-            public void onTick(long millisUntilFinished) {
-                long second = (millisUntilFinished / 1000) % 60;
-                long minute = (millisUntilFinished / (1000 * 60)) % 60;
-                long hour = (millisUntilFinished / (1000 * 60 * 60)) % 24;
+        final boolean[] showDialogs = {false};
+        long timeSettings = getSharedPreferences(SharedPrefSettings, Context.MODE_PRIVATE).getLong("ShiftNotificationSettings",0);
+        if(timeSettings != 0){
+            countDownShiftTimer = new CountDownTimer(time, 1000) {
+                public void onTick(long millisUntilFinished) {
+                    long second = (millisUntilFinished / 1000) % 60;
+                    long minute = (millisUntilFinished / (1000 * 60)) % 60;
+                    long hour = (millisUntilFinished / (1000 * 60 * 60)) % 24;
 
-                String time = String.format("%02d:%02d:%02d", hour, minute, second);
-//                tv_schedule_shift.setText(time);
+                    String time = String.format("%02d:%02d:%02d", hour, minute, second);
+                    Log.d("TimerShift", "Shift need closed! " + time);
 
-                if(millisUntilFinished == 600000){
+
+                    if(millisUntilFinished <= timeSettings && !showDialogs[0]){
+                        new MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
+                                .setTitle(R.string.message_attention)
+                                .setMessage("10 minutes are left before the shift closes.")
+                                .setCancelable(false)
+                                .setPositiveButton(R.string.btn_ok , (dialogInterface, i) -> {
+                                    dialogInterface.dismiss();
+                                })
+                                .show();
+                        showDialogs[0] = true;
+                    }
+
+                }
+                public void onFinish() {
+                    btnPay.setText(R.string.text_close_shift);
+                    btnPay.setBackgroundColor(getResources().getColor(R.color.btnPay));
+                    shiftClosedButtonPay = true;
+
                     new MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog)
                             .setTitle(R.string.message_attention)
-                            .setMessage("10 minutes are left before the shift closes.")
+                            .setMessage(R.string.message_shift_expired_want_close)
                             .setCancelable(false)
-                            .setPositiveButton(R.string.btn_ok , (dialogInterface, i) -> {
-                                dialogInterface.dismiss();
+                            .setPositiveButton(R.string.btn_yes, (dialogInterface, i) -> {
+                                closeShift();
                             })
+                            .setNegativeButton(R.string.btn_no,((dialogInterface, i) -> {
+                                dialogInterface.dismiss();
+                            }))
                             .show();
                 }
-                if(millisUntilFinished == 0){
-                    //TODO close shift probabil
-                }
+            };
+            countDownShiftTimer.start();
+        }
+        else{
+            cancelTimer();
+        }
 
-            }
-            public void onFinish() {
-            }
-        };
-        countDownShiftTimer.start();
     }
     //cancel timer
     void cancelTimer() {
         if(countDownShiftTimer != null){
-            countDownShiftTimer.onFinish();
             countDownShiftTimer.cancel();
         }
-
     }
 
     private static void deviceConnect(final AbstractConnector item) {
@@ -2118,15 +2194,16 @@ public class MainActivity extends AppCompatActivity{
         });
 
     }
-    @SuppressLint("DefaultLocale")
     private static void paymentBill(double summBill){
 //        sumBillToPay = Double.valueOf(btnPay.getText().toString().replace("MDL ",""));
         sumBillToPay = summBill;
         View dialogView = inflater.inflate(R.layout.dialog_payment_bill_version0, null);
 
-        paymentDialog = new AlertDialog.Builder(context,R.style.ThemeOverlay_AppCompat_Dialog_Alert_TestDialogTheme).create();
+//        dialogView.setMinimumHeight((int)( displayMetrics.heightPixels * 0.95f));
+
+        paymentDialog = new Dialog(context,R.style.CustomDialog);
         paymentDialog.setCancelable(false);
-        paymentDialog.setView(dialogView);
+        paymentDialog.setContentView(dialogView);
         paymentDialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 
         tvInputSumBillForPayment = dialogView.findViewById(R.id.tv_pay_input_data_sum);
@@ -2150,6 +2227,10 @@ public class MainActivity extends AppCompatActivity{
                 if (paymentType != null) {
                     billPaymentedSum += paymentType.getSum();
                 }
+            }
+            PaymentType paymentTypesResult = mRealm.where(PaymentType.class).equalTo("id", billPaymentTypes.get(0).getPaymentTypeID()).findFirst();
+            if(paymentTypesResult != null){
+                onlyFiscalPay = paymentTypesResult.getPrintFiscalCheck();
             }
         }
 
@@ -2194,6 +2275,19 @@ public class MainActivity extends AppCompatActivity{
         MaterialButton number_200 = dialogView.findViewById(R.id.btn_pay_200);
         MaterialButton number_500 = dialogView.findViewById(R.id.btn_pay_500);
         MaterialButton point = dialogView.findViewById(R.id.btn_pay_point);
+
+        ConstraintLayout llInput = dialogView.findViewById(R.id.csl_input_data);
+        ConstraintLayout llHeader = dialogView.findViewById(R.id.header_items_pay);
+//
+//        int displayHeight2 = displayMetrics.heightPixels;;
+//        int dialogWindowHeight2 = (int) (displayHeight2 * 0.95f);
+//        llInput.setMinHeight(70);
+//        llHeader.setMinHeight(240);
+//
+//        int heightButton = dialogWindowHeight2 - 312;
+//
+//        llButtons.setMinHeight(heightButton);
+
 
         number_1.setOnClickListener(v1 -> addNumberToSumBill("1"));
         number_2.setOnClickListener(v12 -> addNumberToSumBill("2"));
@@ -2264,14 +2358,11 @@ public class MainActivity extends AppCompatActivity{
         delete.setOnClickListener(v118 -> { if (!tvInputSumBillForPayment.getText().toString().equals("")) tvInputSumBillForPayment.setText(tvInputSumBillForPayment.getText().toString().substring(0, tvInputSumBillForPayment.getText().toString().length() - 1)); });
         clear.setOnClickListener(v119 -> tvInputSumBillForPayment.setText(""));
         btn_Cancel.setOnClickListener(v120 -> {
-            if(finalBillPay){
-                paymentDialog.dismiss();
-                billPaymentedSum = 0;
-                btnPay.setEnabled(true);
-                if(drawer.isDrawerOpen(GravityCompat.END))
-                    drawer.closeDrawer(GravityCompat.END);
-            }
-
+            paymentDialog.dismiss();
+            billPaymentedSum = 0;
+            btnPay.setEnabled(true);
+            if(drawer.isDrawerOpen(GravityCompat.END))
+                drawer.closeDrawer(GravityCompat.END);
         });
         btnOtherPay.setOnClickListener(view -> {
             showOtherPaymentType();
@@ -2282,11 +2373,13 @@ public class MainActivity extends AppCompatActivity{
 
 
         int displayWidth = displayMetrics.widthPixels;
+        int displayHeight = displayMetrics.heightPixels;
         WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
         layoutParams.copyFrom(paymentDialog.getWindow().getAttributes());
         int dialogWindowWidth = (int) (displayWidth * 0.4f);
+        int dialogWindowHeight = (int) (displayHeight * 0.9f);
         layoutParams.width = dialogWindowWidth;
-        layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.height = dialogWindowHeight;  //LinearLayout.LayoutParams.WRAP_CONTENT
         paymentDialog.getWindow().setAttributes(layoutParams);
 //
 //        paymentDialog.getWindow().setLayout(470,LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -2412,74 +2505,100 @@ public class MainActivity extends AppCompatActivity{
        if(bilResult != null)
            bilNumber = bilResult.getShiftReceiptNumSoftware();
 
-       double inputSum = 0;
-       try {
-           inputSum = Double.parseDouble(tvInputSumBillForPayment.getText().toString());
-       } catch (Exception e) {
-           inputSum = Double.parseDouble(tvInputSumBillForPayment.getText().toString().replace(",", "."));
-       }
+       if(!tvInputSumBillForPayment.getText().toString().equals("")){
+           double inputSum = 0;
+           try {
+               inputSum = Double.parseDouble(tvInputSumBillForPayment.getText().toString());
+           } catch (Exception e) {
 
-       if ((billPaymentedSum + inputSum) >= sumBillToPay) {
-           int modeFiscalWork = context.getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork",BaseEnum.NONE_SELECTED_FISCAL_MODE);
+               inputSum = Double.parseDouble(tvInputSumBillForPayment.getText().toString().replace(",", "."));
+           }
 
-           if (printFiscalCheck) {
-               if(modeFiscalWork == BaseEnum.FISCAL_DEVICE){
-                   DatecsFiscalDevice fiscalDevice = null;
-                   if(BaseApplication.getInstance().getMyFiscalDevice() != null){
-                       fiscalDevice = BaseApplication.getInstance().getMyFiscalDevice();
-                   }
-                   if(fiscalDevice != null && fiscalDevice.isConnectedDeviceV2()){
-                       resultCloseReceip = BaseApplication.getInstance().printFiscalReceipt(fiscalReceipt, billStrings, paymentType, inputSum, billPaymentTypes,bilNumber);
-                       if (resultCloseReceip != 0) {
-                           BillPaymentType billPaymentType= new BillPaymentType();
-                           billPaymentType.setId(UUID.randomUUID().toString());
-                           billPaymentType.setBillID(openedBillId);
-                           billPaymentType.setName(paymentType.getName());
-                           billPaymentType.setPaymentCode(Integer.valueOf(code));
-                           billPaymentType.setPaymentTypeID(paymentType.getExternalId());
-                           billPaymentType.setSum(inputSum);
-                           billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
-                           billPaymentType.setCreateDate(new Date().getTime());
+           if ((billPaymentedSum + inputSum) >= sumBillToPay) {
+               int modeFiscalWork = context.getSharedPreferences(SharedPrefSettings, MODE_PRIVATE).getInt("ModeFiscalWork",BaseEnum.NONE_SELECTED_FISCAL_MODE);
 
-                           int finalResultCloseReceip = resultCloseReceip;
-                           mRealm.executeTransaction(realm ->{
-                               Bill bill = realm.where(Bill.class).equalTo("id",openedBillId).findFirst();
-                               if(bill != null){
-                                   bill.setReceiptNumFiscalMemory(finalResultCloseReceip);
-                                   bill.setState(1);
-                                   bill.setCloseDate(new Date().getTime());
-                                   bill.setClosedBy(BaseApplication.getInstance().getUser().getId());
-                                   bill.getBillPaymentTypes().add(billPaymentType);
+               if (printFiscalCheck) {
+                   if(modeFiscalWork == BaseEnum.FISCAL_DEVICE){
+                       DatecsFiscalDevice fiscalDevice = null;
+                       if(BaseApplication.getInstance().getMyFiscalDevice() != null){
+                           fiscalDevice = BaseApplication.getInstance().getMyFiscalDevice();
+                       }
+                       if(fiscalDevice != null && fiscalDevice.isConnectedDeviceV2()){
+                           resultCloseReceip = BaseApplication.getInstance().printFiscalReceipt(fiscalReceipt, billStrings, paymentType, inputSum, billPaymentTypes,bilNumber);
+                           if (resultCloseReceip != 0) {
+                               BillPaymentType billPaymentType= new BillPaymentType();
+                               billPaymentType.setId(UUID.randomUUID().toString());
+                               billPaymentType.setBillID(openedBillId);
+                               billPaymentType.setName(paymentType.getName());
+                               billPaymentType.setPaymentCode(Integer.valueOf(code));
+                               billPaymentType.setPaymentTypeID(paymentType.getExternalId());
+                               billPaymentType.setSum(inputSum);
+                               billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
+                               billPaymentType.setCreateDate(new Date().getTime());
 
-                               }
-                           });
+                               int finalResultCloseReceip = resultCloseReceip;
+                               mRealm.executeTransaction(realm ->{
+                                   Bill bill = realm.where(Bill.class).equalTo("id",openedBillId).findFirst();
+                                   if(bill != null){
+                                       bill.setReceiptNumFiscalMemory(finalResultCloseReceip);
+                                       bill.setState(1);
+                                       bill.setCloseDate(new Date().getTime());
+                                       bill.setClosedBy(BaseApplication.getInstance().getUser().getId());
+                                       bill.getBillPaymentTypes().add(billPaymentType);
 
-                           initRecyclerView();
+                                   }
+                               });
 
-                           billPaymentedSum = 0;
-                           paymentDialog.dismiss();
-                           btnPay.setEnabled(true);
+                               initRecyclerView();
 
-                           if(drawer.isDrawerOpen(GravityCompat.END))
-                               drawer.closeDrawer(GravityCompat.END);
-                           openedBillId = null;
-                           finalBillPay = true;
+                               billPaymentedSum = 0;
+                               paymentDialog.dismiss();
+                               btnPay.setEnabled(true);
+
+                               if(drawer.isDrawerOpen(GravityCompat.END))
+                                   drawer.closeDrawer(GravityCompat.END);
+                               openedBillId = null;
+                           }
+                       }
+                       else{
+                           Toast.makeText(context, R.string.message_fiscal_device_not_connected, Toast.LENGTH_SHORT).show();
                        }
                    }
-                   else{
-                       Toast.makeText(context, R.string.message_fiscal_device_not_connected, Toast.LENGTH_SHORT).show();
-                   }
-               }
-               if(modeFiscalWork == BaseEnum.FISCAL_SERVICE){
-                   BaseApplication.getInstance().printReceiptFiscalService(billStrings, paymentType, inputSum, billPaymentTypes,"1");
+                   if(modeFiscalWork == BaseEnum.FISCAL_SERVICE){
+                       BaseApplication.getInstance().printReceiptFiscalService(billStrings, paymentType, inputSum, billPaymentTypes,"1");
 
+                       BillPaymentType billPaymentType= new BillPaymentType();
+                       billPaymentType.setId(UUID.randomUUID().toString());
+                       billPaymentType.setBillID(openedBillId);
+                       billPaymentType.setName(paymentType.getName());
+                       billPaymentType.setPaymentCode(Integer.valueOf(code));
+                       billPaymentType.setPaymentTypeID(paymentType.getExternalId());
+                       billPaymentType.setSum(inputSum);
+                       billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
+                       billPaymentType.setCreateDate(new Date().getTime());
+
+                       mRealm.executeTransaction(realm ->{
+                           Bill bill = realm.where(Bill.class).equalTo("id",openedBillId).findFirst();
+                           if(bill != null){
+                               bill.setReceiptNumFiscalMemory(0);
+                               bill.setState(1);
+                               bill.setCloseDate(new Date().getTime());
+                               bill.setClosedBy(BaseApplication.getInstance().getUser().getId());
+                               bill.getBillPaymentTypes().add(billPaymentType);
+
+                           }
+                       });
+                   }
+
+               }
+               else {
                    BillPaymentType billPaymentType= new BillPaymentType();
                    billPaymentType.setId(UUID.randomUUID().toString());
                    billPaymentType.setBillID(openedBillId);
                    billPaymentType.setName(paymentType.getName());
                    billPaymentType.setPaymentCode(Integer.valueOf(code));
                    billPaymentType.setPaymentTypeID(paymentType.getExternalId());
-                   billPaymentType.setSum(inputSum);
+                   billPaymentType.setSum(sumBillToPay - billPaymentedSum);
                    billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
                    billPaymentType.setCreateDate(new Date().getTime());
 
@@ -2491,60 +2610,40 @@ public class MainActivity extends AppCompatActivity{
                            bill.setCloseDate(new Date().getTime());
                            bill.setClosedBy(BaseApplication.getInstance().getUser().getId());
                            bill.getBillPaymentTypes().add(billPaymentType);
-
                        }
                    });
+                   doAfterCloseBill();
                }
-
            }
-           else {
-               BillPaymentType billPaymentType= new BillPaymentType();
+           else if ((billPaymentedSum + inputSum) < sumBillToPay) {
+               BillPaymentType billPaymentType = new BillPaymentType();
                billPaymentType.setId(UUID.randomUUID().toString());
                billPaymentType.setBillID(openedBillId);
                billPaymentType.setName(paymentType.getName());
                billPaymentType.setPaymentCode(Integer.valueOf(code));
                billPaymentType.setPaymentTypeID(paymentType.getExternalId());
-               billPaymentType.setSum(sumBillToPay - billPaymentedSum);
+               billPaymentType.setSum(inputSum);
                billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
                billPaymentType.setCreateDate(new Date().getTime());
 
                mRealm.executeTransaction(realm ->{
                    Bill bill = realm.where(Bill.class).equalTo("id",openedBillId).findFirst();
                    if(bill != null){
-                       bill.setReceiptNumFiscalMemory(0);
-                       bill.setState(1);
-                       bill.setCloseDate(new Date().getTime());
-                       bill.setClosedBy(BaseApplication.getInstance().getUser().getId());
+                       bill.setState(0);
                        bill.getBillPaymentTypes().add(billPaymentType);
                    }
                });
-               doAfterCloseBill();
+
+               billPaymentedSum = inputSum;
+               tvToPay.setText(String.format("%.2f", sumBillToPay - billPaymentedSum).replace(",","."));
+               tvInputSumBillForPayment.setText(String.format("%.2f",sumBillToPay - billPaymentedSum).replace(",","."));
            }
        }
-       else if ((billPaymentedSum + inputSum) < sumBillToPay) {
-           finalBillPay = false;
-           BillPaymentType billPaymentType = new BillPaymentType();
-           billPaymentType.setId(UUID.randomUUID().toString());
-           billPaymentType.setBillID(openedBillId);
-           billPaymentType.setName(paymentType.getName());
-           billPaymentType.setPaymentCode(Integer.valueOf(code));
-           billPaymentType.setPaymentTypeID(paymentType.getExternalId());
-           billPaymentType.setSum(inputSum);
-           billPaymentType.setAuthor(BaseApplication.getInstance().getUser().getId());
-           billPaymentType.setCreateDate(new Date().getTime());
-
-           mRealm.executeTransaction(realm ->{
-               Bill bill = realm.where(Bill.class).equalTo("id",openedBillId).findFirst();
-               if(bill != null){
-                   bill.setState(0);
-                   bill.getBillPaymentTypes().add(billPaymentType);
-               }
-           });
-
-           billPaymentedSum = inputSum;
-           tvToPay.setText(String.format("%.2f", sumBillToPay - billPaymentedSum).replace(",","."));
-           tvInputSumBillForPayment.setText(String.format("%.2f",sumBillToPay - billPaymentedSum).replace(",","."));
+       else{
+           postToastMessage("Enter sum for pay!");
        }
+
+
    }
 
     private void checkItem_Dialog(int dialog, MaterialButton button){
@@ -2951,12 +3050,14 @@ public class MainActivity extends AppCompatActivity{
                     new UserTask().execute();
 
                 }else{
-                    //if error code is not equal 0
+                    Toast.makeText(MainActivity.this, "Error download assortment! Code: " + errorecode, Toast.LENGTH_SHORT).show();
+                    pgH.dismiss();
                 }
             }
             @Override
             public void onFailure(Call<AssortmentListService> call, Throwable t) {
-                //on failure
+                Toast.makeText(MainActivity.this, "Error download assortment! Message: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                pgH.dismiss();
             }
         });
     }
@@ -2996,21 +3097,26 @@ public class MainActivity extends AppCompatActivity{
                     pgH.dismiss();
 
                     viewPager.setAdapter(null);
-                    adapterRightMenu = new TabQuickMenuAdapter(getSupportFragmentManager());
+                    adapterRightMenu = new TabQuickMenuAdapter(context,getSupportFragmentManager());
                     viewPager.setAdapter(adapterRightMenu);
                     viewPager.setOffscreenPageLimit(4);
+
+                    tabLayout = findViewById(R.id.tab_items_right_menu);
+
 
                     tabLayout.setupWithViewPager(viewPager);
                     tabLayout.setTabMode(TabLayout.MODE_FIXED);
                     tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
 
                 }else{
-                    //if error code is not equal 0
+                    Toast.makeText(MainActivity.this, "Error download work places! Code: " + errorecode, Toast.LENGTH_SHORT).show();
+                    pgH.dismiss();
                 }
             }
             @Override
             public void onFailure(Call<WorkPlaceSettings> call, Throwable t) {
-                //on failure
+                Toast.makeText(MainActivity.this, "Error download work places! Message: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                pgH.dismiss();
             }
         });
 
@@ -3027,6 +3133,7 @@ public class MainActivity extends AppCompatActivity{
                     errorecode = result.getErrorCode();
                 }
                 if(errorecode == 0){
+                    getSharedPreferences(SharedPrefSettings,MODE_PRIVATE).edit().putBoolean("UserAuthentificate",true).apply();
                     List<User> users = result.getUsers();
                     mRealm.executeTransaction(realm -> {
                         for(User user : users){
@@ -3042,15 +3149,16 @@ public class MainActivity extends AppCompatActivity{
                     new WorkPlaceTask().execute();
 
                 }else{
-                    //if error code is not equal 0
+                    Toast.makeText(MainActivity.this, "Error download user! Code: " + errorecode, Toast.LENGTH_SHORT).show();
+                    pgH.dismiss();
                 }
             }
             @Override
             public void onFailure(Call<UserListServiceResult> call, Throwable t) {
-               //on failure
+                Toast.makeText(MainActivity.this, "Error download user! Message: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                pgH.dismiss();
             }
         });
-
     }
 
     class AssortmentTask extends AsyncTask<Void,Void,Void> {
@@ -3058,7 +3166,6 @@ public class MainActivity extends AppCompatActivity{
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            pgH.setTitle(getString(R.string.message_sync));
             pgH.setMessage(getString(R.string.message_loading_assortment));
             pgH.setCancelable(false);
             pgH.setProgressStyle(ProgressDialog.STYLE_SPINNER);
@@ -3080,7 +3187,6 @@ public class MainActivity extends AppCompatActivity{
         protected void onPreExecute() {
             super.onPreExecute();
             pgH.dismiss();
-            pgH.setTitle(getString(R.string.message_sync));
             pgH.setCancelable(false);
             pgH.setMessage(getString(R.string.message_loading_users));
             pgH.setIndeterminate(true);
@@ -3102,7 +3208,6 @@ public class MainActivity extends AppCompatActivity{
         protected void onPreExecute() {
             super.onPreExecute();
             pgH.dismiss();
-            pgH.setTitle(getString(R.string.message_sync));
             pgH.setMessage(getString(R.string.message_loading_workplace_settings));
             pgH.setIndeterminate(true);
             pgH.show();
@@ -3163,7 +3268,6 @@ public class MainActivity extends AppCompatActivity{
 
             }
         }
-
         return super.dispatchTouchEvent(event);
     }
 }

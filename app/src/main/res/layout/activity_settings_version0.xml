@@ -28,8 +28,8 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/roboto"
-                android:text="Andoid cash: Settings"
+                android:fontFamily="@font/nunito_sans"
+                android:text="@string/andoid_cash_settings"
                 android:textColor="@android:color/white"
                 android:textSize="18sp" />
 
@@ -62,7 +62,7 @@
         android:id="@+id/divider3"
         android:layout_width="1dp"
         android:layout_height="0dp"
-        android:background="@color/form_loginColor"
+        android:background="#D8000000"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/guideline8"
         app:layout_constraintTop_toBottomOf="@id/appbar_settings" />
@@ -82,14 +82,14 @@
             android:layout_height="wrap_content">
 
             <View
-                android:id="@+id/divider34"
+                android:id="@+id/divider24"
                 android:layout_width="0dp"
                 android:layout_height="1dp"
                 android:layout_marginStart="56dp"
-                android:background="@color/form_loginColor"
+                android:background="#D8000000"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/csl_update" />
+                app:layout_constraintTop_toBottomOf="@+id/csl_general" />
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/csl_sync"
@@ -98,14 +98,15 @@
                 android:clickable="true"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/divider7">
+                app:layout_constraintTop_toBottomOf="@+id/divider24">
 
                 <TextView
                     android:id="@+id/textView22"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:text="Data synchronization settings "
+                    android:fontFamily="@font/nunito_sans"
+                    android:text="@string/sync_info_settings"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/imageView19"
@@ -116,8 +117,8 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:fontFamily="@font/roboto"
-                    android:text="Sync"
+                    android:fontFamily="@font/nunito_sans"
+                    android:text="@string/sync_settings"
                     android:textColor="@color/blue_color"
                     android:textSize="16sp"
                     app:layout_constraintBottom_toTopOf="@id/textView22"
@@ -137,93 +138,54 @@
                     app:srcCompat="@drawable/baseline_account_circle_black_48dp" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
+            <View
+                android:id="@+id/divider34"
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_marginStart="56dp"
+                android:background="#D8000000"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/csl_update" />
+
             <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/csl_customer_disp"
+                android:id="@+id/csl_general"
                 android:layout_width="0dp"
                 android:layout_height="88dp"
-                android:background="?attr/colorButtonNormal"
                 android:clickable="true"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="1.0"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/divider24">
+                app:layout_constraintTop_toBottomOf="@+id/divider7">
 
                 <TextView
-                    android:id="@+id/textView20"
+                    android:id="@+id/textViesdsw22"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:text="TextView"
+                    android:fontFamily="@font/nunito_sans"
+                    android:text="Change language"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@id/imageView18"
-                    app:layout_constraintTop_toBottomOf="@id/textView21" />
+                    app:layout_constraintStart_toEndOf="@id/imageView1sds9"
+                    app:layout_constraintTop_toBottomOf="@id/textViewdsf3" />
 
                 <TextView
-                    android:id="@+id/textView21"
+                    android:id="@+id/textViewdsf3"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:fontFamily="@font/roboto"
-                    android:text="Customer display"
+                    android:fontFamily="@font/nunito_sans"
+                    android:text="General"
                     android:textColor="@color/blue_color"
                     android:textSize="16sp"
-                    app:layout_constraintBottom_toTopOf="@id/textView20"
+                    app:layout_constraintBottom_toTopOf="@id/textViesdsw22"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@id/imageView18"
+                    app:layout_constraintStart_toEndOf="@id/imageView1sds9"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintVertical_chainStyle="packed" />
 
                 <ImageView
-                    android:id="@+id/imageView18"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:srcCompat="@drawable/baseline_account_circle_black_48dp" />
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/csl_scales"
-                android:layout_width="0dp"
-                android:layout_height="88dp"
-                android:background="?attr/colorButtonNormal"
-                android:clickable="true"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="1.0"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/divider">
-
-                <TextView
-                    android:id="@+id/textView18"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:text="TextView"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@id/imageView17"
-                    app:layout_constraintTop_toBottomOf="@id/textView19" />
-
-                <TextView
-                    android:id="@+id/textView19"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:fontFamily="@font/roboto"
-                    android:text="Scales"
-                    android:textColor="@color/blue_color"
-                    android:textSize="16sp"
-                    app:layout_constraintBottom_toTopOf="@id/textView18"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@id/imageView17"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintVertical_chainStyle="packed" />
-
-                <ImageView
-                    android:id="@+id/imageView17"
+                    android:id="@+id/imageView1sds9"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
@@ -247,7 +209,8 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:text="Download updates, last update"
+                    android:fontFamily="@font/nunito_sans"
+                    android:text="@string/update_info_settings"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/imageView120"
@@ -258,8 +221,8 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:fontFamily="@font/roboto"
-                    android:text="Software update"
+                    android:fontFamily="@font/nunito_sans"
+                    android:text="@string/update_settings"
                     android:textColor="@color/blue_color"
                     android:textSize="16sp"
                     app:layout_constraintBottom_toTopOf="@id/textView25"
@@ -285,7 +248,7 @@
                 android:layout_height="1dp"
                 android:layout_marginStart="56dp"
                 android:layout_marginTop="8dp"
-                android:background="@color/form_loginColor"
+                android:background="#D8000000"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/btn_dashboard_settings" />
@@ -295,7 +258,7 @@
                 android:layout_width="0dp"
                 android:layout_height="1dp"
                 android:layout_marginStart="56dp"
-                android:background="@color/form_loginColor"
+                android:background="#D8000000"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/csl_fiscal_service" />
@@ -306,7 +269,7 @@
                 android:layout_height="1dp"
                 android:layout_marginStart="56dp"
                 android:layout_marginTop="8dp"
-                android:background="@color/form_loginColor"
+                android:background="#D8000000"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/textView3" />
@@ -316,7 +279,7 @@
                 android:layout_width="0dp"
                 android:layout_height="1dp"
                 android:layout_marginStart="56dp"
-                android:background="@color/form_loginColor"
+                android:background="#D8000000"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/csl_sync" />
@@ -329,7 +292,7 @@
                 android:layout_marginTop="8dp"
                 android:fontFamily="@font/roboto"
                 android:gravity="center|start"
-                android:text="General"
+                android:text="@string/general_settings"
                 android:textSize="18sp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -341,8 +304,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="8dp"
-                android:fontFamily="@font/roboto"
-                android:text="Device and services"
+                android:fontFamily="@font/nunito_sans"
+                android:text="@string/device_and_services_settings"
                 android:textSize="18sp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -353,7 +316,7 @@
                 android:layout_width="0dp"
                 android:layout_height="1dp"
                 android:layout_marginStart="56dp"
-                android:background="@color/form_loginColor"
+                android:background="#D8000000"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/csl_company" />
@@ -372,7 +335,8 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:text="Connect fiscal device or service"
+                    android:fontFamily="@font/nunito_sans"
+                    android:text="@string/fiscal_info_settings"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/imageView16"
@@ -383,8 +347,8 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:fontFamily="@font/roboto"
-                    android:text="Fiscal "
+                    android:fontFamily="@font/nunito_sans"
+                    android:text="@string/fiscal_settings"
                     android:textColor="@color/blue_color"
                     android:textSize="16sp"
                     app:layout_constraintBottom_toTopOf="@id/textView9"
@@ -429,8 +393,8 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:fontFamily="@font/roboto"
-                    android:text="Company"
+                    android:fontFamily="@font/nunito_sans"
+                    android:text="@string/company_settings"
                     android:textColor="@color/blue_color"
                     android:textSize="16sp"
                     app:layout_constraintBottom_toTopOf="@+id/textView5"
@@ -444,33 +408,14 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:text="Information about company and workplace"
+                    android:fontFamily="@font/nunito_sans"
+                    android:text="@string/company_info_settings"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@+id/imageView"
                     app:layout_constraintTop_toBottomOf="@+id/textView4" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <View
-                android:id="@+id/divider24"
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_marginStart="56dp"
-                android:background="@color/form_loginColor"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/csl_scales" />
-
-            <View
-                android:id="@+id/divider25"
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_marginStart="56dp"
-                android:layout_marginEnd="8dp"
-                android:background="@color/form_loginColor"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/csl_customer_disp" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
@@ -478,8 +423,8 @@
         android:id="@+id/txt_start_settings_msg"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:fontFamily="@font/roboto"
-        android:text="Select parameters from the left"
+        android:fontFamily="@font/nunito_sans"
+        android:text="@string/initial_settings"
         android:textSize="18sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

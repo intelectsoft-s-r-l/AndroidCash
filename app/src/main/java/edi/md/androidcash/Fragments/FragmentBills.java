@@ -72,40 +72,4 @@ public class FragmentBills extends Fragment {
         recyclerView.setAdapter(adapterBillList);
 
     }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        Log.d("Bills","onStart");
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        Log.d("Bills","onResume");
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        Log.d("Bills","onPause");
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        Log.d("Bills","onDestroyView");
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        Log.d("Bills","onDestroy");
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        Log.d("Bills","onDetach");
-    }
 }

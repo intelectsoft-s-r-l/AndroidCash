@@ -14,12 +14,16 @@
         android:layout_marginTop="4dp"
         android:layout_marginEnd="8dp"
         android:background="@android:color/transparent"
+        android:fontFamily="@font/nunito_sans"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:tabGravity="fill"
+        app:tabIndicator="@color/form_loginColor"
         app:tabIndicatorColor="@android:color/transparent"
-        app:tabMode="scrollable"></com.google.android.material.tabs.TabLayout>
+        app:tabMode="scrollable">
+
+    </com.google.android.material.tabs.TabLayout>
 
     <androidx.viewpager.widget.ViewPager
         android:id="@+id/viewpager_quick"

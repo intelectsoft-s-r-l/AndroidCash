@@ -10,11 +10,13 @@ import androidx.fragment.app.FragmentStatePagerAdapter;
 import edi.md.androidcash.Fragments.FragmentAssortmentList;
 import edi.md.androidcash.Fragments.FragmentBills;
 import edi.md.androidcash.Fragments.FragmentQuickButtons;
+import edi.md.androidcash.R;
 
 public class TabQuickMenuAdapter extends FragmentStatePagerAdapter {
-
-    public TabQuickMenuAdapter(FragmentManager fm) {
+    Context context;
+    public TabQuickMenuAdapter(Context context, FragmentManager fm) {
         super(fm);
+        this.context = context;
     }
 
     @Override
@@ -43,11 +45,11 @@ public class TabQuickMenuAdapter extends FragmentStatePagerAdapter {
         // Generate title based on item position
         switch (position) {
             case 0:
-                return "Quick Buttons";
+                return context.getString(R.string.group_quick_buttons);
             case 1:
-                return "Assortment";
+                return context.getString(R.string.group_assortment);
             case 2:
-                return "Bills";
+                return context.getString(R.string.group_bills);
             default:
                 return null;
         }

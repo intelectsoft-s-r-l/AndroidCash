@@ -18,6 +18,7 @@ import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -75,6 +76,9 @@ public class FragmentSyncPage extends Fragment {
     private SharedPreferences sharedPrefSettings;
     private ProgressDialog pgH;
 
+    SimpleDateFormat simpleDateFormatMD;
+    TimeZone timeZoneMD;
+
 
     @Nullable
     @Override
@@ -92,6 +96,10 @@ public class FragmentSyncPage extends Fragment {
         mRealm = Realm.getDefaultInstance();
 
         sharedPrefSettings = getActivity().getSharedPreferences(SharedPrefSettings,MODE_PRIVATE);
+
+        simpleDateFormatMD = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
+        timeZoneMD = TimeZone.getTimeZone("Europe/Chisinau");
+        simpleDateFormatMD.setTimeZone(timeZoneMD);
 
         uri = sharedPrefSettings.getString("URI",null);
         token = sharedPrefSettings.getString("Token","null");
@@ -230,12 +238,14 @@ public class FragmentSyncPage extends Fragment {
                     new UserTask().execute();
 
                 }else{
-                    //if error code is not equal 0
+                    pgH.dismiss();
+                    Toast.makeText(getContext(), "Errore sync assortment: " + errorecode, Toast.LENGTH_SHORT).show();
                 }
             }
             @Override
             public void onFailure(Call<AssortmentListService> call, Throwable t) {
-                //on failure
+                pgH.dismiss();
+                Toast.makeText(getContext(), "Errore sync assortment: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -275,13 +285,19 @@ public class FragmentSyncPage extends Fragment {
                         });
                     }
                     pgH.dismiss();
+                    long tim = new Date().getTime();
+                    String form = simpleDateFormatMD.format(tim);
+                    sharedPrefSettings.edit().putString("LastSync",form).apply();
+                    mLastSync.setText("The latest synchronization was: " + form);
                 }else{
-                    //if error code is not equal 0
+                    pgH.dismiss();
+                    Toast.makeText(getContext(), "Errore sync workplace: " + errorecode, Toast.LENGTH_SHORT).show();
                 }
             }
             @Override
             public void onFailure(Call<WorkPlaceSettings> call, Throwable t) {
-                //on failure
+                pgH.dismiss();
+                Toast.makeText(getContext(), "Errore sync workplace: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -307,12 +323,14 @@ public class FragmentSyncPage extends Fragment {
                     new WorkPlaceTask().execute();
 
                 }else{
-                    //if error code is not equal 0
+                    pgH.dismiss();
+                    Toast.makeText(getContext(), "Errore sync users: " + errorecode, Toast.LENGTH_SHORT).show();
                 }
             }
             @Override
             public void onFailure(Call<UserListServiceResult> call, Throwable t) {
-                //on failure
+                pgH.dismiss();
+                Toast.makeText(getContext(), "Errore sync users: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
 

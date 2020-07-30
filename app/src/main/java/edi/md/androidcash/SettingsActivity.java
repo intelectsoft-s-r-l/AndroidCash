@@ -22,6 +22,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import edi.md.androidcash.SettingUtils.FragmentCompanyPage;
 import edi.md.androidcash.SettingUtils.FragmentFiscalPage;
+import edi.md.androidcash.SettingUtils.FragmentGeneralPage;
 import edi.md.androidcash.SettingUtils.FragmentSyncPage;
 import edi.md.androidcash.SettingUtils.FragmentUpdatePage;
 import edi.md.androidcash.Utils.BaseEnum;
@@ -37,7 +38,7 @@ public class SettingsActivity extends AppCompatActivity {
     private static DrawerLayout drawer;
     private static ConstraintLayout drawerConstraint;
 
-    private ConstraintLayout csl_company, csl_sync, csl_fiscal, csl_sales,csl_shifts,csl_reports,csl_finReport,csl_finOper,csl_history,csl_settings, csl_update;
+    private ConstraintLayout csl_company, csl_sync, csl_fiscal, csl_sales,csl_shifts,csl_reports,csl_finReport,csl_general,csl_history,csl_settings, csl_update;
 
     private boolean firstItemSelected = false;
     TextView tvUserNameNav;
@@ -60,6 +61,7 @@ public class SettingsActivity extends AppCompatActivity {
         csl_sync = findViewById(R.id.csl_sync);
         csl_fiscal = findViewById(R.id.csl_fiscal_service);
         csl_update = findViewById(R.id.csl_update);
+        csl_general = findViewById(R.id.csl_general);
 
         csl_sales = findViewById(R.id.csl_sales);
         csl_shifts = findViewById(R.id.csl_shift);
@@ -67,6 +69,7 @@ public class SettingsActivity extends AppCompatActivity {
         csl_finReport = findViewById(R.id.csl_fin_reports);
         csl_history = findViewById(R.id.csl_history);
         csl_settings = findViewById(R.id.csl_setting_nav);
+
         tvUserNameNav = findViewById(R.id.tv_user_name_nav);
         startMsg = findViewById(R.id.txt_start_settings_msg);
         frmContainer = findViewById(R.id.container_setting);
@@ -93,6 +96,10 @@ public class SettingsActivity extends AppCompatActivity {
         csl_update.setOnClickListener(view -> {
             FragmentUpdatePage updatePage = new FragmentUpdatePage();
             replaceFragment(updatePage);
+        });
+        csl_general.setOnClickListener(view -> {
+            FragmentGeneralPage generalPage = new FragmentGeneralPage();
+            replaceFragment(generalPage);
         });
 
 

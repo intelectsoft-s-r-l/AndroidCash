@@ -27,8 +27,8 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/roboto"
-                android:text="Andoid cash: Log history"
+                android:fontFamily="@font/nunito_sans"
+                android:text="@string/andoid_cash_log_history"
                 android:textColor="@android:color/white"
                 android:textSize="18sp" />
 
@@ -42,8 +42,9 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
+        android:fontFamily="@font/nunito_sans"
         android:gravity="right|center_vertical"
-        android:text="Total log entries:"
+        android:text="@string/total_log_entries_history_fragment"
         android:textColor="@color/blue_color"
         android:textSize="18sp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -69,10 +70,12 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/appbar_history"
         tools:listitem="@layout/item_rc_history_list" />
+
     <TextView
         android:id="@+id/tv_total_log_entries"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:fontFamily="@font/nunito_sans"
         android:gravity="center_vertical"
         android:text="0"
         android:textColor="@color/blue_color"

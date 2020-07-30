@@ -273,6 +273,7 @@ public class NewBillStringsRealmRCAdapter extends RealmRecyclerViewAdapter<BillS
 
                 title.setText(billString.getAssortmentFullName());
                 sum.setText(String.format("%.2f", billString.getSumWithDiscount()) + " MDL");
+                //TODO  add condition check if it is weight item
                 quantity.setText(String.format("%.2f", billString.getQuantity()).replace(",","."));
                 price.setText(String.format("%.2f", billString.getPrice()).replace(",","."));
                 discount.setText(String.format("%.2f", billString.getPrice() - billString.getPriceWithDiscount()).replace(",","."));
