@@ -10,37 +10,38 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="75dp"
         android:orientation="horizontal"
-        android:paddingStart="10dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="10dp"
-        android:paddingBottom="10dp">
+        android:paddingStart="5dp"
+        android:paddingTop="5dp"
+        android:paddingEnd="5dp"
+        android:paddingBottom="5dp">
 
         <TextView
             android:id="@+id/item_title"
             android:layout_width="0dp"
-            android:layout_height="0dp"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:fontFamily="@font/roboto"
+            android:fontFamily="@font/nunito_sans"
             android:gravity="start|center_vertical"
             android:textColor="@android:color/black"
-            android:textSize="16sp"
+            android:textSize="18sp"
             app:layout_constraintBottom_toTopOf="@+id/item_sum"
             app:layout_constraintEnd_toStartOf="@+id/ll_count_btn"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            tools:text="Assortment name long string num" />
+            tools:text="Assortment name long string number" />
 
         <TextView
             android:id="@+id/item_sum"
             android:layout_width="0dp"
-            android:layout_height="0dp"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:fontFamily="@font/roboto_medium"
+            android:fontFamily="@font/nunito_sans"
             android:gravity="start|center_vertical"
             android:textColor="@android:color/black"
             android:textSize="18sp"
+            android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/ll_count_btn"
             app:layout_constraintStart_toStartOf="parent"
@@ -60,33 +61,34 @@
 
             <ImageButton
                 android:id="@+id/btn_minus"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/background_buttons_item_billstring"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/item_selector"
                 android:scaleType="centerInside"
-                android:src="@drawable/baseline_remove_white_24dp" />
+                android:src="@drawable/outline_remove_24" />
 
             <TextView
                 android:id="@+id/txt_count_item"
                 android:layout_width="95dp"
                 android:layout_height="match_parent"
                 android:clickable="true"
+                android:fontFamily="@font/nunito_sans"
                 android:gravity="center"
                 android:imeOptions="actionDone"
                 android:inputType="number"
-                android:maxLength="5"
+                android:maxLength="7"
                 android:selectAllOnFocus="true"
+                android:text="999.991"
                 android:textColor="@android:color/black"
-                android:textSize="24sp"
-                android:textStyle="bold" />
+                android:textSize="18sp" />
 
             <ImageButton
                 android:id="@+id/btn_plus"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/background_buttons_item_billstring"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/item_selector"
                 android:scaleType="centerInside"
-                android:src="@drawable/baseline_add_white_24dp" />
+                android:src="@drawable/outline_add_24" />
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -95,21 +97,22 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/blue_color"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp">
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp">
 
         <TextView
             android:id="@+id/txt_btn_delete"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
             android:layout_marginEnd="12dp"
+            android:background="#d40404"
             android:clickable="true"
-            android:fontFamily="@font/roboto_medium"
-            android:paddingStart="5dp"
-            android:paddingEnd="5dp"
+            android:fontFamily="@font/nunito_sans"
+            android:gravity="center"
+            android:padding="8dp"
             android:text="@string/btn_delete_item_string"
             android:textColor="@android:color/white"
-            android:textSize="18sp"
+            android:textSize="14sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -118,7 +121,7 @@
             android:id="@+id/txt_discount_item"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/roboto_medium"
+            android:fontFamily="@font/nunito_sans"
             android:text="n/a"
             android:textColor="@android:color/white"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -129,8 +132,10 @@
             android:id="@+id/textView83"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
             android:layout_marginEnd="4dp"
-            android:fontFamily="@font/roboto_medium"
+            android:layout_marginBottom="8dp"
+            android:fontFamily="@font/nunito_sans"
             android:text="@string/text_discount"
             android:textColor="@android:color/white"
             android:textSize="14sp"
@@ -145,7 +150,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
-            android:fontFamily="@font/roboto_medium"
+            android:fontFamily="@font/nunito_sans"
             android:text="150 lei"
             android:textColor="@android:color/white"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -159,7 +164,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginEnd="4dp"
-            android:fontFamily="@font/roboto_medium"
+            android:fontFamily="@font/nunito_sans"
             android:text="@string/text_price_for_1pcs"
             android:textColor="@android:color/white"
             android:textSize="14sp"

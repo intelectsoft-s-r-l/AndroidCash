@@ -7,65 +7,9 @@
     android:background="@android:color/white">
 
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/csl_fisc_oper"
-        android:layout_width="0dp"
-        android:layout_height="60dp"
-        android:background="?attr/colorButtonNormal"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/csl_fin_reports">
-
-        <ImageView
-            android:id="@+id/imageView16"
-            android:layout_width="35dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/add_black_36dp" />
-
-        <TextView
-            android:id="@+id/textView184"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="Fiscal operations"
-            android:textColor="@color/blue_color"
-            android:textSize="18sp"
-            app:layout_constraintBottom_toTopOf="@id/textView186"
-            app:layout_constraintStart_toEndOf="@id/imageView16"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_chainStyle="packed" />
-
-        <TextView
-            android:id="@+id/textView186"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="All operation made on this device"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@id/imageView16"
-            app:layout_constraintTop_toBottomOf="@id/textView184" />
-
-        <View
-            android:id="@+id/divider28"
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_marginEnd="8dp"
-            android:background="@color/form_loginColor"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="@id/textView186" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/constraintLayout2"
         android:layout_width="0dp"
-        android:layout_height="110dp"
+        android:layout_height="100dp"
         android:background="@color/blue_color"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -89,7 +33,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="Iurii Tvetcov"
+            android:fontFamily="@font/nunito_sans"
+            android:text="Name firsname"
             android:textColor="@android:color/white"
             android:textSize="24sp"
             app:layout_constraintBottom_toTopOf="@+id/tv_email_auth_user"
@@ -102,7 +47,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="tratata404@gmail.com"
+            android:fontFamily="@font/nunito_sans"
+            android:text="example@gmail.com"
             android:textColor="@android:color/white"
             android:textSize="18sp"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -118,28 +64,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/constraintLayout2">
 
-        <ImageView
-            android:id="@+id/imageView8"
-            android:layout_width="35dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/add_black_36dp" />
-
         <TextView
             android:id="@+id/textView106"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/nunito_sans"
             android:text="@string/nav_sales"
             android:textColor="@color/blue_color"
             android:textSize="18sp"
             app:layout_constraintBottom_toTopOf="@+id/textView108"
-            app:layout_constraintStart_toEndOf="@+id/imageView8"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_chainStyle="packed" />
 
@@ -147,10 +84,13 @@
             android:id="@+id/textView108"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/nunito_sans"
             android:text="@string/nav_sales_info"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/imageView8"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textView106" />
 
         <View
@@ -158,7 +98,7 @@
             android:layout_width="0dp"
             android:layout_height="1dp"
             android:layout_marginEnd="8dp"
-            android:background="@color/form_loginColor"
+            android:background="#D8000000"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="@+id/textView108" />
@@ -172,28 +112,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/csl_sales">
 
-        <ImageView
-            android:id="@+id/imageView10"
-            android:layout_width="35dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/add_black_36dp" />
-
         <TextView
             android:id="@+id/textView110"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/nunito_sans"
             android:text="@string/nav_shifts"
             android:textColor="@color/blue_color"
             android:textSize="18sp"
             app:layout_constraintBottom_toTopOf="@id/textView111"
-            app:layout_constraintStart_toEndOf="@id/imageView10"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_chainStyle="packed" />
 
@@ -201,10 +132,13 @@
             android:id="@+id/textView111"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/nunito_sans"
             android:text="@string/nav_shift_info"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@id/imageView10"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/textView110" />
 
         <View
@@ -212,7 +146,7 @@
             android:layout_width="0dp"
             android:layout_height="1dp"
             android:layout_marginEnd="8dp"
-            android:background="@color/form_loginColor"
+            android:background="#D8000000"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="@id/textView110" />
@@ -227,28 +161,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/csl_shift">
 
-        <ImageView
-            android:id="@+id/imageView12"
-            android:layout_width="35dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/add_black_36dp" />
-
         <TextView
             android:id="@+id/textView114"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/nunito_sans"
             android:text="@string/nav_reports"
             android:textColor="@color/blue_color"
             android:textSize="18sp"
             app:layout_constraintBottom_toTopOf="@id/textView115"
-            app:layout_constraintStart_toEndOf="@id/imageView12"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_chainStyle="packed" />
 
@@ -256,10 +181,13 @@
             android:id="@+id/textView115"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/nunito_sans"
             android:text="@string/nav_reports_info"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@id/imageView12"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/textView114" />
 
         <View
@@ -267,7 +195,7 @@
             android:layout_width="0dp"
             android:layout_height="1dp"
             android:layout_marginEnd="8dp"
-            android:background="@color/form_loginColor"
+            android:background="#D8000000"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="@id/textView115" />
@@ -281,28 +209,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/csl_reports">
 
-        <ImageView
-            android:id="@+id/imageView13"
-            android:layout_width="35dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/add_black_36dp" />
-
         <TextView
             android:id="@+id/textView116"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/nunito_sans"
             android:text="@string/nav_financial_operation"
             android:textColor="@color/blue_color"
             android:textSize="18sp"
             app:layout_constraintBottom_toTopOf="@id/textView117"
-            app:layout_constraintStart_toEndOf="@id/imageView13"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_chainStyle="packed" />
 
@@ -310,10 +229,13 @@
             android:id="@+id/textView117"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/nunito_sans"
             android:text="@string/nav_financial_operation_info"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@id/imageView13"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/textView116" />
 
         <View
@@ -321,7 +243,7 @@
             android:layout_width="0dp"
             android:layout_height="1dp"
             android:layout_marginEnd="8dp"
-            android:background="@color/form_loginColor"
+            android:background="#D8000000"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="@id/textView117" />
@@ -331,33 +253,26 @@
         android:id="@+id/csl_history"
         android:layout_width="0dp"
         android:layout_height="60dp"
+        app:layout_constraintBottom_toTopOf="@+id/csl_setting_nav"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/csl_fisc_oper">
-
-        <ImageView
-            android:id="@+id/imageView14"
-            android:layout_width="35dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/add_black_36dp" />
+        app:layout_constraintTop_toBottomOf="@+id/csl_fin_reports"
+        app:layout_constraintVertical_bias="0.0">
 
         <TextView
             android:id="@+id/textView118"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/nunito_sans"
             android:text="@string/nav_history"
             android:textColor="@color/blue_color"
             android:textSize="18sp"
             app:layout_constraintBottom_toTopOf="@id/textView119"
-            app:layout_constraintStart_toEndOf="@id/imageView14"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_chainStyle="packed" />
 
@@ -365,10 +280,13 @@
             android:id="@+id/textView119"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/nunito_sans"
             android:text="@string/nav_history_info"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@id/imageView14"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/textView118" />
 
         <View
@@ -376,7 +294,7 @@
             android:layout_width="0dp"
             android:layout_height="1dp"
             android:layout_marginEnd="8dp"
-            android:background="@color/form_loginColor"
+            android:background="#D8000000"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="@id/textView119" />
@@ -391,31 +309,31 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <ImageView
-            android:id="@+id/imageView15"
-            android:layout_width="35dp"
-            android:layout_height="0dp"
+        <View
+            android:id="@+id/divider42"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
             android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/add_black_36dp" />
+            android:layout_marginEnd="8dp"
+            android:background="#D8000000"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/textView120"
+            app:layout_constraintTop_toTopOf="@+id/textView120" />
 
         <TextView
             android:id="@+id/textView120"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_marginStart="16dp"
-            android:layout_weight="2"
+            android:layout_marginStart="8dp"
+            android:layout_marginBottom="8dp"
+            android:fontFamily="@font/nunito_sans"
             android:gravity="center_vertical"
             android:text="@string/nav_settings"
             android:textColor="@color/blue_color"
-            android:textSize="24sp"
+            android:textSize="18sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/imageView15"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
