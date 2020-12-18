@@ -1,4 +1,4 @@
-package edi.md.androidcash;
+package md.intelectsoft.salesepos;
 
 import org.junit.Test;
 

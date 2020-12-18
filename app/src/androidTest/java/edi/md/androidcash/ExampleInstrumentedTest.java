@@ -1,4 +1,4 @@
-package edi.md.androidcash;
+package md.intelectsoft.salesepos;
 
 import android.content.Context;
 
@@ -22,6 +22,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
-        assertEquals("edi.md.androidcash", appContext.getPackageName());
+        assertEquals("md.intelectsoft.salesepos", appContext.getPackageName());
     }
 }

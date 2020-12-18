@@ -1,2 +1,3 @@
+include ':IntelectSoftBrokerService'
 include ':app'
 rootProject.name='AndroidCash'

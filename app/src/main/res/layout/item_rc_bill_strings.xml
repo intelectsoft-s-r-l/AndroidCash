@@ -109,10 +109,10 @@
             android:clickable="true"
             android:fontFamily="@font/nunito_sans"
             android:gravity="center"
-            android:padding="4dp"
+            android:padding="8dp"
             android:text="@string/btn_delete_item_string"
             android:textColor="@android:color/white"
-            android:textSize="18sp"
+            android:textSize="14sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />

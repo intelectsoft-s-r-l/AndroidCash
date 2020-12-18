@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">SalesEPOS</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
@@ -29,7 +30,7 @@
     <string name="attachment_summary_on">Automatically download attachments for incoming emails
     </string>
     <string name="attachment_summary_off">Only download attachments when manually requested</string>
-    
+
     <string name="downloading">Downloading…</string>
     <string name="title_file_download">APK is downloading</string>
     <string name="storage_access_required">Storage access is required to downloading the file.</string>
@@ -72,14 +73,14 @@
     <string name="message_attention_delete_bill">Attention deleting bill!</string>
     <string name="message_want_delete_bill">Do you want delete it bill?</string>
     <string name="message_bill_deleted">Bill deleted: </string>
-    <string name="text_bill">Bill \</string>
+    <string name="text_bill">"Bill  "</string>
     <string name="message_is_deleted">\ is deleted!</string>
     <string name="text_undo">UNDO</string>
-    <string name="message_bill_returned_open">Bill returned state open: \</string>
+    <string name="message_bill_returned_open">"Bill returned state open: "</string>
     <string name="message_shift_expired">Shift has expired!</string>
     <string name="message_fiscal_device_not_connected">Fiscal device is not connected!</string>
     <string name="message_delete_bill_string">Deleted from bill item</string>
-    <string name="message_change_count_bill_string">Change count for item: \</string>
+    <string name="message_change_count_bill_string">"Change count for item:  "</string>
     <string name="message_bill_created_nr">Bill created No:</string>
     <string name="messaeg_added_to_bill_item">Added to bil item: </string>
     <string name="message_shift_is_opened">Shift is opened!</string>
@@ -138,7 +139,7 @@
     <string name="fiscal_settings">Fiscal</string>
     <string name="fiscal_info_settings">Connect fiscal device or service</string>
     <string name="initial_settings">Select parameters from the left</string>
-    <string name="andoid_cash_settings">Andoid cash: Settings</string>
+    <string name="andoid_cash_settings">SalesEPOS: Settings</string>
     <string name="company_fragment">COMPANY</string>
     <string name="company_name">Company name</string>
     <string name="idno_company_fragment">IDNO</string>
@@ -153,22 +154,22 @@
     <string name="connected_to_fiscal_fragment">Connected to netcp://api.edi.md:444</string>
     <string name="fiscal_device_fiscal_fragment">Fiscal device</string>
     <string name="fiscal_device_info_fiscal_fragment">Not connected</string>
-    <string name="info_shift_fragment">Информация по смене:</string>
-    <string name="date_open_shift_fragment">Дата открытья смены</string>
-    <string name="open_by_shift_fragment">Открыл смену</string>
-    <string name="date_close_shift_fragment">Дата закрытья</string>
-    <string name="closed_by_shift_fragment">Закрыл смену</string>
-    <string name="sales_shift_fragment">Продажи</string>
-    <string name="numbers_bill_shift_fragment">Количество чеков</string>
-    <string name="cash_sales_shift_fragment">Наличные</string>
-    <string name="credit_card_sales_shift_fragment">Банковская карта</string>
-    <string name="other_sales_shift_fragment">Другие способы оплаты</string>
-    <string name="profit_sales_shift_fragment">Выручка</string>
-    <string name="cas_end_shift_shift_fragment">Наличные на конец смены</string>
-    <string name="insert_cash_shift_fragment">Внесено средств</string>
-    <string name="extract_cash_shift_fragment">Изъято средств</string>
-    <string name="cash_start_shift_shift_fragment">Наличные на начало смены</string>
-    <string name="cash_shift_fragment">Касса</string>
+    <string name="info_shift_fragment">Shift information:</string>
+    <string name="date_open_shift_fragment">Opening date of the shift</string>
+    <string name="open_by_shift_fragment">Opened shift</string>
+    <string name="date_close_shift_fragment">Close date</string>
+    <string name="closed_by_shift_fragment">Closed the shift</string>
+    <string name="sales_shift_fragment">Sales</string>
+    <string name="numbers_bill_shift_fragment">Number of checks</string>
+    <string name="cash_sales_shift_fragment">Cash</string>
+    <string name="credit_card_sales_shift_fragment">Bank card</string>
+    <string name="other_sales_shift_fragment">Other payment methods</string>
+    <string name="profit_sales_shift_fragment">Revenue</string>
+    <string name="cas_end_shift_shift_fragment">Cash at the end of the shift</string>
+    <string name="insert_cash_shift_fragment">Funds contributed</string>
+    <string name="extract_cash_shift_fragment">Withdrawn funds</string>
+    <string name="cash_start_shift_shift_fragment">Cash at the beginning of the shift</string>
+    <string name="cash_shift_fragment">Cash</string>
     <string name="created_bill_tickets_fragment">Created</string>
     <string name="closed_bill_tickets_fragment">Closed</string>
     <string name="author_bill_tickets_fragment">Author</string>
@@ -187,7 +188,6 @@
     <string name="software_update_fragment">SOFTWARE UPDATE</string>
     <string name="check_preview_updates_update_fragment">Check preview updates</string>
     <string name="last_checked_update_fragment">Last checked: May 13,2020</string>
-    <string name="auto_check_update_update_fragment">Auto check update</string>
     <string name="check_and_download_updates_automatically_when_application_started_update_fragment">Check and download updates automatically when application started.</string>
     <string name="last_update_update_fragment">Last update</string>
     <string name="the_last_update_was_installed_on_update_fragment">The last update was installed on April 20, 2020</string>
@@ -200,16 +200,16 @@
     <string name="collect_info_financial_reports">The operation will be reflected in the Z report.</string>
     <string name="andoid_cash_log_history">Andoid cash: Log history</string>
     <string name="total_log_entries_history_fragment">Total log entries:</string>
-    <string name="andoid_cash_reports">Andoid cash: Reports</string>
+    <string name="andoid_cash_reports">SalesEPOS: Reports</string>
     <string name="x_report_reports_fragment">X-Report</string>
     <string name="x_info_reports_fragment">Lorem ipsum is smply dummy text of the printing and type setting industry. Lorem ipsum has been the industry\'s standard fummy text ever</string>
     <string name="print_x_reports_fragment">Print</string>
     <string name="z_report_reports_fragment">Z-Report</string>
     <string name="z_info_reports_fragment">Lorem ipsum is smply dummy text of the printing and type setting industry. Lorem ipsum has been the industry\'s standard fummy text ever</string>
-    <string name="andoid_cash_shifts">Andoid cash: Shifts</string>
-    <string name="info_start_shift_fragment">Для просмотра информаций по смене, выберите смену.</string>
-    <string name="start_indicii_shift_fragment">Чтобы начать работу необходимо</string>
-    <string name="open_shift_shift_fragment">открыть смену</string>
+    <string name="andoid_cash_shifts">SalesEPOS: Shifts</string>
+    <string name="info_start_shift_fragment">To view information on a shift, select the shift.</string>
+    <string name="start_indicii_shift_fragment">To get started you need</string>
+    <string name="open_shift_shift_fragment">" open shift"</string>
     <string name="cash_in_title_dialog">Cash in</string>
     <string name="number_1">1</string>
     <string name="number_2">2</string>
@@ -222,7 +222,7 @@
     <string name="number_7">7</string>
     <string name="number_point">.</string>
     <string name="number_0">0</string>
-    <string name="add_client_dialog">ancel</string>
+    <string name="add_client_dialog">Cancel</string>
     <string name="add_client_info_dialog">Apply client card to the reader or use barcode scanner.</string>
     <string name="close_x_z_dialog_vat_total">CLOSE</string>
     <string name="total_for_shift_vat_dialog">Total for shift</string>
@@ -243,7 +243,7 @@
     <string name="port_fiscal_service_settings_dialog">Port</string>
     <string name="shift_name_and_bill_number_ticket_info">shift name and bill number</string>
     <string name="name_ticket_info">Name</string>
-    <string name="cnt_ticket_info">Cnt</string>
+    <string name="cnt_ticket_info">Cnt.</string>
     <string name="price_ticket_info">Price</string>
     <string name="sum_ticket_info">Sum</string>
     <string name="total_ticket_info">Total</string>
@@ -252,4 +252,26 @@
     <string name="regular_price_search_item">REGULAR PRICE</string>
     <string name="cash_out_dialog">Cash out</string>
     <string name="change_count_dialog">Change count</string>
+    <string name="auto_check_update_update_fragment">Auto check update</string>
+    <string name="notify_until_shift_expire">Notify until shift expire</string>
+    <string name="tap_to_set_time_or_disable_notification">Tap to set time or disable notification</string>
+    <string name="disable">disable</string>
+    <string name="general">General</string>
+    <string name="language">Language</string>
+    <string name="tap_to_select_other_language">Tap to select other language</string>
+    <string name="general_settings_header">General</string>
+    <string name="general_settings_pages_info">Change language, notify until shift expire</string>
+    <string name="credit_card_exceed_pay_amount">Amount entered exceeds payment amount!</string>
+    <string name="fiscal_errore_170005">USB error: File unpack error</string>
+    <string name="fiscal_errore_170004">USB error: File copy error</string>
+    <string name="fiscal_errore_170003">USB error: File openFiscalReceipt error</string>
+    <string name="fiscal_errore_170002">USB error: No filesystem</string>
+    <string name="fiscal_errore_170001">USB error: No device</string>
+    <string name="fiscal_errore_170000">USB error: Host init error</string>
+    <string name="fiscal_errore_118007">ECR server error: Forbidden operation</string>
+    <string name="dialog_select_workplace">Select workplace item</string>
+    <string name="noright_workplace_ride">No rights to view workplace! You want to enter other login?</string>
+    <string name="sync_page">synchronization...</string>
+    <string name="last_sync_time">\"The latest synchronization was: \"</string>
+    <string name="cod_de_activare">Cod de activare</string>
 </resources>
